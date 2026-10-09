@@ -1,4 +1,4 @@
-import { useMemo, useState, type ComponentType, type ReactNode } from "react";
+import { useMemo, useState, useEffect, type ComponentType, type ReactNode } from "react";
 import {
   Activity,
   AlertTriangle,
@@ -845,10 +845,37 @@ export default function App() {
   const [role, setRole] = useState<Role | null>(null);
   const [active, setActive] = useState("Overview");
   const [collapsed, setCollapsed] = useState(false);
-  const [issues, setIssues] = useState(initialIssues);
+  const [issues, setIssues] = useState<Issue[]>(initialIssues);
   const [selected, setSelected] = useState<Issue | null>(null);
   const [submission, setSubmission] = useState<Issue | null>(null);
   const [review, setReview] = useState(false);
+
+  // We statically imported useEffect at the top of the file
+  useEffect(() => {
+    fetch('http://localhost:5000/api/v1/reports', {
+      headers: { 'Authorization': 'Bearer citizen-123' } // Demo officer token
+    })
+    .then(res => res.json())
+    .then((data: any[]) => {
+      if (Array.isArray(data) && data.length > 0) {
+        const apiIssues = data.map(d => ({
+          id: d.id,
+          title: d.description || d.category || "Reported Issue",
+          category: d.category || "General",
+          location: d.address || "Unknown Location",
+          coordinates: `${d.latitude?.toFixed(4) || 0}° N, ${d.longitude?.toFixed(4) || 0}° E`,
+          date: new Date(d.created_at).toLocaleDateString(),
+          priority: d.priority || "Medium",
+          status: d.status || "Open",
+          department: "Municipal Operations",
+          image: d.photo_url ? `http://localhost:5000${d.photo_url}` : roadImage,
+          marker: [Math.random() * 80 + 10, Math.random() * 80 + 10] as [number, number]
+        }));
+        setIssues([...apiIssues, ...initialIssues]);
+      }
+    })
+    .catch(err => console.error("Failed to load real issues", err));
+  }, []);
 
   const login = (nextRole: Role) => {
     setRole(nextRole);
