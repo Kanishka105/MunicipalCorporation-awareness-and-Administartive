@@ -32,7 +32,8 @@ class HomeScreen extends StatelessWidget {
             padding: EdgeInsets.only(right: 16.0),
             child: CircleAvatar(
               radius: 14,
-              backgroundImage: NetworkImage('https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80'),
+              backgroundColor: Colors.grey,
+              child: Icon(Icons.person, size: 18, color: Colors.white),
             ),
           )
         ],
@@ -57,8 +58,10 @@ class HomeScreen extends StatelessWidget {
           // GPS Status Bar
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            child: Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              spacing: 8,
+              runSpacing: 8,
               children: [
                 Row(
                   children: [
@@ -166,7 +169,7 @@ class HomeScreen extends StatelessWidget {
                     const CircleAvatar(
                       radius: 18,
                       backgroundColor: Colors.grey,
-                      backgroundImage: NetworkImage('https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=100&q=80'),
+                      child: Icon(Icons.person, color: Colors.white),
                     ),
                     Positioned(
                       bottom: 0,
@@ -217,7 +220,12 @@ class HomeScreen extends StatelessWidget {
             },
             child: Stack(
               children: [
-                Image.network(imageUrl, width: double.infinity, height: 350, fit: BoxFit.cover),
+                Container(
+                  width: double.infinity, 
+                  height: 350, 
+                  color: Colors.blueGrey[100],
+                  child: const Center(child: Icon(Icons.landscape, size: 60, color: Colors.white)),
+                ),
                 Positioned(
                   top: 12,
                   left: 12,
@@ -278,8 +286,10 @@ class HomeScreen extends StatelessWidget {
                 const SizedBox(height: 16),
                 
                 // Bottom Actions
-                Row(
-                  children: [
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                       decoration: BoxDecoration(
@@ -322,6 +332,7 @@ class HomeScreen extends StatelessWidget {
                       child: const Icon(Icons.bookmark_border, size: 16, color: AppTheme.textDark),
                     ),
                   ],
+                  ),
                 )
               ],
             ),

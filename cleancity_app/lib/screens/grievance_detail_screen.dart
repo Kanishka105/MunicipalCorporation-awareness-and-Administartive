@@ -34,7 +34,8 @@ class GrievanceDetailScreen extends StatelessWidget {
             padding: EdgeInsets.only(right: 16.0),
             child: CircleAvatar(
               radius: 14,
-              backgroundImage: NetworkImage('https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80'),
+              backgroundColor: Colors.grey,
+              child: Icon(Icons.person, size: 18, color: Colors.white),
             ),
           )
         ],
@@ -51,7 +52,8 @@ class GrievanceDetailScreen extends StatelessWidget {
                   children: [
                     const CircleAvatar(
                       radius: 20,
-                      backgroundImage: NetworkImage('https://images.unsplash.com/photo-1599566150163-29194dcaad36?auto=format&fit=crop&w=100&q=80'),
+                      backgroundColor: Colors.grey,
+                      child: Icon(Icons.person, size: 24, color: Colors.white),
                     ),
                     Positioned(
                       bottom: 0,
@@ -106,13 +108,11 @@ class GrievanceDetailScreen extends StatelessWidget {
               height: 400,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
-                image: const DecorationImage(
-                  image: NetworkImage('https://images.unsplash.com/photo-1542314831-c6a4d1421045?auto=format&fit=crop&w=800&q=80'),
-                  fit: BoxFit.cover,
-                ),
+                color: Colors.blueGrey[100],
               ),
               child: Stack(
                 children: [
+                  const Center(child: Icon(Icons.landscape, size: 60, color: Colors.white)),
                   Positioned(
                     top: 12,
                     left: 12,
@@ -183,7 +183,10 @@ class GrievanceDetailScreen extends StatelessWidget {
             const SizedBox(height: 20),
             
             // Upvote Row
-            Row(
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -228,8 +231,10 @@ class GrievanceDetailScreen extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    spacing: 8,
+                    runSpacing: 8,
                     children: [
                       Row(
                         children: [
@@ -268,14 +273,11 @@ class GrievanceDetailScreen extends StatelessWidget {
                     height: 180,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(12),
-                      image: const DecorationImage(
-                        image: NetworkImage('https://maps.googleapis.com/maps/api/staticmap?center=36.2704,-121.8081&zoom=11&size=600x300&maptype=roadmap&markers=color:teal%7C36.2704,-121.8081&key=YOUR_API_KEY'), // Mock Map
-                        fit: BoxFit.cover,
-                      ),
-                      color: Colors.green[50],
+                      color: Colors.green[100],
                     ),
                     child: Stack(
                       children: [
+                        const Center(child: Icon(Icons.map, size: 40, color: Colors.green)),
                         Positioned(
                           bottom: 12,
                           left: 12,

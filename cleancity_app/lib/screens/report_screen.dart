@@ -41,7 +41,8 @@ class _ReportScreenState extends State<ReportScreen> {
             padding: EdgeInsets.only(right: 16.0),
             child: CircleAvatar(
               radius: 14,
-              backgroundImage: NetworkImage('https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80'),
+              backgroundColor: Colors.grey,
+              child: Icon(Icons.person, size: 18, color: Colors.white),
             ),
           )
         ],
@@ -103,14 +104,12 @@ class _ReportScreenState extends State<ReportScreen> {
             Container(
               height: 250,
               decoration: BoxDecoration(
+                color: Colors.blueGrey[100],
                 borderRadius: BorderRadius.circular(16),
-                image: const DecorationImage(
-                  image: NetworkImage('https://images.unsplash.com/photo-1542314831-c6a4d1421045?auto=format&fit=crop&w=800&q=80'), // Placeholder
-                  fit: BoxFit.cover,
-                ),
               ),
               child: Stack(
                 children: [
+                  const Center(child: Icon(Icons.landscape, size: 60, color: Colors.white)),
                   Positioned(
                     top: 12,
                     left: 12,
@@ -164,8 +163,10 @@ class _ReportScreenState extends State<ReportScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    spacing: 8,
+                    runSpacing: 8,
                     children: [
                       Row(
                         children: [
@@ -216,8 +217,10 @@ class _ReportScreenState extends State<ReportScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    spacing: 8,
+                    runSpacing: 8,
                     children: const [
                       Row(
                         children: [
@@ -250,14 +253,11 @@ class _ReportScreenState extends State<ReportScreen> {
               height: 100,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
-                image: const DecorationImage(
-                  image: NetworkImage('https://maps.googleapis.com/maps/api/staticmap?center=36.6002,-121.8947&zoom=13&size=600x300&maptype=roadmap&markers=color:green%7Clabel:G%7C36.6002,-121.8947&key=YOUR_API_KEY'), // Mock Map
-                  fit: BoxFit.cover,
-                ),
-                color: Colors.green[50], // Fallback color
+                color: Colors.green[100], // Fallback color
               ),
               child: Stack(
                 children: [
+                  const Center(child: Icon(Icons.map, size: 40, color: Colors.green)),
                   Positioned(
                     bottom: 12,
                     left: 12,
