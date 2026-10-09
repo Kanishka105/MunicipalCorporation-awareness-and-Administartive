@@ -17,7 +17,7 @@ class _MainScreenState extends State<MainScreen> {
     const HomeScreen(),
     const Center(child: Text('My Complaints Screen Placeholder')),
     const RewardsScreen(),
-    const Center(child: Text('Profile Screen Placeholder')),
+    const ProfilePlaceholder(),
   ];
 
   @override
@@ -66,6 +66,20 @@ class _MainScreenState extends State<MainScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class ProfilePlaceholder extends StatelessWidget {
+  const ProfilePlaceholder({Key? key}) : super(key: key);
+  
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: ElevatedButton(
+        onPressed: () => Navigator.pushNamed(context, '/field_worker_tasks'),
+        child: const Text('Open Field Worker Tasks (Demo)'),
       ),
     );
   }
