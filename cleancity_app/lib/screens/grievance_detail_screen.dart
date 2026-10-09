@@ -138,7 +138,7 @@ class GrievanceDetailScreen extends StatelessWidget {
                         child: const Text('12th Main Road', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
                       ),
                     ),
-                    // AI Annotations (Mocked visually)
+                    // Illustrative annotations; not generated from this report's evidence.
                     Center(
                       child: Container(
                         width: 280,
@@ -154,7 +154,7 @@ class GrievanceDetailScreen extends StatelessWidget {
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                                 color: Colors.orangeAccent.withOpacity(0.8),
-                                child: const Text('BBMP-AI: Spill Box #01', style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)),
+                                child: const Text('Illustrative example', style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)),
                               ),
                             ),
                             Positioned(
@@ -163,7 +163,7 @@ class GrievanceDetailScreen extends StatelessWidget {
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                                 color: Colors.white.withOpacity(0.8),
-                                child: const Text('94.2%', style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold)),
+                                child: const Text('No analysis', style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold)),
                               ),
                             ),
                             Positioned(
@@ -179,7 +179,7 @@ class GrievanceDetailScreen extends StatelessWidget {
                         ),
                       ),
                     ),
-                    // Bottom AI Analysis tags
+                    // Static example tags are not model output.
                     Positioned(
                       bottom: 12,
                       left: 12,
@@ -188,9 +188,9 @@ class GrievanceDetailScreen extends StatelessWidget {
                         children: [
                           Row(
                             children: [
-                              _buildTag(Icons.delete_outline, 'Overflow 94%', Colors.blue[50]!, Colors.blue[800]!),
+                              _buildTag(Icons.delete_outline, 'Example label', Colors.blue[50]!, Colors.blue[800]!),
                               const SizedBox(width: 4),
-                              _buildTag(Icons.category, 'Mixed Plastic 88%', Colors.orange[50]!, Colors.orange[800]!),
+                              _buildTag(Icons.category, 'Not classified', Colors.orange[50]!, Colors.orange[800]!),
                             ],
                           ),
                           const SizedBox(height: 4),
@@ -343,16 +343,16 @@ class GrievanceDetailScreen extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: const [
-                      Text('Grievance Audit Trail', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                      Text('Updated 4m ago', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                      Text('Grievance Audit Trail • Sample', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      Text('Not live', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
                     ],
                   ),
                   const SizedBox(height: 20),
-                  _buildTimelineItem(Icons.check, 'Reported', 'दर्ज किया गया • Oct 24', 'Submitted via CleanCity Citizen Portal with GPS geotag lock.', '08:30 AM', true),
-                  _buildTimelineItem(Icons.smart_toy_outlined, 'AI Verified', 'एआई द्वारा सत्यापित • Oct 24', null, '08:32 AM', true, tags: ['94% Confidence', 'Auto-Categorized']),
-                  _buildTimelineItem(Icons.assignment_ind_outlined, 'Assigned', 'अधिकारी नियुक्त • Oct 24', 'Squad 14 auto-routed under East Zone Solid Waste Directive.', '09:15 AM', true),
-                  _buildTimelineItem(Icons.hourglass_bottom, 'In Progress', 'सफाई जारी है • Transit Phase', 'Compactor Truck KA-04-G-8821 in transit to location point.', 'Active', true, isCurrent: true),
-                  _buildTimelineItem(Icons.check_circle_outline, 'Resolved & Cleaned', 'सफलतापूर्वक निस्तारित', 'Pending physical post-cleanup evidence and QA geotag.', 'Pending', false),
+                  _buildTimelineItem(Icons.check, 'Reported', 'Sample record', 'This illustrative record is not connected to a submitted report.', 'Sample', true),
+                  _buildTimelineItem(Icons.pending_outlined, 'Evidence review pending', 'मानवीय समीक्षा लंबित', 'No automated authenticity or image classification result is available.', 'Pending', false),
+                  _buildTimelineItem(Icons.assignment_ind_outlined, 'Assignment example', 'Dispatch not connected', 'No squad assignment is recorded by the live backend.', 'Sample', false),
+                  _buildTimelineItem(Icons.hourglass_bottom, 'Status unavailable', 'Not connected', 'Live report progress is not shown in this sample screen.', 'N/A', false),
+                  _buildTimelineItem(Icons.pending_outlined, 'Resolution review', 'Awaiting official review', 'A submitted resolution is not resolved until an authorized official approves it.', 'Pending', false),
                 ],
               ),
             ),

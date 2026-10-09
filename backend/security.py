@@ -11,21 +11,50 @@ from backend.config import get_settings
 
 logger = logging.getLogger(__name__)
 
-ALLOWED_ROLES = {
-    "Citizen",
-    "FieldWorker",
-    "Inspector",
-    "Zonal",
-    "Commissioner",
-    "StateAdmin",
+ROLE_ALIASES = {
+    "citizen": "Citizen",
+    "Citizen": "Citizen",
+    "fieldworker": "FieldWorker",
+    "field worker": "FieldWorker",
+    "field_worker": "FieldWorker",
+    "FieldWorker": "FieldWorker",
+    "inspector": "Inspector",
+    "Inspector": "Inspector",
+    "departmentofficer": "DepartmentOfficer",
+    "department officer": "DepartmentOfficer",
+    "department_officer": "DepartmentOfficer",
+    "DepartmentOfficer": "DepartmentOfficer",
+    "zonal": "Zonal",
+    "zonalauthority": "Zonal",
+    "zonal authority": "Zonal",
+    "zonal_authority": "Zonal",
+    "Zonal": "Zonal",
+    "commissioner": "Commissioner",
+    "municipalcommissioner": "Commissioner",
+    "municipal commissioner": "Commissioner",
+    "municipal_commissioner": "Commissioner",
+    "Commissioner": "Commissioner",
+    "stateadmin": "StateAdmin",
+    "state administrator": "StateAdmin",
+    "state_administrator": "StateAdmin",
+    "StateAdmin": "StateAdmin",
+    "stateadministrator": "StateAdmin",
+    "systemadmin": "SystemAdmin",
+    "system administrator": "SystemAdmin",
+    "system_administrator": "SystemAdmin",
+    "SystemAdmin": "SystemAdmin",
 }
+
+ALLOWED_ROLES = set(ROLE_ALIASES.values())
 
 OFFICIAL_ROLES = {
     "FieldWorker",
     "Inspector",
+    "DepartmentOfficer",
     "Zonal",
     "Commissioner",
     "StateAdmin",
+    "SystemAdmin",
 }
 
 security_scheme = HTTPBearer(auto_error=False)
@@ -59,6 +88,15 @@ def _unauthorized() -> HTTPException:
     )
 
 
+def normalize_role(raw_role: str | None) -> str | None:
+    if raw_role is None:
+        return None
+    normalized = raw_role.strip()
+    if not normalized:
+        return None
+    return ROLE_ALIASES.get(normalized.lower(), normalized)
+
+
 def _demo_user_for_token(token: str | None) -> AuthUser:
     """Explicitly enabled local-only test authentication."""
     if not token:
@@ -68,9 +106,11 @@ def _demo_user_for_token(token: str | None) -> AuthUser:
         "citizen-": "Citizen",
         "official-": "FieldWorker",
         "inspector-": "Inspector",
+        "department-": "DepartmentOfficer",
         "zonal-": "Zonal",
         "commissioner-": "Commissioner",
         "state-": "StateAdmin",
+        "system-": "SystemAdmin",
     }
 
     for prefix, role in prefixes.items():
@@ -140,10 +180,14 @@ async def get_current_user(
         if not isinstance(raw_roles, list):
             raw_roles = []
 
-        if any(role not in ALLOWED_ROLES for role in raw_roles):
-            raise _unauthorized()
+        normalized_roles = []
+        for role in raw_roles:
+            normalized = normalize_role(str(role))
+            if normalized is None or normalized not in ALLOWED_ROLES:
+                raise _unauthorized()
+            normalized_roles.append(normalized)
 
-        roles = raw_roles or ["Citizen"]
+        roles = normalized_roles or ["Citizen"]
 
         return AuthUser(
             user_id=subject,
@@ -168,11 +212,12 @@ async def get_current_user(
 
 
 def require_roles(*required_roles: str):
-    if not required_roles or not set(required_roles).issubset(ALLOWED_ROLES):
+    normalized_required = {normalize_role(role) for role in required_roles}
+    if not required_roles or any(role not in ALLOWED_ROLES for role in normalized_required if role is not None):
         raise ValueError("Invalid required role configuration")
 
     def dependency(user: AuthUser = Depends(get_current_user)) -> AuthUser:
-        if not set(user.roles).intersection(required_roles):
+        if not set(user.roles).intersection(normalized_required):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Insufficient privileges",

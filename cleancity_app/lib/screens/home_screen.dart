@@ -152,7 +152,7 @@ class HomeScreen extends StatelessWidget {
                             children: const [
                               Icon(Icons.auto_awesome, color: Colors.white, size: 14),
                               SizedBox(width: 4),
-                              Text('Smart Ward AI 2.0', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                              Text('CivicPulse Demo', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
                             ],
                           ),
                         )
@@ -162,7 +162,7 @@ class HomeScreen extends StatelessWidget {
                     const Text('Report a Problem', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
                     const Text('समस्या दर्ज करें', style: TextStyle(color: Colors.white70, fontSize: 14)),
                     const SizedBox(height: 12),
-                    const Text('AI auto-detects waste category & ward in\nseconds', style: TextStyle(color: Colors.white, fontSize: 12, height: 1.4)),
+                    const Text('Select a category and submit a photo with your device location.', style: TextStyle(color: Colors.white, fontSize: 12, height: 1.4)),
                     const SizedBox(height: 20),
                     ElevatedButton(
                       onPressed: () {
@@ -264,7 +264,7 @@ class HomeScreen extends StatelessWidget {
                                     color: AppTheme.primaryGreen.withOpacity(0.9),
                                     borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(8), bottomRight: Radius.circular(8)),
                                   ),
-                                  child: const Text('✓ 96% AI', textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)),
+                                  child: const Text('Sample', textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)),
                                 ),
                               ),
                             ),

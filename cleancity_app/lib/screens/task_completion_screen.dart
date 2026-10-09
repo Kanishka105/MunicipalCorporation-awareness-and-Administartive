@@ -370,14 +370,14 @@ class TaskCompletionScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             
-            // AI Inspection Simulator
+            // Illustrative completion states; no automated inspection is connected.
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Row(
                 children: [
                   const Expanded(
                     flex: 1,
-                    child: Text('AI INSPECTION\nSIMULATOR', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                    child: Text('SAMPLE\nSTATES', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
                   ),
                   Expanded(
                     flex: 1,
@@ -401,7 +401,7 @@ class TaskCompletionScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             
-            // Verified by AI Banner
+            // Completion claims are sample UI and are not automated verification.
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 16),
               padding: const EdgeInsets.all(16),
@@ -420,17 +420,17 @@ class TaskCompletionScreen extends StatelessWidget {
                         child: const Icon(Icons.check, color: Colors.white, size: 16),
                       ),
                       const SizedBox(width: 8),
-                      const Text('Verified by AI (एआई द्वारा सत्यापित)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      const Text('Manual review required (मानवीय समीक्षा आवश्यक)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                     ],
                   ),
                   const SizedBox(height: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(color: AppTheme.primaryGreen, borderRadius: BorderRadius.circular(12)),
-                    child: const Text('99% Clean', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                    child: const Text('Not verified', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
                   ),
                   const SizedBox(height: 8),
-                  const Text('Cleanliness score: 99.2%. Target sector\nverified spotless. Bin emptied &\nsurrounding pavement scrubbed. Municipal\nSLA timer successfully stopped.', style: TextStyle(fontSize: 12, color: AppTheme.primaryGreen)),
+                  const Text('This sample screen does not verify cleanup or stop a municipal SLA. Submit evidence for authorized human review.', style: TextStyle(fontSize: 12, color: AppTheme.primaryGreen)),
                   const SizedBox(height: 16),
                   Container(
                     padding: const EdgeInsets.all(12),

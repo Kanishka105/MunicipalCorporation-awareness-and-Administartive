@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
+import '../services/civicpulse_api.dart';
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -128,24 +129,24 @@ class LoginScreen extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('Citizen Login', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                        const Text('CivicPulse Login', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
                             color: Colors.green[50],
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Text('OTP Verified', style: TextStyle(color: AppTheme.primaryGreen, fontSize: 12, fontWeight: FontWeight.bold)),
+                          child: const Text('Access token required', style: TextStyle(color: AppTheme.primaryGreen, fontSize: 12, fontWeight: FontWeight.bold)),
                         )
                       ],
                     ),
                     const SizedBox(height: 4),
-                    const Text('नागरिक प्रवेश • Fast, passwordless entry', style: TextStyle(fontSize: 12, color: AppTheme.textLight, fontWeight: FontWeight.w600)),
+                    const Text('Connect with an access token from your configured identity provider.', style: TextStyle(fontSize: 12, color: AppTheme.textLight, fontWeight: FontWeight.w600)),
                     const SizedBox(height: 20),
                     
                     const Text.rich(
                       TextSpan(
-                        text: 'Registered Mobile Number ',
+                        text: 'Identity provider ',
                         style: TextStyle(fontSize: 12, color: AppTheme.textDark, fontWeight: FontWeight.w600),
                         children: [
                           TextSpan(text: '*', style: TextStyle(color: Colors.red)),
@@ -154,7 +155,6 @@ class LoginScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     
-                    // Phone Number Input (Mocked)
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       decoration: BoxDecoration(
@@ -164,10 +164,10 @@ class LoginScreen extends StatelessWidget {
                       ),
                       child: Row(
                         children: [
-                          const Text('🇮🇳 +91', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                          const Text('JWT', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                           const SizedBox(width: 16),
                           const Expanded(
-                            child: Text('9845012384', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, letterSpacing: 1.2)),
+                            child: Text('Token entered securely on continue', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                           ),
                           Icon(Icons.edit_outlined, color: Colors.grey[500], size: 20),
                         ],
@@ -178,20 +178,18 @@ class LoginScreen extends StatelessWidget {
                       children: [
                         Icon(Icons.check_circle_outline, color: AppTheme.primaryGreen, size: 14),
                         const SizedBox(width: 4),
-                        const Text('Aadhaar/Ward linkage auto-detected', style: TextStyle(fontSize: 12, color: AppTheme.textDark, fontWeight: FontWeight.w600)),
+                        const Text('OTP sign-in is not implemented in this app prototype.', style: TextStyle(fontSize: 12, color: AppTheme.textDark, fontWeight: FontWeight.w600)),
                       ],
                     ),
                     const SizedBox(height: 12),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('SMS sent to +91 98450 •••84', style: TextStyle(fontSize: 12, color: AppTheme.textLight)),
-                        Text('Change', style: TextStyle(fontSize: 12, color: AppTheme.primaryGreen, fontWeight: FontWeight.bold)),
+                        const Text('The token is kept in memory only.', style: TextStyle(fontSize: 12, color: AppTheme.textLight)),
                       ],
                     ),
                     const SizedBox(height: 16),
                     
-                    // OTP Box
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
@@ -204,35 +202,7 @@ class LoginScreen extends StatelessWidget {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text('Enter 6-Digit Civic PIN / OTP', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-                              Row(
-                                children: [
-                                  Icon(Icons.timer_outlined, color: AppTheme.primaryGreen, size: 14),
-                                  const SizedBox(width: 4),
-                                  const Text('24s remaining', style: TextStyle(fontSize: 12, color: AppTheme.primaryGreen, fontWeight: FontWeight.w600)),
-                                ],
-                              )
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          // OTP Digits
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              _buildOtpBox('5', true),
-                              _buildOtpBox('8', true),
-                              _buildOtpBox('2', true),
-                              _buildOtpBox('•', false),
-                              _buildOtpBox('•', false),
-                              _buildOtpBox('•', false),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text("Didn't receive code?", style: TextStyle(fontSize: 12, color: AppTheme.textLight, fontWeight: FontWeight.w600)),
-                              const Text('Resend OTP in 24s', style: TextStyle(fontSize: 12, color: AppTheme.textLight)),
+                              const Expanded(child: Text('Authentication is provided by your configured identity provider.', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600))),
                             ],
                           ),
                           const SizedBox(height: 16),
@@ -240,7 +210,37 @@ class LoginScreen extends StatelessWidget {
                             width: double.infinity,
                             height: 48,
                             child: ElevatedButton(
-                              onPressed: () {
+                              onPressed: () async {
+                                final controller = TextEditingController();
+                                final token = await showDialog<String>(
+                                  context: context,
+                                  builder: (dialogContext) => AlertDialog(
+                                    title: const Text('Connect to CivicPulse'),
+                                    content: TextField(
+                                      controller: controller,
+                                      obscureText: true,
+                                      autocorrect: false,
+                                      enableSuggestions: false,
+                                      decoration: const InputDecoration(
+                                        labelText: 'Bearer access token',
+                                        border: OutlineInputBorder(),
+                                      ),
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(dialogContext),
+                                        child: const Text('Cancel'),
+                                      ),
+                                      ElevatedButton(
+                                        onPressed: () => Navigator.pop(dialogContext, controller.text),
+                                        child: const Text('Continue'),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                                controller.dispose();
+                                if (token == null || token.trim().isEmpty) return;
+                                CivicPulseSession.accessToken = token.trim();
                                 Navigator.pushReplacementNamed(context, '/home');
                               },
                               style: ElevatedButton.styleFrom(
@@ -252,7 +252,7 @@ class LoginScreen extends StatelessWidget {
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: const [
-                                  Text('Verify & Continue / सत्यापन करें', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                                  Text('Enter access token / टोकन दर्ज करें', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                                   SizedBox(width: 8),
                                   Icon(Icons.arrow_forward, size: 18),
                                 ],
@@ -270,7 +270,7 @@ class LoginScreen extends StatelessWidget {
                         const SizedBox(width: 12),
                         const Expanded(
                           child: Text(
-                            'Fast login without password. Verified with Aadhaar & Mobile linked civic voter registration records.',
+                            'This app does not issue or store identity-provider tokens. Use only a valid token from your configured sign-in provider.',
                             style: TextStyle(fontSize: 12, color: AppTheme.textLight, height: 1.5),
                           ),
                         )
@@ -313,7 +313,7 @@ class LoginScreen extends StatelessWidget {
                 children: const [
                   Icon(Icons.lock_outline, size: 12, color: AppTheme.textLight),
                   SizedBox(width: 4),
-                  Text('256-bit Encrypted', style: TextStyle(fontSize: 10, color: AppTheme.textLight, fontWeight: FontWeight.bold)),
+                  Text('Access token required', style: TextStyle(fontSize: 10, color: AppTheme.textLight, fontWeight: FontWeight.bold)),
                   Text('  •  ', style: TextStyle(fontSize: 10, color: AppTheme.textLight)),
                   Text('BBMP East • Ward 142', style: TextStyle(fontSize: 10, color: AppTheme.textLight, fontWeight: FontWeight.bold)),
                   Text('  •  ', style: TextStyle(fontSize: 10, color: AppTheme.textLight)),
@@ -328,28 +328,4 @@ class LoginScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildOtpBox(String digit, bool filled) {
-    return Container(
-      width: 45,
-      height: 50,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: filled ? AppTheme.primaryGreen.withOpacity(0.3) : Colors.transparent),
-        boxShadow: [
-          if (filled)
-            BoxShadow(color: AppTheme.primaryGreen.withOpacity(0.1), blurRadius: 4, offset: const Offset(0, 2))
-        ]
-      ),
-      child: Text(
-        digit,
-        style: TextStyle(
-          fontSize: 24,
-          fontWeight: FontWeight.bold,
-          color: filled ? AppTheme.primaryGreen : Colors.grey[400],
-        ),
-      ),
-    );
-  }
 }

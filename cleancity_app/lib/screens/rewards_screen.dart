@@ -213,11 +213,11 @@ class RewardsScreen extends StatelessWidget {
                           children: [
                             Icon(Icons.check_circle_outline, size: 14, color: AppTheme.primaryGreen),
                             SizedBox(width: 4),
-                            Text('32 AI-Verified Validations', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                            Text('Sample contribution activity', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                           ],
                         ),
                         SizedBox(height: 4),
-                        Text('0 spam incidents or false flags\nlogged. High accuracy ward\ncontributor.', style: TextStyle(fontSize: 10, color: AppTheme.textLight)),
+                        Text('Illustrative profile data only; report authenticity and contributor accuracy are not scored.', style: TextStyle(fontSize: 10, color: AppTheme.textLight)),
                       ],
                     ),
                   )

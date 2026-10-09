@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
 import 'home_screen.dart';
+import 'my_reports_screen.dart';
 import 'rewards_screen.dart';
 
 class MainScreen extends StatefulWidget {
@@ -15,7 +16,7 @@ class _MainScreenState extends State<MainScreen> {
 
   final List<Widget> _screens = [
     const HomeScreen(),
-    const Center(child: Text('My Complaints Screen Placeholder')),
+    const MyReportsScreen(),
     const RewardsScreen(),
     const ProfilePlaceholder(),
   ];

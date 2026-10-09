@@ -5,9 +5,11 @@
 
 ---
 
-**CivicPulse** is an enterprise-grade civic management and automated hazard triage platform. Designed for the Delhi Municipal Corporation, it bridges the gap between citizens, AI diagnostic systems, field operators, and municipal executives through a real-time, 4-Swimlane Architectural Pipeline.
+**CivicPulse** is a civic reporting and municipal operations prototype. Its architecture describes a future platform; automated hazard triage, AI diagnostics, dispatch, and other integrations described below are not connected services in this repository.
 
-The system strictly enforces authenticity via hardware-level GPS locking, EXIF timestamp signatures, and perceptual hashing to prevent fabricated reports, ensuring municipal resources are allocated with precision.
+The target design calls for hardware-level GPS locking, EXIF timestamp signatures, and perceptual hashing to reduce fabricated reports.
+
+> **Prototype status:** The backend uses local JSON persistence and configured Cognito JWT validation. The Flutter report form supports camera/gallery evidence selection, local authenticated upload, and device GPS. The backend validates image type/content and computes a SHA-256 content hash for exact-byte reuse signals; this does not prove authenticity. Evidence authenticity remains `not_verified`, including after human approval. Officials submit resolution evidence for pending review and must separately approve or reject it. Approval records human review; no automated before/after visual comparison or AI image analysis is implemented. AWS object storage, real identity-provider configuration, deployment, dispatch, and production infrastructure remain external integrations.
 
 ---
 
@@ -99,6 +101,14 @@ MunicipalCorporation-awareness-and-Administartive/
 
 ## 🚀 Installation & Operation
 
+### Current Citizen App / Backend Integration
+- The Flutter citizen app submits reports to `POST /api/v1/reports` and loads the authenticated user's reports from `GET /api/v1/reports`.
+- The prototype accepts a bearer access token at sign-in and keeps it in memory only. It does not perform OTP or Cognito sign-in; use an access token supplied by a separately configured identity provider.
+- Configure the backend URL with `--dart-define=CIVICPULSE_API_BASE_URL=http://<backend-host>:8000` when running the Flutter app. The default is `http://localhost:8000`.
+- Report submission requires a selected image, current device GPS, title, description, and category. The app uploads bytes to the authenticated local `POST /api/v1/uploads` endpoint and then submits the returned private evidence reference to `POST /api/v1/reports`. The local backend validates supported image types and decodes image content; content hashes can flag exact byte reuse, not prove authenticity. Private evidence downloads require authorization. `POST /api/v1/uploads/presign` remains `501 Not Implemented` until cloud storage integration is provided.
+- Authorized officials submit resolution evidence with `POST /api/v1/reports/{report_id}/resolution-evidence`; it remains pending. A separate `POST /api/v1/reports/{report_id}/resolution-evidence/verify` action records an official approval or rejection. Only approval resolves the report and task; authenticity remains `not_verified`. Citizens cannot review or resolve reports.
+- Classification and priority are rule-based; no trained model inference or AI confidence score is supplied. The dashboard contains illustrative sample data and is not connected to report-review, fleet-dispatch, or AI systems.
+
 ### Prerequisites
 - **Flutter SDK**: `^3.41.6` (or latest stable)
 - **Dart SDK**: `^3.7.0`
@@ -109,7 +119,7 @@ MunicipalCorporation-awareness-and-Administartive/
 1. **Clone the Repository**
    ```bash
    git clone https://github.com/Kanishka105/MunicipalCorporation-awareness-and-Administartive.git
-   cd MunicipalCorporation-awareness-and-Administartive/app
+   cd MunicipalCorporation-awareness-and-Administartive/cleancity_app
    ```
 
 2. **Fetch Dependencies**
@@ -120,8 +130,10 @@ MunicipalCorporation-awareness-and-Administartive/
 3. **Run the Development Server**
    To execute the application utilizing the Chrome web renderer on port 3000:
    ```bash
-   flutter run -d chrome --web-port 3000
+   flutter run -d chrome --web-port 3000 --dart-define=CIVICPULSE_API_BASE_URL=http://localhost:8000
    ```
+
+   On an Android emulator, use `http://10.0.2.2:8000`; on a physical device or Codespace, use a backend URL reachable from that device/browser. Start the backend locally with `cd backend && uvicorn main:app --reload --host 0.0.0.0 --port 8000`. Cloud presigning is intentionally unavailable without the teammate's AWS integration.
 
 4. **Test the Workflow**
    Once initialized, open `http://localhost:3000`. Navigate to the **"System Architecture Workflow"** via the top-right tree icon (`Icons.account_tree`) or the Feed Screen Banner to initiate the interactive pipeline simulation.
