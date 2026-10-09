@@ -1,0 +1,10 @@
+{
+  "description": "Enables government officials to manage, track, and approve civic issue reports with role-based dashboards, location mapping, and detailed resolution workflows.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
