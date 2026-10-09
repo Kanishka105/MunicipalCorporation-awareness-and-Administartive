@@ -25,32 +25,7 @@ class TopHeader extends StatelessWidget implements PreferredSizeWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Row(
           children: [
-            // CivicPulse Brand Logo
-            Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                gradient: CivicColors.primaryGradient,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: CivicColors.primary.withOpacity(0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: const Center(
-                child: Icon(
-                  Icons.hub_outlined,
-                  color: Colors.white,
-                  size: 22,
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-
-            // Title & AI pill & Ward info
+            // CleanCity Brand & Location
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -58,58 +33,56 @@ class TopHeader extends StatelessWidget implements PreferredSizeWidget {
                 children: [
                   Row(
                     children: [
-                      Text(
-                        state.tr('appName'),
-                        style: TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w700,
-                          color: isDark ? Colors.white : CivicColors.textPrimaryLight,
-                          letterSpacing: -0.3,
-                        ),
-                      ),
+                      const Icon(Icons.maps_home_work_outlined, color: CivicColors.primary, size: 20),
                       const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: isDark ? CivicColors.mint.withOpacity(0.2) : CivicColors.mintBadgeBg,
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(
-                            color: CivicColors.mint.withOpacity(0.4),
-                            width: 0.8,
-                          ),
-                        ),
-                        child: Text(
-                          'AI',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: isDark ? CivicColors.mint : CivicColors.mintDark,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 1),
-                  Row(
-                    children: [
-                      Container(
-                        width: 6,
-                        height: 6,
-                        decoration: const BoxDecoration(
-                          color: CivicColors.mint,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 5),
                       Text(
-                        user?.ward ?? state.tr('wardSubtitle'),
+                        'CLEANCITY ',
                         style: TextStyle(
-                          fontSize: 11.5,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: isDark ? Colors.white : CivicColors.primaryDark,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      Text(
+                        '| Home',
+                        style: TextStyle(
+                          fontSize: 14,
                           fontWeight: FontWeight.w500,
                           color: isDark ? CivicColors.textSecondaryDark : CivicColors.textSecondaryLight,
                         ),
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: isDark ? CivicColors.cardSurfaceDark : const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: const BoxDecoration(
+                            color: CivicColors.primary,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          'Ward GPS Live',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: isDark ? CivicColors.textPrimaryDark : CivicColors.textPrimaryLight,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -118,97 +91,73 @@ class TopHeader extends StatelessWidget implements PreferredSizeWidget {
             // Language Switcher (EN / HI)
             InkWell(
               onTap: () => state.toggleLanguage(),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(20),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.all(2),
                 decoration: BoxDecoration(
-                  color: isDark ? CivicColors.cardSurfaceDark : CivicColors.primarySoft,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: CivicColors.primaryBorder),
+                  color: isDark ? CivicColors.cardSurfaceDark : const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(20),
                 ),
-                child: Text(
-                  state.language.toUpperCase(),
-                  style: const TextStyle(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w800,
-                    color: CivicColors.primary,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 4),
-
-            // System Architecture Workflow Button
-            IconButton(
-              icon: const Icon(Icons.account_tree_outlined, color: CivicColors.primary, size: 22),
-              tooltip: 'System Architecture Workflow',
-              onPressed: () {
-                showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  backgroundColor: Colors.transparent,
-                  builder: (ctx) => const SystemWorkflowSheet(),
-                );
-              },
-            ),
-
-            // Leaderboard Button
-            IconButton(
-              icon: const Icon(Icons.emoji_events_outlined, color: Colors.amber, size: 22),
-              tooltip: 'Ward Leaderboard',
-              onPressed: () {
-                showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  backgroundColor: Colors.transparent,
-                  builder: (ctx) => const LeaderboardModal(),
-                );
-              },
-            ),
-
-            // Theme Toggle Button
-            IconButton(
-              icon: Icon(
-                isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
-                color: isDark ? Colors.amber : CivicColors.textSecondaryLight,
-                size: 22,
-              ),
-              tooltip: isDark ? 'Light Mode' : 'Dark Mode',
-              onPressed: () {
-                state.toggleTheme();
-              },
-            ),
-
-            // Notification Bell
-            Stack(
-              clipBehavior: Clip.none,
-              children: [
-                IconButton(
-                  icon: Icon(
-                    Icons.notifications_none_rounded,
-                    color: isDark ? Colors.white70 : CivicColors.textPrimaryLight,
-                    size: 24,
-                  ),
-                  onPressed: () {
-                    _showNotificationSheet(context);
-                  },
-                ),
-                Positioned(
-                  top: 10,
-                  right: 10,
-                  child: Container(
-                    width: 7,
-                    height: 7,
-                    decoration: const BoxDecoration(
-                      color: CivicColors.urgentRed,
-                      shape: BoxShape.circle,
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: state.language == 'en' ? CivicColors.primary : Colors.transparent,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        'EN',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          color: state.language == 'en' ? Colors.white : CivicColors.textSecondaryLight,
+                        ),
+                      ),
                     ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: state.language == 'hi' ? CivicColors.primary : Colors.transparent,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        'हि',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          color: state.language == 'hi' ? Colors.white : CivicColors.textSecondaryLight,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+
+            // Notification Diamond Icon
+            GestureDetector(
+              onTap: () {
+                _showNotificationSheet(context);
+              },
+              child: Container(
+                width: 32,
+                height: 32,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFFFE4E6), // timerPinkBg
+                  shape: BoxShape.circle,
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.error_outline,
+                    color: Color(0xFFE11D48), // red color
+                    size: 18,
                   ),
                 ),
-              ],
+              ),
             ),
-
-            const SizedBox(width: 4),
+            const SizedBox(width: 8),
 
             // User Profile Avatar
             GestureDetector(
@@ -216,38 +165,18 @@ class TopHeader extends StatelessWidget implements PreferredSizeWidget {
                 _showProfileModal(context, state);
               },
               child: Container(
-                width: 38,
-                height: 38,
+                width: 32,
+                height: 32,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: CivicColors.primary,
-                  border: Border.all(
-                    color: Colors.white,
-                    width: 2,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.08),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
+                  color: CivicColors.primaryDark,
                 ),
-                child: Center(
-                  child: user != null && user.role == UserRole.fieldOfficer
-                      ? const Text(
-                          'RK',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        )
-                      : const Icon(
-                          Icons.person,
-                          color: Colors.white,
-                          size: 22,
-                        ),
+                child: const Center(
+                  child: Icon(
+                    Icons.person_outline,
+                    color: Colors.white,
+                    size: 18,
+                  ),
                 ),
               ),
             ),

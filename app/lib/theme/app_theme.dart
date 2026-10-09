@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 
 class CivicColors {
   // Brand Primary & Accent
-  static const Color primary = Color(0xFF5B36F5);
-  static const Color primaryDark = Color(0xFF4318FF);
-  static const Color primaryLight = Color(0xFF7551FF);
-  static const Color primarySoft = Color(0xFFEEF2FF);
-  static const Color primaryBorder = Color(0xFFC7D2FE);
+  static const Color primary = Color(0xFF147D52);
+  static const Color primaryDark = Color(0xFF0F5E3D);
+  static const Color primaryLight = Color(0xFF1A9A65);
+  static const Color primarySoft = Color(0xFFE8F5EE);
+  static const Color primaryBorder = Color(0xFFBBE5D0);
 
   // Mint / Green / Verified
   static const Color mint = Color(0xFF00D09C);
@@ -45,19 +45,19 @@ class CivicColors {
 
   // Gradients
   static const LinearGradient primaryGradient = LinearGradient(
-    colors: [Color(0xFF4F32E5), Color(0xFF7042F6)],
+    colors: [Color(0xFF18875A), Color(0xFF106140)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient reportCardGradient = LinearGradient(
-    colors: [Color(0xFF4F36E3), Color(0xFF6842EE)],
+    colors: [Color(0xFF158356), Color(0xFF106843)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient heroCardGradient = LinearGradient(
-    colors: [Color(0xFF3B28CC), Color(0xFF5B36F5)],
+    colors: [Color(0xFF147D52), Color(0xFF0F5E3D)],
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
   );

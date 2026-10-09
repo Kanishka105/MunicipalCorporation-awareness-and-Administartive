@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/civic_app_state.dart';
 import '../theme/app_theme.dart';
-import '../models/user_model.dart';
-import '../models/officer_task_model.dart';
 
 class TasksScreen extends StatefulWidget {
   const TasksScreen({super.key});
@@ -13,374 +11,289 @@ class TasksScreen extends StatefulWidget {
 }
 
 class _TasksScreenState extends State<TasksScreen> {
-  final List<String> _disposalLogs = [
-    'Desilting completed, waste loaded in Compactor DL-1GC-4921',
-    'Excavator silt bucket transferred to Bawana Landfill',
-    'Hydro-jet suction flushed 120m underground pipe',
-    'Manual clearing completed & bagged for municipal hauler',
-  ];
-
   @override
   Widget build(BuildContext context) {
     final state = context.watch<CivicAppState>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final user = state.currentUser;
-    final urgentTask = state.urgentTask;
-    final slaSeconds = state.urgentSlaRemainingSeconds;
-    final minutes = (slaSeconds / 60).floor();
-    final seconds = slaSeconds % 60;
-    final timeFormatted = slaSeconds > 0
-        ? '${minutes.toString().padLeft(2, '0')}m ${seconds.toString().padLeft(2, '0')}s remaining'
-        : 'SLA Triage Active';
 
-    return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 1. Officer Profile Header Card
-          _buildOfficerProfileHeader(context, user, state, isDark),
-          const SizedBox(height: 16),
-
-          // 2. Urgent Action Required Header (Only if urgent task exists)
-          if (urgentTask != null && !urgentTask.isResolved) ...[
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: const [
-                    Icon(Icons.warning_amber_rounded, color: CivicColors.urgentRed, size: 20),
-                    SizedBox(width: 6),
-                    Text(
-                      'Urgent Action\nRequired',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                        color: CivicColors.textPrimaryLight,
-                        height: 1.1,
-                      ),
-                    ),
-                  ],
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFE4E6),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 5,
-                        height: 5,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFBE123C),
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 5),
-                      Text(
-                        timeFormatted,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFFBE123C),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-
-            // 3. Urgent Task Card
-            _buildUrgentTaskCard(context, state, urgentTask, isDark),
-            const SizedBox(height: 20),
-
-            // 4. Tamper-Proof Resolution Proof Card
-            _buildTamperProofSection(context, state, isDark),
-            const SizedBox(height: 24),
-          ] else ...[
-            Container(
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: isDark ? CivicColors.cardDark : Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: isDark ? CivicColors.borderDark : CivicColors.borderLight,
-                ),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: CivicColors.mint.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(Icons.check_circle_outline, color: CivicColors.mintDark, size: 26),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'No Urgent Pending Tasks',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: isDark ? Colors.white : CivicColors.textPrimaryLight,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'All assigned squad tasks in Ward 42 are currently cleared. Standby for dispatch alerts.',
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            color: isDark ? CivicColors.textSecondaryDark : CivicColors.textSecondaryLight,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-          ],
-
-          // 5. Completed (Audit In-Progress) Section
-          _buildCompletedSection(context, state, isDark),
-          const SizedBox(height: 16),
-
-          // 6. Bottom Status Bar (Rugged outdoor mode)
-          _buildRuggedModeBar(isDark),
-          const SizedBox(height: 20),
-        ],
-      ),
-    );
-  }
-
-  // 1. Officer Profile Header Card
-  Widget _buildOfficerProfileHeader(BuildContext context, UserModel? user, CivicAppState state, bool isDark) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark ? CivicColors.cardDark : const Color(0xFFEEF2FF),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: isDark ? CivicColors.borderDark : const Color(0xFFC7D2FE),
-        ),
-      ),
-      child: Column(
-        children: [
-          Row(
+    return Scaffold(
+      backgroundColor: isDark ? CivicColors.bgDark : const Color(0xFFF9FAFB),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Stack(
-                children: [
-                  Container(
-                    width: 46,
-                    height: 46,
-                    decoration: const BoxDecoration(
-                      color: CivicColors.primary,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Center(
-                      child: Text(
-                        user != null ? user.name.split(' ').map((e) => e.isNotEmpty ? e[0] : '').take(2).join() : 'RK',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: Container(
-                      width: 12,
-                      height: 12,
-                      decoration: BoxDecoration(
-                        color: CivicColors.mint,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(width: 12),
-
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              // 1. Top Header
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Row(
                       children: [
-                        Text(
-                          user?.name ?? 'Rajesh Kumar',
-                          style: TextStyle(
-                            fontSize: 15.5,
-                            fontWeight: FontWeight.w800,
-                            color: isDark ? Colors.white : CivicColors.textPrimaryLight,
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: isDark ? CivicColors.cardSurfaceDark : const Color(0xFFE5E7EB),
+                            shape: BoxShape.circle,
                           ),
+                          child: const Icon(Icons.account_balance_outlined, size: 16, color: CivicColors.primary),
                         ),
                         const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: Colors.grey.shade300),
-                          ),
-                          child: Text(
-                            user?.unitId ?? 'Unit #3',
-                            style: const TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                              color: CivicColors.textPrimaryLight,
-                            ),
-                          ),
-                        ),
-                        const Spacer(),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: const Color(0xFFA7F3D0)),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: const [
-                              Icon(Icons.wifi_tethering, color: CivicColors.mintDark, size: 13),
-                              SizedBox(width: 4),
-                              Text(
-                                'ap-south-1',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w700,
-                                  color: CivicColors.mintDark,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Container(
-                              width: 5,
-                              height: 5,
-                              decoration: const BoxDecoration(
-                                color: CivicColors.mint,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
                             Text(
-                              'On Duty • Ward 42 Dispatch',
+                              'BBMP CIVIC CONNECT',
                               style: TextStyle(
                                 fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                                color: isDark ? Colors.white : CivicColors.textPrimaryLight,
+                              ),
+                            ),
+                            Text(
+                              'Govt. of Karnataka',
+                              style: TextStyle(
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w600,
                                 color: isDark ? CivicColors.textSecondaryDark : CivicColors.textSecondaryLight,
                               ),
                             ),
                           ],
                         ),
-                        Text(
-                          'Accuracy ±${user?.gpsAccuracy ?? 1.8}m',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: isDark ? CivicColors.textMutedDark : CivicColors.textSecondaryLight,
-                          ),
-                        ),
                       ],
+                    ),
+                    // Language Switcher (EN / HI)
+                    Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        color: isDark ? CivicColors.cardSurfaceDark : const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: CivicColors.primary,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: const Text(
+                              'EN',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.transparent,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              'हि',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                                color: CivicColors.textSecondaryLight,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 14),
 
-          // 4 Metric Boxes (Live dynamic counters)
-          Row(
-            children: [
-              _buildStatBox('${state.urgentTask != null ? 1 : 0}', 'Assigned', isDark, false),
-              const SizedBox(width: 8),
-              _buildStatBox('${state.completedTasks.length}', 'Cleared', isDark, false),
-              const SizedBox(width: 8),
-              _buildStatBox('${state.urgentTask != null ? 1 : 0}', 'Critical', isDark, state.urgentTask != null),
-              const SizedBox(width: 8),
-              _buildStatBox('⭐ ${user?.rating ?? 5.0}', 'Rating', isDark, false),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Officer Task Center',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w900,
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    const Text(
+                      'BBMP East Zone • K. Suresh (SE)',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: CivicColors.textSecondaryLight,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // 2. SLA CRITICAL ALERTS Banner
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFEF2F2), // red-50
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFFCA5A5)), // red-300
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: const [
+                        Icon(Icons.warning_amber_rounded, color: Color(0xFFDC2626), size: 16),
+                        SizedBox(width: 8),
+                        Text(
+                          'SLA CRITICAL ALERTS',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF991B1B), // red-800
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      '2 Hazards breaching 4-hour SLA. Immediate dispatch required.',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF7F1D1D), // red-900
+                        height: 1.3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // 3. Live Dispatch Radar
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.my_location_outlined, size: 18, color: CivicColors.primary),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Live Dispatch Radar / लाइव डिस्पैच रडार',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                            color: isDark ? Colors.white : CivicColors.textPrimaryLight,
+                          ),
+                        ),
+                        const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEEF2FF),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Text(
+                            '2.1km',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: CivicColors.primary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'Monitoring 2 active zones within your jurisdiction',
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w500,
+                        color: CivicColors.textSecondaryLight,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // 4. Hazard Cards List
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Column(
+                  children: [
+                    _buildOfficerHazardCard(
+                      ticketCode: '#CC-84920',
+                      badge: 'Overflowing Bin',
+                      slaText: 'SLA Breach in 45m',
+                      imageUrl: 'overflowing_dumpster_1791533637321.jpg',
+                      aiScore: '96% AI',
+                      location: '12th Main Road, Near Metro Pillar 84',
+                      progressText: 'In Progress',
+                      dispatchAction: 'Validate clearance photo',
+                      assignedText: 'Sanitation Squad 14',
+                      isDark: isDark,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildOfficerHazardCard(
+                      ticketCode: '#CC-84921',
+                      badge: 'Sector 3 Park',
+                      slaText: '3h 12m elapsed',
+                      imageUrl: 'road_debris_before_1791533738210.jpg',
+                      aiScore: '88% AI',
+                      location: 'Sector 3 Park, near Gate 2',
+                      progressText: 'Reported',
+                      dispatchAction: 'Allocate team & equipment',
+                      assignedText: 'Pending Assignment',
+                      isDark: isDark,
+                      slaIsRed: false,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 32),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildStatBox(String value, String label, bool isDark, bool isCritical) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        decoration: BoxDecoration(
-          color: isCritical
-              ? const Color(0xFFFEE2E2)
-              : (isDark ? CivicColors.cardSurfaceDark : Colors.white),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isCritical
-                ? const Color(0xFFFECDD3)
-                : (isDark ? CivicColors.borderDark : const Color(0xFFE2E8F0)),
-          ),
-        ),
-        child: Column(
-          children: [
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w800,
-                color: isCritical ? const Color(0xFFDC2626) : (isDark ? Colors.white : CivicColors.textPrimaryLight),
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-                color: isCritical
-                    ? const Color(0xFF991B1B)
-                    : (isDark ? CivicColors.textSecondaryDark : CivicColors.textSecondaryLight),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // 3. Urgent Task Card
-  Widget _buildUrgentTaskCard(
-      BuildContext context, CivicAppState state, UrgentOfficerTaskModel task, bool isDark) {
+  Widget _buildOfficerHazardCard({
+    required String ticketCode,
+    required String badge,
+    required String slaText,
+    required String imageUrl,
+    required String aiScore,
+    required String location,
+    required String progressText,
+    required String dispatchAction,
+    required String assignedText,
+    required bool isDark,
+    bool slaIsRed = true,
+  }) {
     return Container(
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isDark ? CivicColors.cardDark : Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isDark ? CivicColors.borderDark : CivicColors.borderLight,
+          color: isDark ? CivicColors.borderDark : const Color(0xFFE2E8F0),
         ),
         boxShadow: [
           BoxShadow(
@@ -393,682 +306,34 @@ class _TasksScreenState extends State<TasksScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: isDark ? CivicColors.cardSurfaceDark : const Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        task.taskId,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: isDark ? Colors.white70 : CivicColors.textSecondaryLight,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEEF2FF),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        task.departmentTag,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: CivicColors.primary,
-                        ),
-                      ),
-                    ),
-                    const Spacer(),
-                    Container(
-                      width: 28,
-                      height: 28,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFEEF2FF),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.more_vert, size: 16, color: CivicColors.primary),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-
-                Text(
-                  task.title,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: isDark ? Colors.white : CivicColors.textPrimaryLight,
-                  ),
-                ),
-                const SizedBox(height: 8),
-
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: isDark ? CivicColors.cardSurfaceDark : const Color(0xFFF0FDF4),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isDark ? CivicColors.borderDark : const Color(0xFFDCFCE7),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.near_me_outlined, color: CivicColors.mintDark, size: 18),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              task.locationName,
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                color: isDark ? Colors.white : CivicColors.textPrimaryLight,
-                              ),
-                            ),
-                            Text(
-                              '${task.gpsCoordinates} • ${task.distanceAway}',
-                              style: TextStyle(
-                                fontSize: 10.5,
-                                color: isDark ? CivicColors.textSecondaryDark : CivicColors.mintDark,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Image with Bounding Box
-          ClipRRect(
-            child: SizedBox(
-              height: 180,
-              width: double.infinity,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Image.network(
-                    task.originalProofUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (ctx, err, stack) => Container(
-                      color: Colors.grey.shade800,
-                      child: const Center(child: Icon(Icons.broken_image, color: Colors.white54)),
-                    ),
-                  ),
-                  Positioned(
-                    top: 40,
-                    left: 40,
-                    right: 40,
-                    bottom: 30,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(color: const Color(0xFFEF4444), width: 2),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    top: 10,
-                    left: 10,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.8),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        'AWS Rekognition: ${task.aiRekognitionLabel}',
-                        style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [Colors.transparent, Colors.black.withOpacity(0.85)],
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Citizen Ticket: ${task.citizenTicket}',
-                            style: const TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w600),
-                          ),
-                          Row(
-                            children: const [
-                              Icon(Icons.camera_alt, color: Colors.white70, size: 12),
-                              SizedBox(width: 4),
-                              Text(
-                                'Original Proof',
-                                style: TextStyle(color: Colors.white70, fontSize: 10.5, fontWeight: FontWeight.w600),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFEEF2FF),
-                      foregroundColor: CivicColors.primary,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    icon: const Icon(Icons.navigation_outlined, size: 16),
-                    label: const Text(
-                      'MapLibre Route',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
-                    ),
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('MapLibre Vector Navigation: Routing to ${task.locationName}'),
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: CivicColors.primary,
-                      foregroundColor: Colors.white,
-                      elevation: 2,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    icon: const Icon(Icons.auto_fix_high, size: 16),
-                    label: const Text(
-                      'Resolve Now',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
-                    ),
-                    onPressed: () {
-                      _showCameraCaptureDialog(context, state);
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // 4. Tamper-Proof Resolution Proof Card
-  Widget _buildTamperProofSection(BuildContext context, CivicAppState state, bool isDark) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark ? CivicColors.cardDark : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isDark ? CivicColors.borderDark : CivicColors.borderLight,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFDCFCE7),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(Icons.verified_outlined, color: CivicColors.mintDark, size: 18),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Tamper-Proof\nResolution Proof',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                        color: isDark ? Colors.white : CivicColors.textPrimaryLight,
-                        height: 1.15,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Cryptographic EXIF + Geofence Guard',
-                      style: TextStyle(
-                        fontSize: 10.5,
-                        color: isDark ? CivicColors.textSecondaryDark : CivicColors.textSecondaryLight,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF80EED2),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Text(
-                  'Step\nFunctions',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 9.5,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF065F46),
-                    height: 1.1,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: isDark ? CivicColors.cardSurfaceDark : const Color(0xFFF0FDF4),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.location_on_outlined, size: 14, color: CivicColors.mintDark),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Geofence Validation (< 15m target)',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: isDark ? Colors.white : CivicColors.textPrimaryLight,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFD1FAE5),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        '• Within Range (${state.geofenceDistance}m)',
-                        style: const TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF065F46),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: Container(
-                    height: 6,
-                    color: Colors.grey.shade300,
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: FractionallySizedBox(
-                        widthFactor: 0.72,
-                        child: Container(
-                          decoration: const BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [Color(0xFF007A78), Color(0xFF00D09C)],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Validated via GPS L1/L5 Dual Band + Tower Triangulation',
-                  style: TextStyle(
-                    fontSize: 9.5,
-                    color: isDark ? CivicColors.textMutedDark : CivicColors.textSecondaryLight,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 14),
-
-          Text(
-            'Post-Resolution Camera Capture',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: isDark ? CivicColors.textSecondaryDark : CivicColors.textSecondaryLight,
-            ),
-          ),
-          const SizedBox(height: 6),
-          GestureDetector(
-            onTap: () {
-              _showCameraCaptureDialog(context, state);
-            },
-            child: Container(
-              height: 130,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: isDark ? CivicColors.cardSurfaceDark : const Color(0xFFF1F5F9),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: isDark ? CivicColors.borderDark : const Color(0xFFCBD5E1),
-                ),
-              ),
-              child: state.capturedProofImage != null
-                  ? ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: Image.network(
-                        state.capturedProofImage!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (ctx, err, stack) => Container(
-                          color: const Color(0xFF007A78),
-                          child: const Center(
-                            child: Icon(Icons.check_circle_outline, color: Colors.white, size: 36),
-                          ),
-                        ),
-                      ),
-                    )
-                  : Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: 44,
-                          height: 44,
-                          decoration: const BoxDecoration(
-                            color: CivicColors.primary,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Center(
-                            child: Icon(Icons.camera_alt, color: Colors.white, size: 22),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Capture Timestamped Proof',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: isDark ? Colors.white : CivicColors.textPrimaryLight,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Watermarks GPS (28.7499, 77.1172) & Device UID',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: isDark ? CivicColors.textMutedDark : CivicColors.textSecondaryLight,
-                          ),
-                        ),
-                      ],
-                    ),
-            ),
-          ),
-          const SizedBox(height: 14),
-
-          Text(
-            'Sanitation Disposal Audit Log',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: isDark ? CivicColors.textSecondaryDark : CivicColors.textSecondaryLight,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            decoration: BoxDecoration(
-              color: isDark ? CivicColors.cardSurfaceDark : const Color(0xFFF8FAFC),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: isDark ? CivicColors.borderDark : CivicColors.borderLight),
-            ),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                value: state.selectedDisposalLog,
-                isExpanded: true,
-                dropdownColor: isDark ? CivicColors.cardDark : Colors.white,
-                items: _disposalLogs.map((log) {
-                  return DropdownMenuItem(
-                    value: log,
-                    child: Text(
-                      log,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: isDark ? Colors.white : CivicColors.textPrimaryLight,
-                      ),
-                    ),
-                  );
-                }).toList(),
-                onChanged: (val) {
-                  if (val != null) state.setSelectedDisposalLog(val);
-                },
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: const Color(0xFFEEF2FF),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Row(
-              children: const [
-                Icon(Icons.hub_outlined, color: CivicColors.primary, size: 16),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Automated Verification Pipeline\nTriggers AWS Step Functions > Rekognition Diff > Supervisor Pass',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: CivicColors.primary,
-                      height: 1.2,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 14),
-
-          SizedBox(
-            width: double.infinity,
-            height: 46,
-            child: ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: CivicColors.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              icon: state.isSubmittingProof
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                    )
-                  : const Icon(Icons.cloud_upload_outlined, size: 18),
-              label: Text(
-                state.isSubmittingProof ? 'Running Rekognition AI Diff...' : 'Upload Proof & Trigger AI Audit',
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
-              ),
-              onPressed: state.isSubmittingProof
-                  ? null
-                  : () async {
-                      final result = await state.submitResolutionProof();
-                      if (result['success'] == true && context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            backgroundColor: CivicColors.mintDark,
-                            content: Text(result['message'] as String),
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
-                      }
-                    },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // 5. Completed (Audit In-Progress) Section
-  Widget _buildCompletedSection(BuildContext context, CivicAppState state, bool isDark) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.fact_check_outlined, size: 18, color: CivicColors.mintDark),
-                const SizedBox(width: 6),
-                Text(
-                  'Completed (Audit In-\nProgress)',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                    color: isDark ? Colors.white : CivicColors.textPrimaryLight,
-                    height: 1.15,
-                  ),
-                ),
-              ],
-            ),
-            Text(
-              '${state.completedTasks.length} Verified Today',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: isDark ? CivicColors.textMutedDark : CivicColors.textSecondaryLight,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-
-        if (state.completedTasks.isEmpty)
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: isDark ? CivicColors.cardDark : Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: isDark ? CivicColors.borderDark : CivicColors.borderLight),
-            ),
-            child: Center(
-              child: Text(
-                'No verified tasks completed today yet.',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: isDark ? CivicColors.textMutedDark : CivicColors.textMutedLight,
-                ),
-              ),
-            ),
-          )
-        else
-          ...state.completedTasks.map((task) => _buildCompletedCard(task, isDark)),
-      ],
-    );
-  }
-
-  Widget _buildCompletedCard(CompletedTaskModel task, bool isDark) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: isDark ? CivicColors.cardDark : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isDark ? CivicColors.borderDark : CivicColors.borderLight,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: isDark ? CivicColors.cardSurfaceDark : const Color(0xFFF1F5F9),
+                  color: const Color(0xFFF1F5F9),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  task.taskId,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: isDark ? Colors.white70 : CivicColors.textSecondaryLight,
+                  ticketCode,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF1E293B),
                   ),
                 ),
               ),
               const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFDCFCE7),
-                  borderRadius: BorderRadius.circular(6),
+                  color: const Color(0xFFA7F3D0),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  task.aiDiffPercent,
+                  badge,
                   style: const TextStyle(
-                    fontSize: 10.5,
+                    fontSize: 9,
                     fontWeight: FontWeight.w700,
                     color: Color(0xFF065F46),
                   ),
@@ -1076,252 +341,178 @@ class _TasksScreenState extends State<TasksScreen> {
               ),
               const Spacer(),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEEF2FF),
+                  color: slaIsRed ? const Color(0xFFFEE2E2) : const Color(0xFFFEF3C7),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Text(
-                  task.completionTime,
-                  style: const TextStyle(
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w600,
-                    color: CivicColors.primary,
-                  ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.timer_outlined,
+                      size: 10,
+                      color: slaIsRed ? const Color(0xFFDC2626) : const Color(0xFFD97706),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      slaText,
+                      style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w800,
+                        color: slaIsRed ? const Color(0xFFB91C1C) : const Color(0xFFB45309),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-
-          Text(
-            task.title,
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-              color: isDark ? Colors.white : CivicColors.textPrimaryLight,
-            ),
-          ),
           const SizedBox(height: 12),
-
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Column(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: SizedBox(
-                        height: 90,
-                        width: double.infinity,
-                        child: Stack(
-                          fit: StackFit.expand,
-                          children: [
-                            Image.network(
-                              task.beforeImageUrl,
-                              fit: BoxFit.cover,
-                              errorBuilder: (ctx, err, stack) => Container(
-                                color: Colors.grey.shade800,
-                                child: const Icon(Icons.broken_image, color: Colors.white54, size: 20),
-                              ),
-                            ),
-                            Positioned(
-                              top: 6,
-                              left: 6,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withOpacity(0.7),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: const Text(
-                                  'BEFORE',
-                                  style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w800),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      task.citizenLabel,
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: isDark ? CivicColors.textSecondaryDark : CivicColors.textSecondaryLight,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 10),
-
-              Expanded(
-                child: Column(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: SizedBox(
-                        height: 90,
-                        width: double.infinity,
-                        child: Stack(
-                          fit: StackFit.expand,
-                          children: [
-                            Image.network(
-                              task.afterImageUrl,
-                              fit: BoxFit.cover,
-                              errorBuilder: (ctx, err, stack) => Container(
-                                color: const Color(0xFF007A78),
-                                child: const Icon(Icons.check_circle_outline, color: Colors.white, size: 24),
-                              ),
-                            ),
-                            Positioned(
-                              top: 6,
-                              left: 6,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF007A78),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: const Text(
-                                  'AFTER',
-                                  style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w800),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      task.officerProofLabel,
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: isDark ? CivicColors.textSecondaryDark : CivicColors.textSecondaryLight,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-            decoration: BoxDecoration(
-              color: isDark ? CivicColors.cardSurfaceDark : const Color(0xFFEEF2FF),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.verified, size: 16, color: CivicColors.mintDark),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: SizedBox(
+                  width: 80,
+                  height: 80,
+                  child: Stack(
+                    fit: StackFit.expand,
                     children: [
-                      Text(
-                        'Triage Score: ${task.triageScore} / Pass',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: isDark ? Colors.white : CivicColors.textPrimaryLight,
-                        ),
+                      Image.asset(
+                        imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (ctx, err, stack) => Container(color: Colors.grey.shade300),
                       ),
-                      Text(
-                        task.supervisorStatus,
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: isDark ? CivicColors.textSecondaryDark : CivicColors.textSecondaryLight,
+                      Positioned(
+                        bottom: 4,
+                        left: 4,
+                        right: 4,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 3),
+                          decoration: BoxDecoration(
+                            color: CivicColors.primaryDark,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.check_circle, color: Colors.white, size: 10),
+                              const SizedBox(width: 2),
+                              Text(
+                                aiScore,
+                                style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.w800),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
-                const Icon(Icons.chevron_right, size: 18, color: CivicColors.primary),
-              ],
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(Icons.location_on_outlined, size: 14, color: CivicColors.textPrimaryLight),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            location,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: CivicColors.textPrimaryLight,
+                              height: 1.3,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFF59E0B),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          progressText,
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: CivicColors.textPrimaryLight,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    RichText(
+                      text: TextSpan(
+                        text: 'Dispatch Action Required: ',
+                        style: const TextStyle(
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w600,
+                          color: CivicColors.textSecondaryLight,
+                          fontFamily: 'Inter',
+                        ),
+                        children: [
+                          TextSpan(
+                            text: dispatchAction,
+                            style: const TextStyle(fontWeight: FontWeight.w800, color: CivicColors.textPrimaryLight),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Auto-Assigned: $assignedText',
+                      style: const TextStyle(
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w500,
+                        color: CivicColors.textSecondaryLight,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            height: 44,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isDark ? CivicColors.cardSurfaceDark : const Color(0xFFF1F5F9),
+                foregroundColor: CivicColors.primary,
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                side: BorderSide(color: isDark ? CivicColors.borderDark : const Color(0xFFE2E8F0)),
+              ),
+              onPressed: () {},
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: const [
+                  Icon(Icons.checklist, size: 16),
+                  SizedBox(width: 8),
+                  Text(
+                    'Review & Close',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // 6. Rugged Outdoor Mode bar
-  Widget _buildRuggedModeBar(bool isDark) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: isDark ? CivicColors.cardSurfaceDark : const Color(0xFFF1F5F9),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: const [
-              Icon(Icons.vibration, size: 16, color: CivicColors.primary),
-              SizedBox(width: 8),
-              Text(
-                'Rugged Outdoor Mode • Contrast\nOptimized',
-                style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, height: 1.15),
-              ),
-            ],
-          ),
-          Row(
-            children: [
-              Container(
-                width: 6,
-                height: 6,
-                decoration: const BoxDecoration(
-                  color: CivicColors.mint,
-                  shape: BoxShape.circle,
-                ),
-              ),
-              const SizedBox(width: 6),
-              const Text(
-                'Telemetry\nLive',
-                style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, height: 1.1),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showCameraCaptureDialog(BuildContext context, CivicAppState state) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Capture Tamper-Proof Proof'),
-        content: const Text(
-          'Simulate camera snapshot with GPS EXIF watermarking (28.7499° N, 77.1172° E)?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: CivicColors.primary),
-            onPressed: () {
-              state.setCapturedProof(
-                'https://images.unsplash.com/photo-1517649763962-0c623266ddc0?auto=format&fit=crop&w=600&q=80',
-              );
-              Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('📸 Timestamped proof captured with EXIF lock!'),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            },
-            child: const Text('Capture & Lock', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),

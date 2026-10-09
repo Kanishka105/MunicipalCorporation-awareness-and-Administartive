@@ -24,9 +24,17 @@ class FeedScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. Citizen Profile / Hero Card with Karma & Trust Badge
-          _buildHeroProfileCard(context, state, isDark),
-          const SizedBox(height: 12),
+          // 1. Citizen Profile Header
+          _buildProfileHeader(context, state, isDark),
+          const SizedBox(height: 16),
+
+          // 2. Report a Problem Hero Card
+          _buildReportHeroCard(context, state, isDark),
+          const SizedBox(height: 20),
+
+          // 3. Quick Categories Grid
+          _buildQuickCategories(context, state, isDark),
+          const SizedBox(height: 24),
 
           // 2. Interactive End-to-End Workflow Architecture Card
           _buildWorkflowBannerCard(context, isDark),
@@ -48,123 +56,179 @@ class FeedScreen extends StatelessWidget {
     );
   }
 
-  // 1. Citizen Karma & Trust Badge Card (Profile image removed)
-  Widget _buildHeroProfileCard(BuildContext context, CivicAppState state, bool isDark) {
-    final user = state.currentUser;
-    final karmaPoints = user?.karmaPoints ?? 0;
-    final streak = user?.streakDays ?? 1;
-    final trustScore = user?.trustScore ?? 100.0;
+  // 1. Citizen Profile Header
+  Widget _buildProfileHeader(BuildContext context, CivicAppState state, bool isDark) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.verified_user_outlined, color: CivicColors.primary, size: 16),
+            const SizedBox(width: 6),
+            Text(
+              'CIVIC CITIZEN PROFILE',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+                color: isDark ? CivicColors.primaryLight : CivicColors.primaryDark,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Namaste, Priya ...',
+          style: TextStyle(
+            fontSize: 26,
+            fontWeight: FontWeight.w900,
+            color: isDark ? Colors.white : CivicColors.textPrimaryLight,
+            letterSpacing: -0.5,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Row(
+          children: [
+            Icon(Icons.location_on_outlined, size: 14, color: isDark ? Colors.white70 : CivicColors.textSecondaryLight),
+            const SizedBox(width: 4),
+            Text(
+              'Ward 142, Indiranagar, Bengaluru',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: isDark ? Colors.white70 : CivicColors.textPrimaryLight,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
 
+  // 2. Report a Problem Hero Card
+  Widget _buildReportHeroCard(BuildContext context, CivicAppState state, bool isDark) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: isDark ? CivicColors.cardSurfaceDark : CivicColors.primarySoft,
+        color: CivicColors.primary,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isDark ? CivicColors.borderDark : const Color(0xFFC7D2FE),
+        image: DecorationImage(
+          image: const NetworkImage('https://www.transparenttextures.com/patterns/cubes.png'), // Subtle pattern mimicking the green background waves
+          fit: BoxFit.cover,
+          opacity: 0.1,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: CivicColors.primary.withOpacity(0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              gradient: CivicColors.primaryGradient,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Center(
-              child: Icon(Icons.verified, color: Colors.white, size: 22),
-            ),
-          ),
-          const SizedBox(width: 12),
-
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Center(
+                  child: Icon(Icons.camera_alt_outlined, color: Colors.white, size: 28),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    Icon(Icons.auto_awesome, color: Colors.white, size: 12),
+                    SizedBox(width: 4),
                     Text(
-                      '$karmaPoints',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: isDark ? Colors.white : CivicColors.textPrimaryLight,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    const Text(
-                      'KP',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: CivicColors.primary,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      '🔥 $streak-Day Streak',
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFFE65100),
-                      ),
+                      'Smart Ward AI 2.0',
+                      style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700),
                     ),
                   ],
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  'Trust: $trustScore% • Redeemable for DTC Metro passes',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: isDark ? CivicColors.textSecondaryDark : CivicColors.textSecondaryLight,
-                  ),
-                ),
-              ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          const Text(
+            'Report a Problem',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+              letterSpacing: -0.5,
             ),
           ),
-
-          // Redeem Button
-          InkWell(
+          const SizedBox(height: 2),
+          const Text(
+            'समस्या दर्ज करें',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: Colors.white70,
+            ),
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'AI auto-detects waste category & ward in\nseconds',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: Colors.white,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 24),
+          GestureDetector(
             onTap: () {
               showModalBottomSheet(
                 context: context,
                 isScrollControlled: true,
                 backgroundColor: Colors.transparent,
-                builder: (ctx) => const RedeemKarmaModal(),
+                builder: (ctx) => const ReportHazardModal(),
               );
             },
-            borderRadius: BorderRadius.circular(20),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 16),
               decoration: BoxDecoration(
-                color: isDark ? CivicColors.primary.withOpacity(0.2) : const Color(0xFFE0E7FE),
-                borderRadius: BorderRadius.circular(20),
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               child: Row(
-                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: const [
+                  Icon(Icons.camera_enhance_outlined, color: CivicColors.primary, size: 18),
+                  SizedBox(width: 8),
                   Text(
-                    'Redeem',
+                    'Tap to Capture Grievance / फोटो खींचें',
                     style: TextStyle(
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w700,
-                      color: CivicColors.primary,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      color: CivicColors.primaryDark,
                     ),
-                  ),
-                  SizedBox(width: 4),
-                  Icon(
-                    Icons.arrow_forward,
-                    size: 13,
-                    color: CivicColors.primary,
                   ),
                 ],
               ),
@@ -284,184 +348,236 @@ class FeedScreen extends StatelessWidget {
     );
   }
 
-  // 3. Action Buttons Row (Report & QR Scan)
-  Widget _buildActionGrid(BuildContext context, CivicAppState state, bool isDark) {
-    return Row(
+  // 3. Quick Categories Grid
+  Widget _buildQuickCategories(BuildContext context, CivicAppState state, bool isDark) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Left: Report Civic Hazard
-        Expanded(
-          child: GestureDetector(
-            onTap: () {
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                backgroundColor: Colors.transparent,
-                builder: (ctx) => const ReportHazardModal(),
-              );
-            },
-            child: Container(
-              height: 150,
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                gradient: CivicColors.reportCardGradient,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: CivicColors.primary.withOpacity(0.3),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Center(
-                      child: Icon(Icons.camera_alt_outlined, color: Colors.white, size: 20),
-                    ),
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        state.tr('reportHazard'),
-                        style: const TextStyle(
-                          fontSize: 14.5,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                          height: 1.15,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      const Text(
-                        'AI Auto-Triage • Auto-\nGPS & S3 Pre-signed',
-                        style: TextStyle(
-                          fontSize: 9.5,
-                          color: Colors.white70,
-                          height: 1.2,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Row(
-                    children: const [
-                      Text(
-                        'Capture Now',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                      ),
-                      SizedBox(width: 4),
-                      Icon(Icons.arrow_forward, size: 12, color: Colors.white),
-                    ],
-                  ),
-                ],
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Quick Categories / श्रेणियां',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                color: isDark ? Colors.white : CivicColors.textPrimaryLight,
+                letterSpacing: -0.2,
               ),
             ),
-          ),
+            Text(
+              'TAP TO REPORT',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+                color: CivicColors.primary,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 12),
-
-        // Right: Scan QR to Back Issue
-        Expanded(
-          child: GestureDetector(
-            onTap: () {
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                backgroundColor: Colors.transparent,
-                builder: (ctx) => const QrScannerModal(),
-              );
-            },
-            child: Container(
-              height: 150,
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: isDark ? CivicColors.cardDark : Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: isDark ? CivicColors.borderDark : CivicColors.borderLight,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: isDark ? CivicColors.mint.withOpacity(0.15) : CivicColors.mintBadgeBg,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Center(
-                      child: Icon(Icons.qr_code_scanner, color: CivicColors.mintDark, size: 20),
-                    ),
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        state.tr('scanQr'),
-                        style: TextStyle(
-                          fontSize: 14.5,
-                          fontWeight: FontWeight.w800,
-                          color: isDark ? Colors.white : CivicColors.textPrimaryLight,
-                          height: 1.15,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Physical Pole Nodes •\nNo Duplicates',
-                        style: TextStyle(
-                          fontSize: 9.5,
-                          color: isDark ? CivicColors.textSecondaryDark : CivicColors.textSecondaryLight,
-                          height: 1.2,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Row(
-                    children: const [
-                      Text(
-                        'Back Node (+10 KP)',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: CivicColors.mintDark,
-                        ),
-                      ),
-                      SizedBox(width: 4),
-                      Icon(Icons.electric_bolt, size: 12, color: CivicColors.mintDark),
-                    ],
-                  ),
-                ],
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _buildCategoryCard(
+                context,
+                title: 'Garbage Dump',
+                subtitle: 'कचरा ढेर',
+                icon: Icons.delete_outline,
+                iconBg: const Color(0xFFB1F4D0),
+                iconColor: const Color(0xFF147D52),
+                isDark: isDark,
               ),
             ),
-          ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _buildCategoryCard(
+                context,
+                title: 'Overflowing...',
+                subtitle: 'भरा हुआ कूड़ादान',
+                icon: Icons.delete_sweep_outlined,
+                iconBg: const Color(0xFFEEF2FF),
+                iconColor: const Color(0xFF147D52),
+                isDark: isDark,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: _buildCategoryCard(
+                context,
+                title: 'Waste Burning',
+                subtitle: 'कचरा जलाना',
+                icon: Icons.local_fire_department_outlined,
+                iconBg: const Color(0xFFFFEDD5),
+                iconColor: const Color(0xFFC2410C),
+                pillText: 'Urgent',
+                pillColor: const Color(0xFF9A3412),
+                isDark: isDark,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _buildCategoryCard(
+                context,
+                title: 'Drain Blocked',
+                subtitle: 'नाली जाम',
+                icon: Icons.water_drop_outlined,
+                iconBg: const Color(0xFFE2E8F0),
+                iconColor: const Color(0xFF475569),
+                isDark: isDark,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: _buildCategoryCard(
+                context,
+                title: 'Construction',
+                subtitle: 'मलबे का ढेर',
+                icon: Icons.construction_outlined,
+                iconBg: const Color(0xFFE2E8F0),
+                iconColor: const Color(0xFF1E293B),
+                isDark: isDark,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _buildCategoryCard(
+                context,
+                title: 'Chemical',
+                subtitle: 'रासायनिक कचरा',
+                icon: Icons.science_outlined,
+                iconBg: Colors.transparent,
+                iconColor: Colors.white,
+                pillText: 'High Risk',
+                pillColor: const Color(0xFF991B1B),
+                bgColor: const Color(0xFFDC2626),
+                textColor: Colors.white,
+                isDark: isDark,
+              ),
+            ),
+          ],
         ),
       ],
     );
   }
 
-  // 3. My Active Submission Section (Real dynamic state with graceful empty state)
+  Widget _buildCategoryCard(
+    BuildContext context, {
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color iconBg,
+    required Color iconColor,
+    Color? bgColor,
+    Color? textColor,
+    String? pillText,
+    Color? pillColor,
+    required bool isDark,
+  }) {
+    final actualBg = bgColor ?? (isDark ? CivicColors.cardSurfaceDark : const Color(0xFFF8FAFC));
+    final actualText = textColor ?? (isDark ? Colors.white : CivicColors.textPrimaryLight);
+    final actualSubtext = textColor != null ? textColor.withOpacity(0.9) : (isDark ? Colors.white70 : CivicColors.textPrimaryLight.withOpacity(0.8));
+
+    return GestureDetector(
+      onTap: () {
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (ctx) => const ReportHazardModal(),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        decoration: BoxDecoration(
+          color: actualBg,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: bgColor != null ? bgColor : (isDark ? CivicColors.borderDark : const Color(0xFFF1F5F9)),
+          ),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: iconBg,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Center(
+                child: Icon(icon, color: iconColor, size: 18),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w800,
+                      color: actualText,
+                      letterSpacing: -0.2,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: actualSubtext,
+                    ),
+                  ),
+                  if (pillText != null) ...[
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: pillColor ?? Colors.red,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 10),
+                          const SizedBox(width: 3),
+                          Text(
+                            pillText,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 4. My Latest Report Section
   Widget _buildActiveSubmissionSection(BuildContext context, ActiveSubmissionModel? sub, bool isDark) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -469,791 +585,411 @@ class FeedScreen extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
-              children: [
-                Container(
-                  width: 7,
-                  height: 7,
-                  decoration: const BoxDecoration(
-                    color: CivicColors.primary,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  'My Active Submission',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: isDark ? Colors.white : CivicColors.textPrimaryLight,
-                  ),
-                ),
-              ],
-            ),
-            if (sub != null)
-              Text(
-                sub.ticketCode,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: isDark ? CivicColors.textMutedDark : CivicColors.textMutedLight,
-                  letterSpacing: 0.4,
-                ),
+            Text(
+              'Your Latest Report / आपकी रिपोर्ट',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                color: isDark ? Colors.white : CivicColors.textPrimaryLight,
+                letterSpacing: -0.2,
               ),
+            ),
+            Text(
+              'View All (4)',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                color: CivicColors.primary,
+                letterSpacing: 0.5,
+              ),
+            ),
           ],
         ),
-        const SizedBox(height: 10),
-
-        if (sub == null)
-          Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: isDark ? CivicColors.cardDark : Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: isDark ? CivicColors.borderDark : CivicColors.borderLight,
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: CivicColors.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(Icons.camera_alt_outlined, color: CivicColors.primary, size: 24),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'No Active Submissions',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: isDark ? Colors.white : CivicColors.textPrimaryLight,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Tap "Report Civic Hazard" to file a real-time live camera report.',
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          color: isDark ? CivicColors.textSecondaryDark : CivicColors.textSecondaryLight,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          )
-        else
-          Container(
-            decoration: BoxDecoration(
-              color: isDark ? CivicColors.cardDark : Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: isDark ? CivicColors.borderDark : CivicColors.borderLight,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              sub.title,
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                                color: isDark ? Colors.white : CivicColors.textPrimaryLight,
-                              ),
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF80EED2),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  width: 5,
-                                  height: 5,
-                                  decoration: const BoxDecoration(
-                                    color: Color(0xFF065F46),
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                                const SizedBox(width: 5),
-                                Text(
-                                  sub.status,
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    color: Color(0xFF065F46),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${sub.location} • ${sub.timeAgo}',
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          color: isDark ? CivicColors.textSecondaryDark : CivicColors.textSecondaryLight,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Stepper
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _buildStepItem(
-                        icon: Icons.check,
-                        iconBg: const Color(0xFF006C4C),
-                        title: 'Reported',
-                        subtitle: 'Live Camera',
-                        isCompleted: true,
-                        isDark: isDark,
-                      ),
-                      _buildStepConnector(isCompleted: true),
-                      _buildStepItem(
-                        icon: Icons.assignment_ind_outlined,
-                        iconBg: const Color(0xFF007A78),
-                        title: 'Assigned',
-                        subtitle: 'Unit #3',
-                        subtitleColor: const Color(0xFF007A78),
-                        isCompleted: true,
-                        isDark: isDark,
-                      ),
-                      _buildStepConnector(isCompleted: true),
-                      _buildStepItem(
-                        icon: Icons.bolt,
-                        iconBg: const Color(0xFF4F32E5),
-                        title: 'In Progress',
-                        subtitle: 'En Route',
-                        subtitleColor: const Color(0xFF4F32E5),
-                        isCompleted: true,
-                        isDark: isDark,
-                      ),
-                      _buildStepConnector(isCompleted: false),
-                      _buildStepItem(
-                        icon: Icons.camera_alt_outlined,
-                        iconBg: isDark ? Colors.grey.shade700 : const Color(0xFFE2E8F0),
-                        iconColor: isDark ? Colors.grey.shade400 : const Color(0xFF94A3B8),
-                        title: 'Resolved',
-                        subtitle: 'Pending',
-                        subtitleColor: isDark ? Colors.grey.shade400 : const Color(0xFF94A3B8),
-                        isCompleted: false,
-                        isDark: isDark,
-                      ),
-                      _buildStepConnector(isCompleted: false),
-                      _buildStepItem(
-                        icon: Icons.verified_outlined,
-                        iconBg: isDark ? Colors.grey.shade700 : const Color(0xFFE2E8F0),
-                        iconColor: isDark ? Colors.grey.shade400 : const Color(0xFF94A3B8),
-                        title: 'Verified',
-                        subtitle: 'Zonal SE',
-                        subtitleColor: isDark ? Colors.grey.shade400 : const Color(0xFF94A3B8),
-                        isCompleted: false,
-                        isDark: isDark,
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 14),
-
-                // Bottom Lock & SLA banner
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: isDark ? CivicColors.cardSurfaceDark : const Color(0xFFEEF2FF),
-                    borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(Icons.shield_outlined, size: 15, color: CivicColors.primary),
-                          const SizedBox(width: 6),
-                          Text(
-                            sub.securityLockText,
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                              color: isDark ? Colors.white70 : CivicColors.textPrimaryLight,
-                            ),
-                          ),
-                        ],
-                      ),
-                      InkWell(
-                        onTap: () {
-                          _showSlaDetails(context, sub, isDark);
-                        },
-                        child: const Text(
-                          'View Live\nSLA',
-                          textAlign: TextAlign.right,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: CivicColors.primary,
-                            height: 1.1,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildStepItem({
-    required IconData icon,
-    required Color iconBg,
-    Color iconColor = Colors.white,
-    required String title,
-    required String subtitle,
-    Color? subtitleColor,
-    required bool isCompleted,
-    required bool isDark,
-  }) {
-    return Column(
-      children: [
+        const SizedBox(height: 12),
         Container(
-          width: 28,
-          height: 28,
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: iconBg,
-            shape: BoxShape.circle,
+            color: isDark ? CivicColors.cardDark : Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isDark ? CivicColors.borderDark : const Color(0xFFE2E8F0),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-          child: Center(
-            child: Icon(icon, color: iconColor, size: 14),
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: 9,
-            fontWeight: FontWeight.w700,
-            color: isDark ? Colors.white : CivicColors.textPrimaryLight,
-          ),
-        ),
-        Text(
-          subtitle,
-          style: TextStyle(
-            fontSize: 8.5,
-            fontWeight: FontWeight.w600,
-            color: subtitleColor ?? (isDark ? CivicColors.textMutedDark : CivicColors.textMutedLight),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStepConnector({required bool isCompleted}) {
-    return Expanded(
-      child: Container(
-        height: 2,
-        margin: const EdgeInsets.only(bottom: 20),
-        color: isCompleted ? CivicColors.mint : Colors.grey.shade300,
-      ),
-    );
-  }
-
-  // 4. Nearby Hazard Radar Section (Real dynamic data)
-  Widget _buildHazardRadarSection(BuildContext context, CivicAppState state, bool isDark) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: CivicColors.mint, width: 1.5),
-                  ),
-                  child: const Icon(Icons.radar, color: CivicColors.mint, size: 16),
-                ),
-                const SizedBox(width: 8),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      state.tr('nearbyRadar'),
-                      style: TextStyle(
-                        fontSize: 16,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '#CC-\n84920',
+                      style: const TextStyle(
+                        fontSize: 10,
                         fontWeight: FontWeight.w800,
-                        color: isDark ? Colors.white : CivicColors.textPrimaryLight,
+                        color: Color(0xFF1E293B),
+                        height: 1.1,
                       ),
                     ),
-                    Text(
-                      'Rohini Sector 17 • DTU Campus perimeter',
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFA7F3D0),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Text(
+                      'Overflowing\nBin',
                       style: TextStyle(
-                        fontSize: 11,
-                        color: isDark ? CivicColors.textSecondaryDark : CivicColors.textSecondaryLight,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF065F46),
+                        height: 1.1,
                       ),
                     ),
-                  ],
-                ),
-              ],
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: isDark ? CivicColors.primary.withOpacity(0.2) : const Color(0xFFDDE6FD),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Text(
-                'Within 650m',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: CivicColors.primary,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 14),
-
-        if (state.hazards.isEmpty)
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: isDark ? CivicColors.cardDark : Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: isDark ? CivicColors.borderDark : CivicColors.borderLight,
-              ),
-            ),
-            child: Center(
-              child: Column(
-                children: [
-                  const Icon(Icons.check_circle_outline, color: CivicColors.mintDark, size: 40),
-                  const SizedBox(height: 8),
-                  Text(
-                    'All Clear in Your Radar Zone',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: isDark ? Colors.white : CivicColors.textPrimaryLight,
-                    ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'No open hazard complaints nearby. Tap "Report Civic Hazard" above if you spot an issue.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: isDark ? CivicColors.textSecondaryDark : CivicColors.textSecondaryLight,
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFEF3C7),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                  ),
-                ],
-              ),
-            ),
-          )
-        else
-          ...state.hazards.map((hazard) => _buildHazardCard(context, state, hazard, isDark)),
-      ],
-    );
-  }
-
-  Widget _buildHazardCard(BuildContext context, CivicAppState state, HazardRadarModel hazard, bool isDark) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: isDark ? CivicColors.cardDark : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isDark ? CivicColors.borderDark : CivicColors.borderLight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-            child: SizedBox(
-              height: 180,
-              width: double.infinity,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Image.network(
-                    hazard.imageUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (ctx, err, stack) => Container(
-                      color: Colors.grey.shade800,
-                      child: const Center(child: Icon(Icons.broken_image, color: Colors.white54)),
-                    ),
-                  ),
-                  Positioned(
-                    top: 10,
-                    left: 10,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Row(
                       children: [
-                        if (hazard.badgeTag != null)
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                            margin: const EdgeInsets.only(bottom: 4),
-                            decoration: BoxDecoration(
-                              color: hazard.isUrgent ? const Color(0xFFDC2626) : const Color(0xFF00A389),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              hazard.badgeTag!,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.75),
-                            borderRadius: BorderRadius.circular(6),
+                          width: 6,
+                          height: 6,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFB45309),
+                            shape: BoxShape.circle,
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.hub_outlined, color: CivicColors.mint, size: 12),
-                              const SizedBox(width: 4),
-                              Text(
-                                hazard.aiTag,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
+                        ),
+                        const SizedBox(width: 4),
+                        const Text(
+                          'In Progress / काम जारी',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF92400E),
                           ),
                         ),
                       ],
                     ),
                   ),
-                  Positioned(
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [Colors.transparent, Colors.black.withOpacity(0.85)],
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: SizedBox(
+                      width: 80,
+                      height: 80,
+                      child: Stack(
+                        fit: StackFit.expand,
                         children: [
-                          Text(
-                            hazard.locationTag,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                            ),
+                          Image.asset(
+                            'overflowing_dumpster_1791533637321.jpg',
+                            fit: BoxFit.cover,
+                            errorBuilder: (ctx, err, stack) => Container(color: Colors.grey.shade300),
                           ),
-                          Text(
-                            hazard.ticketCode,
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.4,
+                          Positioned(
+                            bottom: 4,
+                            left: 4,
+                            right: 4,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 3),
+                              decoration: BoxDecoration(
+                                color: CivicColors.primaryDark,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: const [
+                                  Icon(Icons.check_circle, color: Colors.white, size: 10),
+                                  SizedBox(width: 2),
+                                  Text(
+                                    '96% AI',
+                                    style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.w800),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ],
                       ),
                     ),
                   ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(Icons.location_on_outlined, size: 14, color: CivicColors.textPrimaryLight),
+                            const SizedBox(width: 4),
+                            const Expanded(
+                              child: Text(
+                                '12th Main Road, Near Metro Pillar 84',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: CivicColors.textPrimaryLight,
+                                  height: 1.3,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            const Icon(Icons.access_time, size: 14, color: Color(0xFFB45309)),
+                            const SizedBox(width: 4),
+                            RichText(
+                              text: const TextSpan(
+                                text: 'Resolving within ',
+                                style: TextStyle(fontSize: 10, color: CivicColors.textPrimaryLight, fontFamily: 'Inter'),
+                                children: [
+                                  TextSpan(text: '2h 45m', style: TextStyle(fontWeight: FontWeight.w700, color: Color(0xFFB45309))),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        const Text(
+                          'Assigned: BBMP Sanitation Squad 14',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: CivicColors.textSecondaryLight,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
-            ),
-          ),
-
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  hazard.title,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: isDark ? Colors.white : CivicColors.textPrimaryLight,
+              const SizedBox(height: 12),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: 0.68,
+                  minHeight: 4,
+                  backgroundColor: const Color(0xFFE2E8F0),
+                  color: CivicColors.primary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: const [
+                  Text(
+                    'Submitted 08:30 AM',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: CivicColors.textPrimaryLight,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  hazard.description,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: isDark ? CivicColors.textSecondaryDark : CivicColors.textSecondaryLight,
-                    height: 1.3,
+                  Text(
+                    'SLA On-Track',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      color: CivicColors.primary,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 14),
-
-                // Meta Info Row
-                Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: isDark ? CivicColors.cardSurfaceDark : const Color(0xFFDCFCE7),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(4),
-                              decoration: const BoxDecoration(
-                                color: Color(0xFF86EFAC),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(Icons.people, size: 14, color: Color(0xFF065F46)),
-                            ),
-                            const SizedBox(width: 8),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  '${hazard.backers} Backers',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700,
-                                    color: isDark ? Colors.white : const Color(0xFF065F46),
-                                  ),
-                                ),
-                                Text(
-                                  hazard.backerSubtext,
-                                  style: TextStyle(
-                                    fontSize: 9.5,
-                                    color: isDark ? CivicColors.textMutedDark : const Color(0xFF047857),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? CivicColors.cardSurfaceDark
-                              : (hazard.isUrgent ? const Color(0xFFFFE4E6) : const Color(0xFFE0F2FE)),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(4),
-                              decoration: BoxDecoration(
-                                color: hazard.isUrgent ? const Color(0xFFFECDD3) : const Color(0xFFBAE6FD),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                hazard.isUrgent ? Icons.hourglass_top : Icons.build_outlined,
-                                size: 14,
-                                color: hazard.isUrgent ? const Color(0xFFBE123C) : const Color(0xFF0369A1),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  hazard.slaTimeLeft,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700,
-                                    color: isDark
-                                        ? Colors.white
-                                        : (hazard.isUrgent ? const Color(0xFFBE123C) : const Color(0xFF0369A1)),
-                                  ),
-                                ),
-                                Text(
-                                  hazard.slaSubtext,
-                                  style: TextStyle(
-                                    fontSize: 9.5,
-                                    color: isDark ? CivicColors.textMutedDark : CivicColors.textSecondaryLight,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-
-                // Action Row
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: hazard.hasSupported
-                              ? CivicColors.mintDark
-                              : (hazard.isUrgent ? CivicColors.primary : const Color(0xFFDDE6FD)),
-                          foregroundColor: hazard.hasSupported || hazard.isUrgent ? Colors.white : CivicColors.primary,
-                          elevation: 0,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        icon: Icon(
-                          hazard.hasSupported ? Icons.thumb_up_alt : Icons.thumb_up_alt_outlined,
-                          size: 16,
-                        ),
-                        label: Text(
-                          hazard.hasSupported ? state.tr('backed') : state.tr('supportIssue'),
-                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
-                        ),
-                        onPressed: () {
-                          state.supportHazard(hazard.id);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              backgroundColor: CivicColors.mintDark,
-                              content: Text(hazard.hasSupported
-                                  ? 'Removed support from ${hazard.ticketCode}'
-                                  : '🎉 Supported ${hazard.ticketCode}! +10 Karma Points added.'),
-                              duration: const Duration(seconds: 2),
-                              behavior: SnackBarBehavior.floating,
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-
-                    // Suggest a Fix button
-                    Container(
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: isDark ? CivicColors.cardSurfaceDark : const Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: isDark ? CivicColors.borderDark : CivicColors.borderLight),
-                      ),
-                      child: TextButton.icon(
-                        icon: const Icon(Icons.lightbulb_outline, size: 16, color: CivicColors.primary),
-                        label: const Text('Suggest Fix', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
-                        onPressed: () {
-                          showModalBottomSheet(
-                            context: context,
-                            isScrollControlled: true,
-                            backgroundColor: Colors.transparent,
-                            builder: (ctx) => SuggestFixModal(
-                              ticketCode: hazard.ticketCode,
-                              hazardTitle: hazard.title,
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+                ],
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  void _showSlaDetails(BuildContext context, ActiveSubmissionModel sub, bool isDark) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: isDark ? CivicColors.cardDark : Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          'Live SLA Timeline: ${sub.ticketCode}',
-          style: TextStyle(
-            fontSize: 17,
-            fontWeight: FontWeight.w700,
-            color: isDark ? Colors.white : CivicColors.textPrimaryLight,
+  // 5. Impact & Supervisor Section
+  Widget _buildHazardRadarSection(BuildContext context, CivicAppState state, bool isDark) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // SWACHH WARD IMPACT
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: isDark ? CivicColors.cardDark : const Color(0xFFF1FDF8),
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFA7F3D0),
+                  shape: BoxShape.circle,
+                ),
+                child: const Center(
+                  child: Icon(Icons.emoji_events_outlined, color: CivicColors.primaryDark, size: 24),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          'SWACHH WARD IMPACT',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: isDark ? CivicColors.primaryLight : CivicColors.primary,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF6EE7B7),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Text(
+                            'Ward 142',
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF064E3B),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '1,240 complaints resolved in your ward this month!',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? Colors.white : CivicColors.textPrimaryLight,
+                        height: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    RichText(
+                      text: TextSpan(
+                        text: '98.4%',
+                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: CivicColors.primaryDark, fontFamily: 'Inter'),
+                        children: [
+                          TextSpan(
+                            text: ' cleared within municipal SLA timelines.',
+                            style: TextStyle(fontWeight: FontWeight.w500, color: isDark ? Colors.white70 : CivicColors.textSecondaryLight),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
-            Text('• 5-Step Workflow: Reported ➔ Assigned ➔ In Progress ➔ Resolved ➔ Verified'),
-            SizedBox(height: 4),
-            Text('• Turnaround Target: 4.0 Hours'),
-            SizedBox(height: 4),
-            Text('• Cryptographic EXIF Geofence: Active & Verified'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Close'),
+        const SizedBox(height: 16),
+        // Ward Supervisor Contact
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: isDark ? CivicColors.cardDark : Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isDark ? CivicColors.borderDark : const Color(0xFFE2E8F0),
+            ),
           ),
-        ],
-      ),
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF1F5F9),
+                  shape: BoxShape.circle,
+                ),
+                child: const Center(
+                  child: Icon(Icons.support_agent_outlined, color: CivicColors.primary, size: 20),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Ward Supervisor Contact',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: CivicColors.textPrimaryLight,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    const Text(
+                      'K. Suresh (East Zone Zone-Officer)',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: CivicColors.textSecondaryLight,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEEF2FF),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: const [
+                    Icon(Icons.call_outlined, size: 14, color: CivicColors.primary),
+                    SizedBox(width: 4),
+                    Text(
+                      'Call Desk',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        color: CivicColors.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
