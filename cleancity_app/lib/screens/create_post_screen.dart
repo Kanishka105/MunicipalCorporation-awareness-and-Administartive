@@ -1,4 +1,8 @@
+import 'dart:io' as io;
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:image_picker/image_picker.dart';
 import '../theme.dart';
 
 class CreatePostScreen extends StatefulWidget {
@@ -11,6 +15,17 @@ class CreatePostScreen extends StatefulWidget {
 class _CreatePostScreenState extends State<CreatePostScreen> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descController = TextEditingController();
+  XFile? _imageFile;
+  final ImagePicker _picker = ImagePicker();
+
+  Future<void> _pickImage() async {
+    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        _imageFile = pickedFile;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +54,8 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         centerTitle: true,
         actions: [
           const CircleAvatar(
-            backgroundImage: NetworkImage('https://randomuser.me/api/portraits/men/62.jpg'),
+            backgroundColor: AppTheme.primaryColor,
+            child: Icon(Icons.person, color: Colors.white, size: 20),
             radius: 14,
           ),
           const SizedBox(width: 16),
@@ -96,51 +112,82 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               ),
               child: Column(
                 children: [
-                  Stack(
-                    children: [
-                      ClipRRect(
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                        child: Image.network(
-                          'https://images.unsplash.com/photo-1542401886-65d6c61db217?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-                          height: 200,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                      Positioned(
-                        top: 12,
-                        left: 12,
-                        child: Row(
-                          children: [
-                            _buildOverlayBtn(Icons.refresh, 'Retake'),
-                            const SizedBox(width: 8),
-                            _buildOverlayBtn(Icons.swap_horiz, 'Replace'),
-                          ],
-                        ),
-                      ),
-                      Positioned(
-                        top: 12,
-                        right: 12,
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                          child: const Icon(Icons.close, size: 16, color: Colors.red),
-                        ),
-                      ),
-                      Positioned(
-                        bottom: 12,
-                        right: 12,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.6),
-                            borderRadius: BorderRadius.circular(16),
+                  if (_imageFile == null)
+                    GestureDetector(
+                      onTap: _pickImage,
+                      child: Container(
+                        height: 200,
+                        width: double.infinity,
+                        color: Colors.grey[300],
+                        child: const Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.add_a_photo, size: 48, color: Colors.grey),
+                              SizedBox(height: 8),
+                              Text('Tap to add a photo', style: TextStyle(color: Colors.grey)),
+                            ],
                           ),
-                          child: const Text('24mm • f/2.8 • ISO 100', style: TextStyle(color: Colors.white, fontSize: 12)),
                         ),
-                      )
-                    ],
-                  ),
+                      ),
+                    )
+                  else
+                    Stack(
+                      children: [
+                        ClipRRect(
+                          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                          child: kIsWeb
+                              ? Image.network(
+                                  _imageFile!.path,
+                                  height: 200,
+                                  width: double.infinity,
+                                  fit: BoxFit.cover,
+                                )
+                              : Image.file(
+                                  io.File(_imageFile!.path),
+                                  height: 200,
+                                  width: double.infinity,
+                                  fit: BoxFit.cover,
+                                ),
+                        ),
+                        Positioned(
+                          top: 12,
+                          left: 12,
+                          child: Row(
+                            children: [
+                              GestureDetector(
+                                onTap: _pickImage,
+                                child: _buildOverlayBtn(Icons.swap_horiz, 'Replace'),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Positioned(
+                          top: 12,
+                          right: 12,
+                          child: GestureDetector(
+                            onTap: () => setState(() => _imageFile = null),
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                              child: const Icon(Icons.close, size: 16, color: Colors.red),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          bottom: 12,
+                          right: 12,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.6),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: const Text('24mm • f/2.8 • ISO 100', style: TextStyle(color: Colors.white, fontSize: 12)),
+                          ),
+                        )
+                      ],
+                    ),
                 ],
               ),
             ),
@@ -266,31 +313,18 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             ),
             const SizedBox(height: 16),
             
-            // Map pin placeholder
+            // Map view
             ClipRRect(
               borderRadius: BorderRadius.circular(16),
-              child: Container(
+              child: SizedBox(
                 height: 80,
-                color: Colors.teal.withOpacity(0.2),
-                child: Stack(
-                  children: [
-                    const Center(child: Text('Map View Placeholder')),
-                    Positioned(
-                      bottom: 8,
-                      left: 8,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
-                        child: Row(
-                          children: const [
-                            Icon(Icons.my_location, size: 12),
-                            SizedBox(width: 4),
-                            Text('Map Pin Synced', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
-                          ],
-                        ),
-                      ),
-                    )
-                  ],
+                child: GoogleMap(
+                  initialCameraPosition: const CameraPosition(
+                    target: LatLng(34.0522, -118.2437),
+                    zoom: 12,
+                  ),
+                  zoomControlsEnabled: false,
+                  mapToolbarEnabled: false,
                 ),
               ),
             ),

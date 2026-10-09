@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../models/post_model.dart';
 import '../theme.dart';
 
@@ -257,10 +258,22 @@ class PostDetailScreen extends StatelessWidget {
                         const SizedBox(height: 16),
                         ClipRRect(
                           borderRadius: BorderRadius.circular(16),
-                          child: Container(
+                          child: SizedBox(
                             height: 150,
-                            color: Colors.grey[300], // Map placeholder
-                            child: const Center(child: Text('Map Placeholder')),
+                            child: GoogleMap(
+                              initialCameraPosition: CameraPosition(
+                                target: LatLng(post.latitude, post.longitude),
+                                zoom: 14,
+                              ),
+                              markers: {
+                                Marker(
+                                  markerId: const MarkerId('postLocation'),
+                                  position: LatLng(post.latitude, post.longitude),
+                                ),
+                              },
+                              zoomControlsEnabled: false,
+                              mapToolbarEnabled: false,
+                            ),
                           ),
                         ),
                         const SizedBox(height: 16),

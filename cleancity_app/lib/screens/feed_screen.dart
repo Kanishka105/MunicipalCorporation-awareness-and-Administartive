@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/post_model.dart';
 import '../theme.dart';
 import '../widgets/post_card.dart';
+import '../services/api_service.dart';
 
 class FeedScreen extends StatefulWidget {
   const FeedScreen({super.key});
@@ -11,40 +12,35 @@ class FeedScreen extends StatefulWidget {
 }
 
 class _FeedScreenState extends State<FeedScreen> {
-  final List<Post> _dummyPosts = [
-    Post(
-      id: '1',
-      authorName: 'Elena Rostova',
-      authorAvatarUrl: 'https://randomuser.me/api/portraits/women/44.jpg',
-      timeAgo: '2 hours ago',
-      cameraInfo: 'Olympus OM-1',
-      latitude: 46.8523,
-      longitude: 121.7603,
-      elevation: '2,140m',
-      locationName: 'Mt. Rainier Trail',
-      imageUrl: 'https://images.unsplash.com/photo-1542401886-65d6c61db217?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-      title: 'Sunrise over Emerald Ridge',
-      description: 'Caught the first golden hour rays after a 4am hike. The fog cleared right at 06:14 AM.',
-      upvotes: 342,
-      comments: 48,
-    ),
-    Post(
-      id: '2',
-      authorName: 'Marcus Chen',
-      authorAvatarUrl: 'https://randomuser.me/api/portraits/men/32.jpg',
-      timeAgo: '5 hours ago',
-      cameraInfo: 'Sony A7IV 14mm',
-      latitude: 37.7749,
-      longitude: 122.4194,
-      elevation: '15s exp',
-      locationName: 'Embarcadero Bay Bridge',
-      imageUrl: 'https://images.unsplash.com/photo-1501594907352-04cda38ebc29?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-      title: 'Urban Geometry & Reflections',
-      description: 'Long exposure test with the new wide lens on the pedestrian bridge.',
-      upvotes: 128,
-      comments: 19,
-    ),
-  ];
+  final ApiService _apiService = ApiService();
+  List<Post> _posts = [];
+  bool _isLoading = true;
+  String _error = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFeed();
+  }
+
+  Future<void> _loadFeed() async {
+    setState(() {
+      _isLoading = true;
+      _error = '';
+    });
+    try {
+      final posts = await _apiService.getFeed();
+      setState(() {
+        _posts = posts;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = 'Failed to load feed. Pull to refresh.';
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -81,7 +77,8 @@ class _FeedScreenState extends State<FeedScreen> {
           const Padding(
             padding: EdgeInsets.only(right: 16),
             child: CircleAvatar(
-              backgroundImage: NetworkImage('https://randomuser.me/api/portraits/men/62.jpg'),
+              backgroundColor: AppTheme.primaryColor,
+              child: Icon(Icons.person, color: Colors.white, size: 20),
               radius: 16,
             ),
           ),
@@ -135,16 +132,57 @@ class _FeedScreenState extends State<FeedScreen> {
           ),
         ),
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: _dummyPosts.length + 1,
-        itemBuilder: (context, index) {
-          if (index == _dummyPosts.length) {
-            return _buildFooterCard();
-          }
-          return PostCard(post: _dummyPosts[index]);
-        },
+      body: RefreshIndicator(
+        onRefresh: _loadFeed,
+        child: _buildBody(),
       ),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_error.isNotEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(_error, style: const TextStyle(color: Colors.red)),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _loadFeed,
+              child: const Text('Retry'),
+            )
+          ],
+        ),
+      );
+    }
+    
+    if (_posts.isEmpty) {
+      return ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 40),
+              child: Text('No reports found.'),
+            ),
+          ),
+          _buildFooterCard(),
+        ],
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: _posts.length + 1,
+      itemBuilder: (context, index) {
+        if (index == _posts.length) {
+          return _buildFooterCard();
+        }
+        return PostCard(post: _posts[index]);
+      },
     );
   }
 

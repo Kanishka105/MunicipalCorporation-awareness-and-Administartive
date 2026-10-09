@@ -3,6 +3,7 @@ import '../theme.dart';
 import 'feed_screen.dart';
 import 'create_post_screen.dart';
 import 'profile_screen.dart';
+import 'rewards_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -16,6 +17,7 @@ class _HomeScreenState extends State<HomeScreen> {
   
   final List<Widget> _screens = [
     const FeedScreen(),
+    const RewardsScreen(),
     const CreatePostScreen(),
     const ProfileScreen(),
   ];
@@ -42,8 +44,9 @@ class _HomeScreenState extends State<HomeScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 _buildNavItem(0, Icons.home_outlined, Icons.home, 'Feed'),
+                _buildNavItem(1, Icons.emoji_events_outlined, Icons.emoji_events, 'Rewards'),
                 _buildCreateNavItem(),
-                _buildNavItem(2, Icons.person_outline, Icons.person, 'Profile'),
+                _buildNavItem(3, Icons.person_outline, Icons.person, 'Profile'),
               ],
             ),
           ),
@@ -81,7 +84,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildCreateNavItem() {
     return GestureDetector(
-      onTap: () => setState(() => _currentIndex = 1),
+      onTap: () => setState(() => _currentIndex = 2),
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: const BoxDecoration(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
 import 'home_screen.dart';
+import '../services/api_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -12,6 +13,10 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   bool isLogin = false; // toggle for Log In / Sign Up
   bool autoTaggingEnabled = true;
+  bool isLoading = false;
+  final TextEditingController mobileController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+  final ApiService _apiService = ApiService();
 
   @override
   Widget build(BuildContext context) {
@@ -224,17 +229,17 @@ class _LoginScreenState extends State<LoginScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('Email Address', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                        const Text('Mobile Number', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
                         Text('VERIFIED', style: TextStyle(color: AppTheme.textSecondary, fontSize: 11, letterSpacing: 1)),
                       ],
                     ),
                     const SizedBox(height: 8),
-                    _buildTextField(icon: Icons.email_outlined, hint: 'photographer@cleancity.io'),
+                    _buildTextField(icon: Icons.phone_android, hint: '+91 9876543210', controller: mobileController, keyboardType: TextInputType.phone),
                     const SizedBox(height: 16),
                     
                     const Text('Password', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
                     const SizedBox(height: 8),
-                    _buildTextField(icon: Icons.lock_outline, hint: '••••••••••••', isPassword: true),
+                    _buildTextField(icon: Icons.lock_outline, hint: '••••••••••••', isPassword: true, controller: passwordController),
                     const SizedBox(height: 16),
                     
                     if (!isLogin) ...[
@@ -271,23 +276,57 @@ class _LoginScreenState extends State<LoginScreen> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(builder: (_) => const HomeScreen()),
-                          );
-                        },
+                        onPressed: isLoading
+                            ? null
+                            : () async {
+                                final mobile = mobileController.text.trim();
+                                final password = passwordController.text;
+                                
+                                final mobileRegExp = RegExp(r'^\+91[0-9]{10}$');
+                                if (!mobileRegExp.hasMatch(mobile) && mobile.isNotEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Please enter a valid number starting with +91 followed by 10 digits')),
+                                  );
+                                  return;
+                                }
+                                
+                                setState(() => isLoading = true);
+                                
+                                // Default to a demo Indian number if empty for testing
+                                final targetMobile = mobile.isEmpty ? '+919876543210' : mobile;
+                                
+                                final success = await _apiService.login(targetMobile, password);
+                                if (!mounted) return;
+                                
+                                if (success) {
+                                  Navigator.pushReplacement(
+                                    context,
+                                    MaterialPageRoute(builder: (_) => const HomeScreen()),
+                                  );
+                                } else {
+                                  setState(() => isLoading = false);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Login failed')),
+                                  );
+                                }
+                              },
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: const [
-                            Text('Continue to CleanCity', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                            SizedBox(width: 8),
-                            Icon(Icons.arrow_forward),
-                          ],
-                        ),
+                        child: isLoading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                              )
+                            : Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: const [
+                                  Text('Continue to CleanCity', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                                  SizedBox(width: 8),
+                                  Icon(Icons.arrow_forward),
+                                ],
+                              ),
                       ),
                     ),
                   ],
@@ -324,10 +363,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     Row(
                       children: [
-                        _buildSmallStatIcon(Icons.terrain),
-                        const SizedBox(width: -8),
-                        _buildSmallStatIcon(Icons.water_drop),
-                        const SizedBox(width: -8),
+                        Align(widthFactor: 0.7, child: _buildSmallStatIcon(Icons.terrain)),
+                        Align(widthFactor: 0.7, child: _buildSmallStatIcon(Icons.water_drop)),
                         _buildSmallStatIcon(Icons.forest),
                       ],
                     )
@@ -360,14 +397,16 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildTextField({required IconData icon, required String hint, bool isPassword = false}) {
+  Widget _buildTextField({required IconData icon, required String hint, bool isPassword = false, TextEditingController? controller, TextInputType? keyboardType}) {
     return Container(
       decoration: BoxDecoration(
         color: AppTheme.backgroundColor,
         borderRadius: BorderRadius.circular(12),
       ),
       child: TextField(
+        controller: controller,
         obscureText: isPassword,
+        keyboardType: keyboardType,
         decoration: InputDecoration(
           prefixIcon: Icon(icon, color: AppTheme.textSecondary),
           suffixIcon: isPassword ? Icon(Icons.visibility_outlined, color: AppTheme.textSecondary) : null,

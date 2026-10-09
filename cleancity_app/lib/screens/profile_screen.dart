@@ -1,8 +1,40 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
+import '../models/post_model.dart';
+import '../services/api_service.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  final ApiService _apiService = ApiService();
+  List<Post> _myPosts = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMyPosts();
+  }
+
+  Future<void> _loadMyPosts() async {
+    try {
+      final posts = await _apiService.getFeed();
+      // For now, assume all posts or filter by some criteria if available
+      setState(() {
+        _myPosts = posts;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +62,8 @@ class ProfileScreen extends StatelessWidget {
           const Padding(
             padding: EdgeInsets.only(right: 16),
             child: CircleAvatar(
-              backgroundImage: NetworkImage('https://randomuser.me/api/portraits/men/62.jpg'),
+              backgroundColor: AppTheme.primaryColor,
+              child: Icon(Icons.person, color: Colors.white, size: 20),
               radius: 16,
             ),
           ),
@@ -90,7 +123,8 @@ class ProfileScreen extends StatelessWidget {
                           ),
                           child: const CircleAvatar(
                             radius: 40,
-                            backgroundImage: NetworkImage('https://randomuser.me/api/portraits/men/62.jpg'),
+                            backgroundColor: AppTheme.primaryColor,
+                            child: Icon(Icons.person, color: Colors.white, size: 40),
                           ),
                         ),
                         Positioned(
@@ -119,11 +153,11 @@ class ProfileScreen extends StatelessWidget {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
-                          _buildStatColumn('24', 'Posts'),
+                          _buildStatColumn('${_myPosts.length}', 'Posts'),
                           Container(width: 1, height: 30, color: Colors.grey.withOpacity(0.3)),
                           _buildStatColumn('1.8k', 'Upvotes'),
                           Container(width: 1, height: 30, color: Colors.grey.withOpacity(0.3)),
-                          _buildStatColumn('12', 'Mapped'),
+                          _buildStatColumn('${_myPosts.length}', 'Mapped'),
                         ],
                       ),
                     ),
@@ -239,73 +273,59 @@ class ProfileScreen extends StatelessWidget {
             const SizedBox(height: 16),
             
             // Grid
-            GridView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              physics: const NeverScrollableScrollPhysics(),
-              shrinkWrap: true,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 8,
-                mainAxisSpacing: 8,
-                childAspectRatio: 1,
-              ),
-              itemCount: 6,
-              itemBuilder: (context, index) {
-                final imgs = [
-                  'https://images.unsplash.com/photo-1542401886-65d6c61db217?w=400',
-                  'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400',
-                  'https://images.unsplash.com/photo-1448375240586-882707db888b?w=400',
-                  'https://images.unsplash.com/photo-1511497584788-876760111969?w=400',
-                  'https://images.unsplash.com/photo-1531366936337-7c912a458b07?w=400',
-                  'https://images.unsplash.com/photo-1501594907352-04cda38ebc29?w=400',
-                ];
-                final coords = ['46.85° N', null, null, null, null, null];
-                final badges = [
-                  {'icon': Icons.arrow_upward, 'text': '342', 'color': Colors.redAccent},
-                  {'icon': Icons.arrow_upward, 'text': '189', 'color': Colors.black54},
-                  {'icon': Icons.arrow_upward, 'text': '94', 'color': Colors.black54},
-                  {'icon': Icons.arrow_upward, 'text': '215', 'color': Colors.black54},
-                  {'icon': Icons.arrow_upward, 'text': '512', 'color': Colors.redAccent},
-                  {'icon': Icons.arrow_upward, 'text': '88', 'color': Colors.black54},
-                ];
-
-                return ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      Image.network(imgs[index], fit: BoxFit.cover),
-                      if (coords[index] != null)
-                        Positioned(
-                          top: 8,
-                          left: 8,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(color: Colors.black45, borderRadius: BorderRadius.circular(4)),
-                            child: Text(coords[index]!, style: const TextStyle(color: Colors.white, fontSize: 10)),
-                          ),
+            _isLoading
+                ? const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator()))
+                : _myPosts.isEmpty
+                    ? const Center(child: Padding(padding: EdgeInsets.all(24), child: Text("No captures yet.")))
+                    : GridView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        physics: const NeverScrollableScrollPhysics(),
+                        shrinkWrap: true,
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 8,
+                          mainAxisSpacing: 8,
+                          childAspectRatio: 1,
                         ),
-                      Positioned(
-                        bottom: 8,
-                        right: 8,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(color: badges[index]['color'] as Color, borderRadius: BorderRadius.circular(12)),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(badges[index]['icon'] as IconData, color: Colors.white, size: 10),
-                              const SizedBox(width: 2),
-                              Text(badges[index]['text'] as String, style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
-                            ],
-                          ),
-                        ),
+                        itemCount: _myPosts.length,
+                        itemBuilder: (context, index) {
+                          final post = _myPosts[index];
+                          return ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                Image.network(post.imageUrl, fit: BoxFit.cover),
+                                Positioned(
+                                  top: 8,
+                                  left: 8,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(color: Colors.black45, borderRadius: BorderRadius.circular(4)),
+                                    child: Text('${post.latitude.toStringAsFixed(2)}° N', style: const TextStyle(color: Colors.white, fontSize: 10)),
+                                  ),
+                                ),
+                                Positioned(
+                                  bottom: 8,
+                                  right: 8,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(12)),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(Icons.arrow_upward, color: Colors.white, size: 10),
+                                        const SizedBox(width: 2),
+                                        Text('${post.upvotes}', style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
                       ),
-                    ],
-                  ),
-                );
-              },
-            ),
             const SizedBox(height: 32),
           ],
         ),

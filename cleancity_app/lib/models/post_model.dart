@@ -32,21 +32,38 @@ class Post {
   });
 
   factory Post.fromJson(Map<String, dynamic> json) {
+    // Map backend ReportOut to Flutter Post model
+    final gps = json['gps'] ?? {'latitude': 0.0, 'longitude': 0.0};
+    final createdAt = json['created_at'] != null ? DateTime.parse(json['created_at']) : DateTime.now();
+    final difference = DateTime.now().difference(createdAt);
+    String timeAgoStr = '${difference.inHours} hours ago';
+    if (difference.inHours == 0) {
+      timeAgoStr = '${difference.inMinutes} mins ago';
+    } else if (difference.inDays > 0) {
+      timeAgoStr = '${difference.inDays} days ago';
+    }
+    
+    // Construct absolute URL for photo if it's a relative path
+    String photoUrl = json['photo_url'] ?? '';
+    if (photoUrl.startsWith('/api')) {
+      photoUrl = 'http://10.0.2.2:5000' + photoUrl;
+    }
+
     return Post(
       id: json['id'] ?? '',
-      authorName: json['authorName'] ?? 'Unknown User',
-      authorAvatarUrl: json['authorAvatarUrl'] ?? '',
-      timeAgo: json['timeAgo'] ?? 'Just now',
-      cameraInfo: json['cameraInfo'] ?? '',
-      latitude: json['latitude'] ?? 0.0,
-      longitude: json['longitude'] ?? 0.0,
-      elevation: json['elevation'] ?? '0m',
-      locationName: json['locationName'] ?? 'Unknown Location',
-      imageUrl: json['imageUrl'] ?? '',
+      authorName: json['citizen_id'] ?? 'Unknown Citizen',
+      authorAvatarUrl: 'https://randomuser.me/api/portraits/lego/1.jpg', // Placeholder
+      timeAgo: timeAgoStr,
+      cameraInfo: 'SmartPhone',
+      latitude: (gps['latitude'] as num?)?.toDouble() ?? 0.0,
+      longitude: (gps['longitude'] as num?)?.toDouble() ?? 0.0,
+      elevation: '0m', // Default if backend doesn't provide
+      locationName: json['category'] ?? 'General',
+      imageUrl: photoUrl.isNotEmpty ? photoUrl : 'https://via.placeholder.com/400x300.png?text=No+Image',
       title: json['title'] ?? '',
       description: json['description'] ?? '',
-      upvotes: json['upvotes'] ?? 0,
-      comments: json['comments'] ?? 0,
+      upvotes: 0,
+      comments: 0,
     );
   }
 }

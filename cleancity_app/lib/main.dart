@@ -4,14 +4,7 @@ import 'theme.dart';
 import 'screens/login_screen.dart';
 
 void main() {
-  runApp(
-    MultiProvider(
-      providers: [
-        // Provider(create: (_) => ApiService()),
-      ],
-      child: const CleanCityApp(),
-    ),
-  );
+  runApp(const CleanCityApp());
 }
 
 class CleanCityApp extends StatelessWidget {
