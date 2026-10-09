@@ -4,6 +4,7 @@ import '../providers/civic_app_state.dart';
 import '../theme/app_theme.dart';
 import '../models/user_model.dart';
 import '../models/executive_dashboard_model.dart';
+import '../widgets/system_workflow_sheet.dart';
 
 class ExecutiveDashboardScreen extends StatelessWidget {
   const ExecutiveDashboardScreen({super.key});
@@ -21,9 +22,13 @@ class ExecutiveDashboardScreen extends StatelessWidget {
         children: [
           // 1. Role View Switcher
           _buildRoleSwitcher(context, state, isDark),
+          const SizedBox(height: 12),
+
+          // 2. Workflow Pipeline Architecture Button
+          _buildWorkflowHeaderCard(context, isDark),
           const SizedBox(height: 14),
 
-          // 2. Bedrock AI-Written Executive Summary
+          // 3. Bedrock AI-Written Executive Summary
           _buildBedrockExecutiveSummary(state, isDark),
           const SizedBox(height: 16),
 
@@ -86,7 +91,68 @@ class ExecutiveDashboardScreen extends StatelessWidget {
     );
   }
 
-  // 2. Bedrock AI-Written Executive Summary
+  // 2. Workflow Pipeline Architecture Button
+  Widget _buildWorkflowHeaderCard(BuildContext context, bool isDark) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E293B) : const Color(0xFFEEF2FF),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isDark ? const Color(0xFF334155) : const Color(0xFFC7D2FE),
+        ),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.schema_outlined, color: CivicColors.primary, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'End-to-End System Architecture Pipeline',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? Colors.white : CivicColors.textPrimaryLight,
+                  ),
+                ),
+                Text(
+                  'Citizen ➔ AI Detect ➔ Field Worker ➔ Officers Lifecycle',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: isDark ? CivicColors.textSecondaryDark : CivicColors.textSecondaryLight,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: CivicColors.primary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (ctx) => const SystemWorkflowSheet(),
+              );
+            },
+            child: const Text('Open Flow', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 3. Bedrock AI-Written Executive Summary
   Widget _buildBedrockExecutiveSummary(CivicAppState state, bool isDark) {
     final openCount = state.hazards.length;
     final clearedCount = state.completedTasks.length;

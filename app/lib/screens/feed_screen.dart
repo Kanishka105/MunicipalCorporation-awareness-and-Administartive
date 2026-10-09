@@ -7,6 +7,7 @@ import 'report_hazard_modal.dart';
 import 'qr_scanner_modal.dart';
 import 'redeem_karma_modal.dart';
 import 'suggest_fix_modal.dart';
+import '../widgets/system_workflow_sheet.dart';
 
 class FeedScreen extends StatelessWidget {
   const FeedScreen({super.key});
@@ -25,17 +26,21 @@ class FeedScreen extends StatelessWidget {
         children: [
           // 1. Citizen Profile / Hero Card with Karma & Trust Badge
           _buildHeroProfileCard(context, state, isDark),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
 
-          // 2. Action Buttons Row (Report Civic Hazard & Scan QR)
+          // 2. Interactive End-to-End Workflow Architecture Card
+          _buildWorkflowBannerCard(context, isDark),
+          const SizedBox(height: 14),
+
+          // 3. Action Buttons Row (Report Civic Hazard & Scan QR)
           _buildActionGrid(context, state, isDark),
           const SizedBox(height: 20),
 
-          // 3. My Active Submission Section (Real dynamic state)
+          // 4. My Active Submission Section (Real dynamic state)
           _buildActiveSubmissionSection(context, activeSub, isDark),
           const SizedBox(height: 24),
 
-          // 4. Nearby Hazard Radar Section (Real dynamic state)
+          // 5. Nearby Hazard Radar Section (Real dynamic state)
           _buildHazardRadarSection(context, state, isDark),
           const SizedBox(height: 24),
         ],
@@ -170,7 +175,116 @@ class FeedScreen extends StatelessWidget {
     );
   }
 
-  // 2. Action Buttons Row (Report & QR Scan)
+  // 2. Interactive End-to-End Workflow Architecture Card
+  Widget _buildWorkflowBannerCard(BuildContext context, bool isDark) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: CivicColors.primary.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.account_tree_outlined, color: CivicColors.primary, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      'End-to-End Workflow',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        color: isDark ? Colors.white : CivicColors.textPrimaryLight,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                      decoration: BoxDecoration(
+                        color: CivicColors.mint.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Text(
+                        '4 Lanes',
+                        style: TextStyle(
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w800,
+                          color: CivicColors.mintDark,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'OTP ➔ Live Photo ➔ AI Detect ➔ Dupe Merge ➔ SLA Task ➔ Verify',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: isDark ? CivicColors.textSecondaryDark : CivicColors.textSecondaryLight,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            onPressed: () {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (ctx) => const SystemWorkflowSheet(),
+              );
+            },
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                Text(
+                  'View Flow',
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w700,
+                    color: CivicColors.primary,
+                  ),
+                ),
+                SizedBox(width: 3),
+                Icon(Icons.arrow_forward_ios, size: 10, color: CivicColors.primary),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 3. Action Buttons Row (Report & QR Scan)
   Widget _buildActionGrid(BuildContext context, CivicAppState state, bool isDark) {
     return Row(
       children: [
