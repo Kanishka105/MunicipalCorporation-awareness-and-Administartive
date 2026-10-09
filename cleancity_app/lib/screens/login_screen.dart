@@ -295,19 +295,76 @@ class _LoginScreenState extends State<LoginScreen> {
                                 // Default to a demo Indian number if empty for testing
                                 final targetMobile = mobile.isEmpty ? '+919876543210' : mobile;
                                 
-                                final success = await _apiService.login(targetMobile, password);
-                                if (!mounted) return;
-                                
-                                if (success) {
-                                  Navigator.pushReplacement(
-                                    context,
-                                    MaterialPageRoute(builder: (_) => const HomeScreen()),
-                                  );
-                                } else {
+                                if (!isLogin) {
+                                  // Sign Up Flow
+                                  final success = await _apiService.signUp(targetMobile, password, "Citizen");
+                                  if (!mounted) return;
                                   setState(() => isLoading = false);
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Login failed')),
-                                  );
+                                  
+                                  if (success) {
+                                    // Show OTP Dialog
+                                    final otpController = TextEditingController();
+                                    showDialog(
+                                      context: context,
+                                      barrierDismissible: false,
+                                      builder: (context) => AlertDialog(
+                                        title: const Text('Enter OTP'),
+                                        content: TextField(
+                                          controller: otpController,
+                                          keyboardType: TextInputType.number,
+                                          decoration: const InputDecoration(hintText: '123456'),
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Navigator.pop(context),
+                                            child: const Text('Cancel'),
+                                          ),
+                                          ElevatedButton(
+                                            onPressed: () async {
+                                              final otp = otpController.text.trim();
+                                              final verified = await _apiService.verifyOtp(targetMobile, otp);
+                                              if (verified) {
+                                                Navigator.pop(context);
+                                                // Auto login after verification
+                                                final loginSuccess = await _apiService.login(targetMobile, password);
+                                                if (loginSuccess && mounted) {
+                                                  Navigator.pushReplacement(
+                                                    context,
+                                                    MaterialPageRoute(builder: (_) => const HomeScreen()),
+                                                  );
+                                                }
+                                              } else {
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  const SnackBar(content: Text('Invalid OTP')),
+                                                );
+                                              }
+                                            },
+                                            child: const Text('Verify'),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  } else {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('Sign up failed or user already exists')),
+                                    );
+                                  }
+                                } else {
+                                  // Login Flow
+                                  final success = await _apiService.login(targetMobile, password);
+                                  if (!mounted) return;
+                                  
+                                  if (success) {
+                                    Navigator.pushReplacement(
+                                      context,
+                                      MaterialPageRoute(builder: (_) => const HomeScreen()),
+                                    );
+                                  } else {
+                                    setState(() => isLoading = false);
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('Login failed - check credentials or verify account')),
+                                    );
+                                  }
                                 }
                               },
                         style: ElevatedButton.styleFrom(
