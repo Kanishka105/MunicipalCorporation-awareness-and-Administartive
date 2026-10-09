@@ -13,58 +13,7 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  UserRole _selectedRole = UserRole.citizen;
-  final _phoneController = TextEditingController(text: '+91 98765 43210');
-  final _nameController = TextEditingController(text: 'Aarav Sharma');
-  final _wardController = TextEditingController(text: 'DTU Ward 42');
-  final _unitController = TextEditingController(text: 'Unit #3');
-  final _otpController = TextEditingController(text: '420188');
-  bool _isOtpSent = false;
   bool _isLoading = false;
-
-  @override
-  void dispose() {
-    _phoneController.dispose();
-    _nameController.dispose();
-    _wardController.dispose();
-    _unitController.dispose();
-    _otpController.dispose();
-    super.dispose();
-  }
-
-  void _onRoleChanged(UserRole role) {
-    setState(() {
-      _selectedRole = role;
-      if (role == UserRole.citizen) {
-        _nameController.text = 'Aarav Sharma';
-        _phoneController.text = '+91 98765 43210';
-      } else if (role == UserRole.fieldOfficer) {
-        _nameController.text = 'Rajesh Kumar';
-        _phoneController.text = '+91 94123 78901';
-      } else {
-        _nameController.text = 'Sunita Verma';
-        _phoneController.text = '+91 98111 22334';
-      }
-    });
-  }
-
-  void _sendOtp() async {
-    setState(() => _isLoading = true);
-    await Future.delayed(const Duration(milliseconds: 600));
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-        _isOtpSent = true;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: CivicColors.mintDark,
-          content: Text('📱 OTP sent to ${_phoneController.text.trim()} (Auto-filled: 420188)'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    }
-  }
 
   void _submitLogin() async {
     setState(() => _isLoading = true);
@@ -73,10 +22,9 @@ class _LoginScreenState extends State<LoginScreen> {
     if (mounted) {
       final state = context.read<CivicAppState>();
       await state.loginAs(
-        role: _selectedRole,
-        name: _nameController.text.trim(),
-        phone: _phoneController.text.trim(),
-        unitId: _selectedRole == UserRole.fieldOfficer ? _unitController.text.trim() : null,
+        role: UserRole.citizen,
+        name: 'Priya Sharma',
+        phone: '+91 9845012384',
       );
 
       if (!mounted) return;
@@ -95,7 +43,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? CivicColors.bgDark : const Color(0xFFF9FAFB), // light blue-ish white
+      backgroundColor: isDark ? CivicColors.bgDark : const Color(0xFFF9FAFB),
       body: SafeArea(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
@@ -159,26 +107,17 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             child: const Text(
                               'EN',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.white,
-                              ),
+                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.white),
                             ),
                           ),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
+                            decoration: const BoxDecoration(
                               color: Colors.transparent,
-                              borderRadius: BorderRadius.circular(20),
                             ),
-                            child: Text(
+                            child: const Text(
                               'हि',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800,
-                                color: CivicColors.textSecondaryLight,
-                              ),
+                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: CivicColors.textSecondaryLight),
                             ),
                           ),
                         ],
@@ -191,22 +130,22 @@ class _LoginScreenState extends State<LoginScreen> {
               // 2. Banner
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 16),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(
-                  color: isDark ? CivicColors.cardSurfaceDark : const Color(0xFFEEF2FF),
+                  color: isDark ? CivicColors.cardSurfaceDark : const Color(0xFFEEF2FF), // indigo-50
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.verified_user_outlined, size: 16, color: CivicColors.primary),
+                    const Icon(Icons.security_outlined, size: 16, color: CivicColors.primaryDark), // emerald-900
                     const SizedBox(width: 8),
-                    const Expanded(
+                    Expanded(
                       child: Text(
                         'Ministry of Housing & Urban Affairs • BBMP Smart Civic Initiative',
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
-                          color: CivicColors.textPrimaryLight,
+                          color: isDark ? Colors.white : const Color(0xFF1E293B),
                         ),
                       ),
                     ),
@@ -218,29 +157,29 @@ class _LoginScreenState extends State<LoginScreen> {
 
               // 3. Logo & Title
               Stack(
-                clipBehavior: Clip.none,
+                alignment: Alignment.topRight,
                 children: [
                   Container(
-                    width: 64,
-                    height: 64,
+                    width: 70,
+                    height: 70,
                     decoration: BoxDecoration(
                       color: CivicColors.primary,
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: const Center(
-                      child: Icon(Icons.local_florist, color: Colors.white, size: 32),
+                      child: Icon(Icons.local_florist_rounded, color: Colors.white, size: 36),
                     ),
                   ),
                   Positioned(
                     top: -4,
                     right: -4,
                     child: Container(
-                      padding: const EdgeInsets.all(2),
+                      padding: const EdgeInsets.all(4),
                       decoration: const BoxDecoration(
-                        color: Color(0xFFF59E0B),
+                        color: Color(0xFFF59E0B), // amber-500
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.check, color: Colors.white, size: 10),
+                      child: const Icon(Icons.arrow_back_ios_new, size: 8, color: Colors.white), // arbitrary icon for orange badge
                     ),
                   ),
                 ],
@@ -255,16 +194,16 @@ class _LoginScreenState extends State<LoginScreen> {
                   letterSpacing: -0.5,
                 ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 4),
               const Text(
                 'Report. Track. Clean.',
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: 14,
                   fontWeight: FontWeight.w800,
-                  color: CivicColors.primaryDark,
+                  color: CivicColors.primary,
                 ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 4),
               const Text(
                 'रिपोर्ट करें • ट्रैक करें • स्वच्छ बनाएं',
                 style: TextStyle(
@@ -274,49 +213,50 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 32),
 
-              // 4. Login Card
+              // 4. Login Box
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 16),
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   color: isDark ? CivicColors.cardDark : Colors.white,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.04),
-                      blurRadius: 20,
-                      offset: const Offset(0, 10),
+                      blurRadius: 24,
+                      offset: const Offset(0, 8),
                     ),
                   ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Title Row
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
+                        const Text(
                           'Citizen Login',
                           style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            color: isDark ? Colors.white : CivicColors.textPrimaryLight,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w900,
+                            color: Color(0xFF0F172A),
                           ),
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFD1FAE5),
-                            borderRadius: BorderRadius.circular(20),
+                            color: const Color(0xFFD1FAE5), // emerald-100
+                            borderRadius: BorderRadius.circular(16),
                           ),
                           child: const Text(
                             'OTP Verified',
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w800,
-                              color: Color(0xFF065F46),
+                              color: Color(0xFF065F46), // emerald-800
                             ),
                           ),
                         ),
@@ -327,99 +267,86 @@ class _LoginScreenState extends State<LoginScreen> {
                       'नागरिक प्रवेश • Fast, passwordless entry',
                       style: TextStyle(
                         fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: CivicColors.textSecondaryLight,
+                        fontWeight: FontWeight.w700,
+                        color: CivicColors.textPrimaryLight,
                       ),
                     ),
+
                     const SizedBox(height: 20),
+
+                    // Phone Input
                     const Text(
                       'Registered Mobile Number *',
                       style: TextStyle(
-                        fontSize: 11.5,
+                        fontSize: 11,
                         fontWeight: FontWeight.w700,
-                        color: CivicColors.textPrimaryLight,
+                        color: Color(0xFF0F172A),
                       ),
                     ),
                     const SizedBox(height: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                       decoration: BoxDecoration(
-                        color: isDark ? CivicColors.cardSurfaceDark : const Color(0xFFF8FAFC),
+                        color: const Color(0xFFF8FAFC), // slate-50
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                        border: Border.all(color: const Color(0xFFE2E8F0)), // slate-200
                       ),
                       child: Row(
                         children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(6),
-                              border: Border.all(color: const Color(0xFFE2E8F0)),
-                            ),
-                            child: const Text('🇮🇳 +91', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
-                          ),
+                          const Text('🇮🇳 +91', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
                           const SizedBox(width: 12),
                           const Expanded(
                             child: Text(
                               '9845012384',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: CivicColors.textPrimaryLight,
-                                letterSpacing: 1.5,
-                              ),
+                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, letterSpacing: 1),
                             ),
                           ),
-                          const Icon(Icons.edit_outlined, size: 16, color: CivicColors.textSecondaryLight),
+                          const Icon(Icons.edit_outlined, size: 18, color: CivicColors.textSecondaryLight),
                         ],
                       ),
                     ),
+
                     const SizedBox(height: 8),
+
+                    // Linkage detected
                     Row(
                       children: const [
                         Icon(Icons.check_circle_outline, size: 14, color: CivicColors.primary),
-                        SizedBox(width: 4),
+                        SizedBox(width: 6),
                         Text(
                           'Aadhaar/Ward linkage auto-detected',
                           style: TextStyle(
-                            fontSize: 10.5,
+                            fontSize: 11,
                             fontWeight: FontWeight.w700,
                             color: CivicColors.textPrimaryLight,
                           ),
                         ),
                       ],
                     ),
+
                     const SizedBox(height: 16),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: const [
                         Text(
                           'SMS sent to +91 98450 •••84',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: CivicColors.textSecondaryLight,
-                          ),
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: CivicColors.textSecondaryLight),
                         ),
                         Text(
                           'Change',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: CivicColors.primaryDark,
-                          ),
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: CivicColors.primary),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 12),
 
                     // OTP Box
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF8FAFF),
+                        color: const Color(0xFFF8FAFC),
                         borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFEEF2FF)),
                       ),
                       child: Column(
                         children: [
@@ -428,11 +355,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             children: [
                               const Text(
                                 'Enter 6-Digit Civic PIN / OTP',
-                                style: TextStyle(
-                                  fontSize: 11.5,
-                                  fontWeight: FontWeight.w700,
-                                  color: CivicColors.textPrimaryLight,
-                                ),
+                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
                               ),
                               Row(
                                 children: const [
@@ -440,26 +363,22 @@ class _LoginScreenState extends State<LoginScreen> {
                                   SizedBox(width: 4),
                                   Text(
                                     '24s remaining',
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w700,
-                                      color: CivicColors.primary,
-                                    ),
+                                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: CivicColors.primary),
                                   ),
                                 ],
                               ),
                             ],
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 12),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               _buildOtpBox('5'),
                               _buildOtpBox('8'),
                               _buildOtpBox('2'),
-                              _buildOtpBox('•', isDot: true),
-                              _buildOtpBox('•', isDot: true),
-                              _buildOtpBox('•', isDot: true),
+                              _buildOtpBox('•'),
+                              _buildOtpBox('•'),
+                              _buildOtpBox('•'),
                             ],
                           ),
                           const SizedBox(height: 16),
@@ -468,19 +387,11 @@ class _LoginScreenState extends State<LoginScreen> {
                             children: const [
                               Text(
                                 'Didn\'t receive code?',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: CivicColors.textSecondaryLight,
-                                ),
+                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: CivicColors.textSecondaryLight),
                               ),
                               Text(
                                 'Resend OTP in 24s',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: CivicColors.textSecondaryLight,
-                                ),
+                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: CivicColors.textSecondaryLight),
                               ),
                             ],
                           ),
@@ -492,102 +403,54 @@ class _LoginScreenState extends State<LoginScreen> {
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: CivicColors.primary,
                                 foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                 elevation: 0,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                               ),
-                              onPressed: _submitLogin,
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: const [
-                                  Text(
-                                    'Verify & Continue / सत्यापन करें',
-                                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
-                                  ),
-                                  SizedBox(width: 6),
-                                  Icon(Icons.arrow_forward, size: 16),
-                                ],
-                              ),
+                              onPressed: _isLoading ? null : _submitLogin,
+                              child: _isLoading
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                    )
+                                  : Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: const [
+                                        Text(
+                                          'Verify & Continue / सत्यापन करें',
+                                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
+                                        ),
+                                        SizedBox(width: 8),
+                                        Icon(Icons.arrow_forward, size: 16),
+                                      ],
+                                    ),
                             ),
                           ),
                         ],
                       ),
                     ),
-                  ],
-                ),
-              ),
 
-              const SizedBox(height: 20),
-
-              // Info box below card
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFD1FAE5),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.shield_outlined, size: 14, color: CivicColors.primary),
-                    ),
-                    const SizedBox(width: 12),
-                    const Expanded(
-                      child: Text(
-                        'Fast login without password. Verified with Aadhaar & Mobile linked civic voter registration records.',
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w500,
-                          color: CivicColors.textPrimaryLight,
-                          height: 1.4,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 32),
-
-              // Contact Pill
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 32),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEEF2FF),
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFFFE4E6),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.call, size: 16, color: Color(0xFFE11D48)),
-                    ),
-                    const SizedBox(width: 12),
-                    Column(
+                    const SizedBox(height: 24),
+                    Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        Text(
-                          'Toll-free 1913 Swachhatha Sahayata',
-                          style: TextStyle(
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w800,
-                            color: CivicColors.textPrimaryLight,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFD1FAE5), // emerald-100
+                            shape: BoxShape.circle,
                           ),
+                          child: const Icon(Icons.security_outlined, size: 14, color: CivicColors.primary),
                         ),
-                        SizedBox(height: 2),
-                        Text(
-                          '24x7 Municipal Emergency Desk',
-                          style: TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w600,
-                            color: CivicColors.textSecondaryLight,
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Text(
+                            'Fast login without password. Verified with Aadhaar & Mobile linked civic voter registration records.',
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              color: CivicColors.textPrimaryLight,
+                              height: 1.4,
+                            ),
                           ),
                         ),
                       ],
@@ -597,24 +460,63 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
 
               const SizedBox(height: 24),
-
+              
+              // Bottom Helpline Pill
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEEF2FF), // indigo-50
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFFFE4E6), // pink-100
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.call_outlined, size: 16, color: Color(0xFFE11D48)), // rose-600
+                    ),
+                    const SizedBox(width: 12),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: const [
+                        Text(
+                          'Toll-free 1913 Swachhatha Sahayata',
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+                        ),
+                        Text(
+                          '24x7 Municipal Emergency Desk',
+                          style: TextStyle(fontSize: 9, color: CivicColors.textSecondaryLight),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              
+              const SizedBox(height: 24),
               // Footer
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: const [
                   Icon(Icons.lock_outline, size: 12, color: CivicColors.textSecondaryLight),
                   SizedBox(width: 4),
-                  Text(
-                    '256-bit Encrypted   •   BBMP East • Ward 142   •   Privacy',
-                    style: TextStyle(
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.w600,
-                      color: CivicColors.textSecondaryLight,
-                    ),
-                  ),
+                  Text('256-bit Encrypted', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: CivicColors.textSecondaryLight)),
+                  SizedBox(width: 8),
+                  Text('•', style: TextStyle(fontSize: 10, color: CivicColors.textSecondaryLight)),
+                  SizedBox(width: 8),
+                  Text('BBMP East • Ward 142', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: CivicColors.textSecondaryLight)),
+                  SizedBox(width: 8),
+                  Text('•', style: TextStyle(fontSize: 10, color: CivicColors.textSecondaryLight)),
+                  SizedBox(width: 8),
+                  Text('Privacy', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: CivicColors.textSecondaryLight)),
                 ],
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 32),
             ],
           ),
         ),
@@ -622,28 +524,22 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildOtpBox(String char, {bool isDot = false}) {
+  Widget _buildOtpBox(String digit) {
     return Container(
-      width: 42,
+      width: 40,
       height: 48,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(8),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       child: Center(
         child: Text(
-          char,
+          digit,
           style: TextStyle(
-            fontSize: isDot ? 24 : 20,
-            fontWeight: FontWeight.w700,
-            color: isDot ? const Color(0xFF94A3B8) : const Color(0xFF0F172A),
+            fontSize: 20,
+            fontWeight: FontWeight.w900,
+            color: digit == '•' ? const Color(0xFF94A3B8) : const Color(0xFF047857), // emerald-700
           ),
         ),
       ),

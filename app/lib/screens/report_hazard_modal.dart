@@ -1,253 +1,276 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../providers/civic_app_state.dart';
 import '../theme/app_theme.dart';
 
-class ReportHazardModal extends StatefulWidget {
+class ReportHazardModal extends StatelessWidget {
   const ReportHazardModal({super.key});
-
-  @override
-  State<ReportHazardModal> createState() => _ReportHazardModalState();
-}
-
-class _ReportHazardModalState extends State<ReportHazardModal> {
-  final _titleController = TextEditingController();
-  final _descController = TextEditingController();
-  String _selectedCategory = 'Overflowing Municipal Bins';
-  String _locationText = 'DTU North Gate, Sector 17 Rohini (28.7499° N, 77.1172° E)';
-  bool _isNearSensitiveZone = true;
-  bool _isAiScanning = false;
-  Map<String, dynamic>? _submissionResult;
-
-  final List<String> _categories = [
-    'Overflowing Municipal Bins',
-    'Open Garbage Dumps & Litter',
-    'Waste Burning & Smoke Detection',
-    'Stormwater Drain Silt & Blockage',
-    'Construction & Demolition Debris',
-    'Cracked Manhole / Road Cave-in',
-  ];
-
-  @override
-  void dispose() {
-    _titleController.dispose();
-    _descController.dispose();
-    super.dispose();
-  }
-
-  void _submitReport() async {
-    final title = _titleController.text.trim().isNotEmpty
-        ? _titleController.text.trim()
-        : 'Reported Civic Hazard - ${_selectedCategory.split(' & ').first}';
-    final desc = _descController.text.trim().isNotEmpty
-        ? _descController.text.trim()
-        : 'Live camera EXIF telemetry recorded. Proximity to Dr. BSA Hospital approach zone.';
-
-    setState(() {
-      _isAiScanning = true;
-    });
-
-    await Future.delayed(const Duration(milliseconds: 1100));
-
-    if (mounted) {
-      final state = context.read<CivicAppState>();
-      final result = await state.submitNewHazardReport(
-        title: title,
-        description: desc,
-        category: _selectedCategory,
-        locationTag: _locationText.split(' (').first,
-        isNearHospitalOrSchool: _isNearSensitiveZone,
-      );
-
-      setState(() {
-        _isAiScanning = false;
-        _submissionResult = result;
-      });
-
-      await Future.delayed(const Duration(milliseconds: 1600));
-      if (mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            backgroundColor: CivicColors.mintDark,
-            content: Text(result['message'] as String),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.9,
-      decoration: BoxDecoration(
-        color: isDark ? CivicColors.cardDark : Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      padding: const EdgeInsets.all(20),
-      child: _submissionResult != null
-          ? Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 70,
-                    height: 70,
-                    decoration: const BoxDecoration(
-                      color: CivicColors.mintBadgeBg,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.check, color: CivicColors.mintDark, size: 40),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    _submissionResult!['isDuplicateMerged'] == true
-                        ? 'Proximity Duplicate Merged'
-                        : 'Live Report Dispatched',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: isDark ? Colors.white : CivicColors.textPrimaryLight,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _submissionResult!['message'] as String,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: isDark ? CivicColors.textSecondaryDark : CivicColors.textSecondaryLight,
-                    ),
-                  ),
-                ],
-              ),
-            )
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 44,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade400,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 14),
-
-                // Header
-                Row(
+    return Scaffold(
+      backgroundColor: isDark ? CivicColors.bgDark : const Color(0xFFF9FAFB),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 1. Top Custom App Bar
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Row(
                       children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: CivicColors.primary.withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Icon(Icons.videocam, color: CivicColors.primary, size: 20),
+                        GestureDetector(
+                          onTap: () => Navigator.pop(context),
+                          child: const Icon(Icons.arrow_back, size: 20),
                         ),
-                        const SizedBox(width: 10),
+                        const SizedBox(width: 8),
+                        Container(
+                          width: 16,
+                          height: 16,
+                          decoration: const BoxDecoration(
+                            color: CivicColors.primary,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Center(
+                            child: Icon(Icons.eco, color: Colors.white, size: 10),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Live-Camera Citizen Report',
+                              'Report Grieva...',
                               style: TextStyle(
-                                fontSize: 16,
+                                fontSize: 14,
                                 fontWeight: FontWeight.w800,
                                 color: isDark ? Colors.white : CivicColors.textPrimaryLight,
                               ),
                             ),
-                            Text(
-                              'EXIF Signed • Gallery Upload Blocked',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: isDark ? CivicColors.textSecondaryDark : CivicColors.textSecondaryLight,
-                              ),
+                            Row(
+                              children: [
+                                Container(
+                                  width: 6,
+                                  height: 6,
+                                  decoration: const BoxDecoration(
+                                    color: CivicColors.primary,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Ward Active',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    color: isDark ? CivicColors.textPrimaryDark : CivicColors.textPrimaryLight,
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
                       ],
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.pop(context),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: BoxDecoration(
+                            color: isDark ? CivicColors.cardSurfaceDark : const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: CivicColors.primary,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: const Text('EN', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white)),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                                decoration: const BoxDecoration(color: Colors.transparent),
+                                child: Text('हि', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: CivicColors.textSecondaryLight)),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFFFE4E6),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.diamond_outlined, color: Color(0xFFE11D48), size: 16),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: const BoxDecoration(
+                            color: CivicColors.primary,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.person, color: Colors.white, size: 16),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-                const Divider(),
-                const SizedBox(height: 4),
+              ),
 
-                Expanded(
-                  child: SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+              // 2. Banner
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: const [
+                        Icon(Icons.gps_fixed, size: 14, color: CivicColors.primaryDark),
+                        SizedBox(width: 4),
+                        Text(
+                          'Ward 142 • Indiranagar, BBMP East',
+                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF1E293B)),
+                        ),
+                      ],
+                    ),
+                    Row(
                       children: [
-                        // Live-camera Viewfinder
                         Container(
-                          height: 170,
-                          width: double.infinity,
+                          width: 6,
+                          height: 6,
+                          decoration: const BoxDecoration(color: Color(0xFF047857), shape: BoxShape.circle), // emerald-700
+                        ),
+                        const SizedBox(width: 4),
+                        const Text(
+                          'AI VISION READY',
+                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF065F46)), // emerald-800
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              // 3. Camera View
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                height: 380,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Image.asset(
+                        'overflowing_dumpster_1791533637321.jpg',
+                        fit: BoxFit.cover,
+                      ),
+                      // Top Left Overlay
+                      Positioned(
+                        top: 16,
+                        left: 16,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(14),
-                            image: const DecorationImage(
-                              image: NetworkImage(
-                                'https://images.unsplash.com/photo-1605600659908-0ef719419d41?auto=format&fit=crop&w=800&q=80',
-                              ),
-                              fit: BoxFit.cover,
-                            ),
+                            color: const Color(0xFF1E293B).withOpacity(0.8), // slate-800
+                            borderRadius: BorderRadius.circular(16),
                           ),
-                          child: Stack(
+                          child: Row(
                             children: [
                               Container(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(14),
-                                  color: Colors.black.withOpacity(0.3),
-                                ),
+                                width: 6,
+                                height: 6,
+                                decoration: const BoxDecoration(color: Color(0xFF6EE7B7), shape: BoxShape.circle),
                               ),
-                              Positioned(
-                                top: 10,
-                                left: 10,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                  decoration: BoxDecoration(
-                                    color: CivicColors.urgentRed,
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: const Text(
-                                    '• LIVE CAMERA SENSOR ONLY',
-                                    style: TextStyle(color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.w700),
-                                  ),
-                                ),
+                              const SizedBox(width: 6),
+                              const Text(
+                                '12.9716° N, 77.5946° E • ±8m Precision',
+                                style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700, fontFamily: 'monospace'),
                               ),
-                              Positioned(
-                                bottom: 10,
-                                left: 10,
-                                right: 10,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                  decoration: BoxDecoration(
-                                    color: Colors.black.withOpacity(0.75),
-                                    borderRadius: BorderRadius.circular(8),
+                            ],
+                          ),
+                        ),
+                      ),
+                      // Top Right Lightning
+                      Positioned(
+                        top: 16,
+                        right: 16,
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1E293B).withOpacity(0.8),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.flash_off, color: Colors.white, size: 16),
+                        ),
+                      ),
+                      // AI Box Center
+                      Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF047857), // emerald-700
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: const [
+                                  Icon(Icons.auto_awesome, color: Colors.white, size: 12),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    'AI Match: 96% Overflowing',
+                                    style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w800),
                                   ),
-                                  child: Row(
-                                    children: const [
-                                      Icon(Icons.lock, color: CivicColors.mint, size: 14),
-                                      SizedBox(width: 6),
-                                      Expanded(
-                                        child: Text(
-                                          'EXIF pHash Lock (28.7499, 77.1172) • Gallery Blocked',
-                                          style: TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w500),
-                                        ),
-                                      ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Container(
+                              width: 180,
+                              height: 120,
+                              decoration: BoxDecoration(
+                                border: Border.all(color: const Color(0xFF6EE7B7), width: 3), // emerald-300
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Live Photo Mandate Banner
+                      Positioned(
+                        bottom: 16,
+                        left: 16,
+                        right: 16,
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.95),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: const [
+                              Icon(Icons.shield_outlined, color: Color(0xFFD97706), size: 16), // amber-600
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: Text.rich(
+                                  TextSpan(
+                                    children: [
+                                      TextSpan(text: 'Live photo mandate: ', style: TextStyle(fontWeight: FontWeight.w800, color: Color(0xFF92400E), fontSize: 10)),
+                                      TextSpan(text: 'Municipal policy locks camera stream. File uploads disabled to prevent spoofing.', style: TextStyle(color: Color(0xFF0F172A), fontSize: 10, fontWeight: FontWeight.w600)),
                                     ],
                                   ),
                                 ),
@@ -255,189 +278,252 @@ class _ReportHazardModalState extends State<ReportHazardModal> {
                             ],
                           ),
                         ),
-                        const SizedBox(height: 14),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
 
-                        // Sensitive Zone Booster
-                        Container(
-                          padding: const EdgeInsets.all(10),
+              // 4. Action Buttons (Camera)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFA7F3D0), // emerald-200
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: const [
+                            Icon(Icons.qr_code_scanner, color: Color(0xFF065F46), size: 16),
+                            SizedBox(width: 8),
+                            Text('Scan Bin QR\nक्यूआर स्कैन', textAlign: TextAlign.center, style: TextStyle(color: Color(0xFF065F46), fontSize: 10, fontWeight: FontWeight.w800)),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Container(
+                      width: 70,
+                      height: 70,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: CivicColors.primary, width: 4),
+                      ),
+                      child: Center(
+                        child: Container(
+                          width: 52,
+                          height: 52,
                           decoration: BoxDecoration(
-                            color: isDark ? CivicColors.cardSurfaceDark : const Color(0xFFF0FDF4),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: isDark ? CivicColors.borderDark : const Color(0xFFDCFCE7),
-                            ),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: CivicColors.primary, width: 2),
+                          ),
+                          child: const Icon(Icons.camera_alt_outlined, color: CivicColors.primary, size: 28),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEEF2FF), // indigo-50
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: const [
+                            Icon(Icons.autorenew, color: Color(0xFF1E1B4B), size: 18),
+                            SizedBox(width: 8),
+                            Text('Retake\nफिर से लें', textAlign: TextAlign.center, style: TextStyle(color: Color(0xFF1E1B4B), fontSize: 10, fontWeight: FontWeight.w800)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // 5. Select Category
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: const [
+                        Text('SELECT CATEGORY / श्रेणी चुनें', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF0F172A))),
+                        Text('AI Confirmed', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: CivicColors.primaryDark)),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: CivicColors.primaryDark,
+                            borderRadius: BorderRadius.circular(20),
                           ),
                           child: Row(
-                            children: [
-                              Checkbox(
-                                value: _isNearSensitiveZone,
-                                activeColor: CivicColors.primary,
-                                onChanged: (val) {
-                                  if (val != null) setState(() => _isNearSensitiveZone = val);
-                                },
-                              ),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text(
-                                      'Near Hospital / School / Water Body',
-                                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-                                    ),
-                                    Text(
-                                      'Boosts AI Severity Score (+20 pts) for urgent priority triage.',
-                                      style: TextStyle(fontSize: 10.5, color: isDark ? Colors.white60 : Colors.black54),
-                                    ),
-                                  ],
-                                ),
-                              ),
+                            children: const [
+                              Icon(Icons.delete_outline, color: Colors.white, size: 14),
+                              SizedBox(width: 6),
+                              Text('Overflowing Bin (कूड़ादान)', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700)),
                             ],
                           ),
                         ),
-                        const SizedBox(height: 14),
-
-                        // Category Dropdown
-                        Text(
-                          'AI Detected Hazard Category',
-                          style: TextStyle(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w600,
-                            color: isDark ? Colors.white70 : CivicColors.textPrimaryLight,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
+                        const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                           decoration: BoxDecoration(
-                            color: isDark ? CivicColors.cardSurfaceDark : CivicColors.bgLight,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: isDark ? CivicColors.borderDark : CivicColors.borderLight),
+                            color: const Color(0xFFEEF2FF), // indigo-50
+                            borderRadius: BorderRadius.circular(20),
                           ),
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<String>(
-                              value: _selectedCategory,
-                              isExpanded: true,
-                              dropdownColor: isDark ? CivicColors.cardDark : Colors.white,
-                              items: _categories.map((c) {
-                                return DropdownMenuItem(
-                                  value: c,
-                                  child: Text(
-                                    c,
-                                    style: TextStyle(
-                                      fontSize: 12.5,
-                                      color: isDark ? Colors.white : CivicColors.textPrimaryLight,
-                                    ),
-                                  ),
-                                );
-                              }).toList(),
-                              onChanged: (val) {
-                                if (val != null) setState(() => _selectedCategory = val);
-                              },
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-
-                        // Title
-                        Text(
-                          'Landmark / Proximity Tag',
-                          style: TextStyle(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w600,
-                            color: isDark ? Colors.white70 : CivicColors.textPrimaryLight,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        TextField(
-                          controller: _titleController,
-                          style: TextStyle(color: isDark ? Colors.white : CivicColors.textPrimaryLight, fontSize: 13.5),
-                          decoration: InputDecoration(
-                            hintText: 'e.g. DTU North Gate / Metro Pillar 24',
-                            filled: true,
-                            fillColor: isDark ? CivicColors.cardSurfaceDark : CivicColors.bgLight,
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide(color: isDark ? CivicColors.borderDark : CivicColors.borderLight),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-
-                        // Description
-                        Text(
-                          'Observations & Public Risk Notes',
-                          style: TextStyle(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w600,
-                            color: isDark ? Colors.white70 : CivicColors.textPrimaryLight,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        TextField(
-                          controller: _descController,
-                          maxLines: 2,
-                          style: TextStyle(color: isDark ? Colors.white : CivicColors.textPrimaryLight, fontSize: 13),
-                          decoration: InputDecoration(
-                            hintText: 'Describe public blockage, odor, or safety hazard...',
-                            filled: true,
-                            fillColor: isDark ? CivicColors.cardSurfaceDark : CivicColors.bgLight,
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide(color: isDark ? CivicColors.borderDark : CivicColors.borderLight),
-                            ),
+                          child: Row(
+                            children: const [
+                              Icon(Icons.auto_awesome, color: Color(0xFF1E1B4B), size: 14),
+                              SizedBox(width: 6),
+                              Text('Garbage Dump (कचरा ढेर)', style: TextStyle(color: Color(0xFF1E1B4B), fontSize: 10, fontWeight: FontWeight.w700)),
+                            ],
                           ),
                         ),
                       ],
                     ),
-                  ),
+                  ],
                 ),
+              ),
 
-                const SizedBox(height: 12),
+              const SizedBox(height: 24),
 
-                // Submit Button
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: CivicColors.primary,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      elevation: 2,
-                    ),
-                    onPressed: _isAiScanning ? null : _submitReport,
-                    child: _isAiScanning
-                        ? const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+              // 6. Landmark Details
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('LANDMARK DETAILS / स्थल का विवरण', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF0F172A))),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Add landmark details (e.g. Near Apollo Pharmacy, opposite park gate #2)...',
+                            style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                          ),
+                          const SizedBox(height: 24),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: const [
+                              Row(
+                                children: [
+                                  Icon(Icons.signpost_outlined, size: 12, color: Color(0xFF0F172A)),
+                                  SizedBox(width: 4),
+                                  Text('Helps sanitation marshals locate spot fast', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: Color(0xFF0F172A))),
+                                ],
                               ),
-                              SizedBox(width: 10),
-                              Text('Running Duplicate Merge Check & pHash EXIF...'),
-                            ],
-                          )
-                        : const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.send_rounded, size: 18),
-                              SizedBox(width: 8),
-                              Text(
-                                'Dispatch Live Report (+25 KP)',
-                                style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700),
-                              ),
+                              Text('0/140', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: Color(0xFF475569))),
                             ],
                           ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // 7. Service Level Guarantee
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9), // slate-100
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFA7F3D0), // emerald-200
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(Icons.check_circle_outline, color: Color(0xFF065F46), size: 18),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: const [
+                          Text('Service Level Guarantee', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF0F172A))),
+                          Text('SLA: 4-hour cleanup target', style: TextStyle(fontSize: 11, color: Color(0xFF475569))),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE2E8F0), // slate-200
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: const Text('Zone 4', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF0F172A))),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // 8. Submit Button
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: CivicColors.primaryDark,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    icon: const Icon(Icons.send_outlined, size: 16),
+                    label: const Text(
+                      'Submit Report / रिपोर्ट दर्ज करें',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
+                    ),
+                    onPressed: () {},
                   ),
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 8),
+              const Center(
+                child: Text(
+                  'Ward Inspector will acknowledge ticket within 15 minutes',
+                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF334155)),
+                ),
+              ),
+
+              const SizedBox(height: 32),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

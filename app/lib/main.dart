@@ -5,10 +5,8 @@ import 'theme/app_theme.dart';
 import 'widgets/top_header.dart';
 import 'widgets/bottom_nav_bar.dart';
 import 'screens/feed_screen.dart';
-import 'screens/tasks_screen.dart';
-import 'screens/copilot_screen.dart';
-import 'screens/analytics_screen.dart';
-import 'screens/executive_dashboard_screen.dart';
+import 'screens/rewards_screen.dart';
+import 'screens/placeholders.dart';
 import 'screens/login_screen.dart';
 
 void main() {
@@ -61,15 +59,13 @@ class MainNavigationShell extends StatelessWidget {
     }
 
     return Scaffold(
-      appBar: const TopHeader(),
       body: IndexedStack(
         index: state.currentNavIndex,
         children: const [
           FeedScreen(),
-          TasksScreen(),
-          CopilotScreen(),
-          AnalyticsScreen(),
-          ExecutiveDashboardScreen(),
+          MyReportsScreen(),
+          RewardsScreen(),
+          ProfileScreen(),
         ],
       ),
       bottomNavigationBar: const BottomNavBar(),

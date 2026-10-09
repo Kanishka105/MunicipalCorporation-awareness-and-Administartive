@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/civic_app_state.dart';
 import '../theme/app_theme.dart';
-import '../screens/report_hazard_modal.dart';
 
 class BottomNavBar extends StatelessWidget {
   const BottomNavBar({super.key});
@@ -34,86 +33,52 @@ class BottomNavBar extends StatelessWidget {
         top: false,
         child: Container(
           height: 64,
-          padding: const EdgeInsets.symmetric(horizontal: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // 1. Feed
+              // 1. Home
               _buildNavItem(
                 index: 0,
-                icon: Icons.article_outlined,
-                activeIcon: Icons.article_rounded,
-                label: state.tr('feedTab'),
+                icon: Icons.home_outlined,
+                activeIcon: Icons.home,
+                label: 'गृह', // Home
                 isSelected: currentIndex == 0,
                 isDark: isDark,
                 onTap: () => state.setNavIndex(0),
               ),
 
-              // 2. Tasks
+              // 2. My Reports
               _buildNavItem(
                 index: 1,
-                icon: Icons.checklist_rtl_outlined,
-                activeIcon: Icons.checklist_rtl_rounded,
-                label: state.tr('tasksTab'),
+                icon: Icons.assignment_outlined,
+                activeIcon: Icons.assignment,
+                label: 'मेरी शिकायतें', // My Reports
                 isSelected: currentIndex == 1,
                 isDark: isDark,
                 onTap: () => state.setNavIndex(1),
               ),
 
-              // 3. Center Camera Action Button
-              GestureDetector(
-                onTap: () {
-                  showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    backgroundColor: Colors.transparent,
-                    builder: (ctx) => const ReportHazardModal(),
-                  );
-                },
-                child: Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    gradient: CivicColors.primaryGradient,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: CivicColors.primary.withOpacity(0.4),
-                        blurRadius: 10,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                  child: const Center(
-                    child: Icon(
-                      Icons.camera_alt_rounded,
-                      color: Colors.white,
-                      size: 22,
-                    ),
-                  ),
-                ),
-              ),
-
-              // 4. Copilot
+              // 3. Rewards
               _buildNavItem(
                 index: 2,
-                icon: Icons.smart_toy_outlined,
-                activeIcon: Icons.smart_toy_rounded,
-                label: state.tr('copilotTab'),
+                icon: Icons.emoji_events_outlined,
+                activeIcon: Icons.emoji_events,
+                label: 'रिवॉर्ड्स', // Rewards
                 isSelected: currentIndex == 2,
                 isDark: isDark,
                 onTap: () => state.setNavIndex(2),
               ),
 
-              // 5. Executive Dashboard
+              // 4. Profile
               _buildNavItem(
-                index: 4,
-                icon: Icons.admin_panel_settings_outlined,
-                activeIcon: Icons.admin_panel_settings_rounded,
-                label: state.tr('dashboardTab'),
-                isSelected: currentIndex == 4,
+                index: 3,
+                icon: Icons.person_outline,
+                activeIcon: Icons.person,
+                label: 'प्रोफाइल', // Profile
+                isSelected: currentIndex == 3,
                 isDark: isDark,
-                onTap: () => state.setNavIndex(4),
+                onTap: () => state.setNavIndex(3),
               ),
             ],
           ),
@@ -131,35 +96,32 @@ class BottomNavBar extends StatelessWidget {
     required bool isDark,
     required VoidCallback onTap,
   }) {
-    final activeColor = CivicColors.primary;
-    final inactiveColor = isDark ? CivicColors.textSecondaryDark : CivicColors.textSecondaryLight;
+    final activeColor = CivicColors.primaryDark; // Use dark green for active tab
+    final inactiveColor = const Color(0xFF64748B); // slate-500
 
     return InkWell(
       onTap: onTap,
       splashColor: Colors.transparent,
       highlightColor: Colors.transparent,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              isSelected ? activeIcon : icon,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            isSelected ? activeIcon : icon,
+            color: isSelected ? activeColor : inactiveColor,
+            size: 24,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
               color: isSelected ? activeColor : inactiveColor,
-              size: 22,
             ),
-            const SizedBox(height: 3),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 10.5,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                color: isSelected ? activeColor : inactiveColor,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
