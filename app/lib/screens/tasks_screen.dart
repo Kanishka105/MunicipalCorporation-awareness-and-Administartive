@@ -467,6 +467,10 @@ class _TasksScreenState extends State<TasksScreen> {
                   Image.network(
                     task.originalProofUrl,
                     fit: BoxFit.cover,
+                    errorBuilder: (ctx, err, stack) => Container(
+                      color: Colors.grey.shade800,
+                      child: const Center(child: Icon(Icons.broken_image, color: Colors.white54)),
+                    ),
                   ),
 
                   // Bounding Box Rectangle Overlay
@@ -949,12 +953,12 @@ class _TasksScreenState extends State<TasksScreen> {
               onPressed: state.isSubmittingProof
                   ? null
                   : () async {
-                      final success = await state.submitResolutionProof();
-                      if (success && context.mounted) {
+                      final result = await state.submitResolutionProof();
+                      if (result['success'] == true && context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
+                          SnackBar(
                             backgroundColor: CivicColors.mintDark,
-                            content: Text('✅ Audit Passed! AI Diff: 98% Cleared. Ticket marked Resolved.'),
+                            content: Text(result['message'] as String),
                             behavior: SnackBarBehavior.floating,
                           ),
                         );
@@ -1101,7 +1105,14 @@ class _TasksScreenState extends State<TasksScreen> {
                         child: Stack(
                           fit: StackFit.expand,
                           children: [
-                            Image.network(task.beforeImageUrl, fit: BoxFit.cover),
+                            Image.network(
+                              task.beforeImageUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (ctx, err, stack) => Container(
+                                color: Colors.grey.shade800,
+                                child: const Icon(Icons.broken_image, color: Colors.white54, size: 20),
+                              ),
+                            ),
                             Positioned(
                               top: 6,
                               left: 6,
@@ -1146,7 +1157,14 @@ class _TasksScreenState extends State<TasksScreen> {
                         child: Stack(
                           fit: StackFit.expand,
                           children: [
-                            Image.network(task.afterImageUrl, fit: BoxFit.cover),
+                            Image.network(
+                              task.afterImageUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (ctx, err, stack) => Container(
+                                color: const Color(0xFF007A78),
+                                child: const Icon(Icons.check_circle_outline, color: Colors.white, size: 24),
+                              ),
+                            ),
                             Positioned(
                               top: 6,
                               left: 6,

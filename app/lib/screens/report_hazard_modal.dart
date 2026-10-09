@@ -13,18 +13,19 @@ class ReportHazardModal extends StatefulWidget {
 class _ReportHazardModalState extends State<ReportHazardModal> {
   final _titleController = TextEditingController();
   final _descController = TextEditingController();
-  String _selectedCategory = 'Solid Waste / Garbage Overflow';
-  final String _locationText = 'DTU North Gate, Sector 17 Rohini (28.7499° N, 77.1172° E)';
+  String _selectedCategory = 'Overflowing Municipal Bins';
+  String _locationText = 'DTU North Gate, Sector 17 Rohini (28.7499° N, 77.1172° E)';
+  bool _isNearSensitiveZone = true;
   bool _isAiScanning = false;
-  bool _isSubmitted = false;
+  Map<String, dynamic>? _submissionResult;
 
   final List<String> _categories = [
-    'Solid Waste / Garbage Overflow',
-    'Stormwater Drain Silt & Plastic Clogging',
+    'Overflowing Municipal Bins',
+    'Open Garbage Dumps & Litter',
+    'Waste Burning & Smoke Detection',
+    'Stormwater Drain Silt & Blockage',
+    'Construction & Demolition Debris',
     'Cracked Manhole / Road Cave-in',
-    'Broken Streetlight / Ballast Failure',
-    'Pot-hole / Road Surface Debris',
-    'Water Pipe Leakage / Contamination',
   ];
 
   @override
@@ -37,38 +38,39 @@ class _ReportHazardModalState extends State<ReportHazardModal> {
   void _submitReport() async {
     final title = _titleController.text.trim().isNotEmpty
         ? _titleController.text.trim()
-        : 'Reported Civic Hazard - ${_selectedCategory.split(' / ').first}';
+        : 'Reported Civic Hazard - ${_selectedCategory.split(' & ').first}';
     final desc = _descController.text.trim().isNotEmpty
         ? _descController.text.trim()
-        : 'Immediate municipal attention requested. AI pre-signed EXIF telemetry recorded.';
+        : 'Live camera EXIF telemetry recorded. Proximity to Dr. BSA Hospital approach zone.';
 
     setState(() {
       _isAiScanning = true;
     });
 
-    await Future.delayed(const Duration(milliseconds: 1000));
+    await Future.delayed(const Duration(milliseconds: 1100));
 
     if (mounted) {
       final state = context.read<CivicAppState>();
-      await state.submitNewHazardReport(
+      final result = await state.submitNewHazardReport(
         title: title,
         description: desc,
-        category: _selectedCategory.split(' / ').first,
+        category: _selectedCategory,
         locationTag: _locationText.split(' (').first,
+        isNearHospitalOrSchool: _isNearSensitiveZone,
       );
 
       setState(() {
         _isAiScanning = false;
-        _isSubmitted = true;
+        _submissionResult = result;
       });
 
-      await Future.delayed(const Duration(milliseconds: 1200));
+      await Future.delayed(const Duration(milliseconds: 1600));
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: CivicColors.mintDark,
-            content: const Text('🎉 Hazard reported successfully! +25 Karma Points added.'),
+            content: Text(result['message'] as String),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -81,13 +83,13 @@ class _ReportHazardModalState extends State<ReportHazardModal> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
-      height: MediaQuery.of(context).size.height * 0.88,
+      height: MediaQuery.of(context).size.height * 0.9,
       decoration: BoxDecoration(
         color: isDark ? CivicColors.cardDark : Colors.white,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       padding: const EdgeInsets.all(20),
-      child: _isSubmitted
+      child: _submissionResult != null
           ? Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -103,16 +105,18 @@ class _ReportHazardModalState extends State<ReportHazardModal> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Ticket Dispatched & Encrypted',
+                    _submissionResult!['isDuplicateMerged'] == true
+                        ? 'Proximity Duplicate Merged'
+                        : 'Live Report Dispatched',
                     style: TextStyle(
                       fontSize: 18,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w800,
                       color: isDark ? Colors.white : CivicColors.textPrimaryLight,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'AI Rekognition Dedup Passed (96.8% Confidence)\nAssigned to Ward 42 PWD Sanitation Squad.',
+                    _submissionResult!['message'] as String,
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 13,
@@ -125,7 +129,6 @@ class _ReportHazardModalState extends State<ReportHazardModal> {
           : Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Modal Handle bar
                 Center(
                   child: Container(
                     width: 44,
@@ -150,22 +153,22 @@ class _ReportHazardModalState extends State<ReportHazardModal> {
                             color: CivicColors.primary.withOpacity(0.12),
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: const Icon(Icons.camera_alt, color: CivicColors.primary, size: 20),
+                          child: const Icon(Icons.videocam, color: CivicColors.primary, size: 20),
                         ),
                         const SizedBox(width: 10),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Report Civic Hazard',
+                              'Live-Camera Citizen Report',
                               style: TextStyle(
-                                fontSize: 17,
-                                fontWeight: FontWeight.w700,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
                                 color: isDark ? Colors.white : CivicColors.textPrimaryLight,
                               ),
                             ),
                             Text(
-                              'AI Auto-Triage • Auto-GPS & S3 Pre-signed',
+                              'EXIF Signed • Gallery Upload Blocked',
                               style: TextStyle(
                                 fontSize: 11,
                                 color: isDark ? CivicColors.textSecondaryDark : CivicColors.textSecondaryLight,
@@ -182,16 +185,16 @@ class _ReportHazardModalState extends State<ReportHazardModal> {
                   ],
                 ),
                 const Divider(),
-                const SizedBox(height: 8),
+                const SizedBox(height: 4),
 
                 Expanded(
                   child: SingleChildScrollView(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Simulated Camera Live Viewfinder
+                        // Live-camera Viewfinder
                         Container(
-                          height: 180,
+                          height: 170,
                           width: double.infinity,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(14),
@@ -211,28 +214,28 @@ class _ReportHazardModalState extends State<ReportHazardModal> {
                                 ),
                               ),
                               Positioned(
-                                top: 12,
-                                left: 12,
+                                top: 10,
+                                left: 10,
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                   decoration: BoxDecoration(
                                     color: CivicColors.urgentRed,
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: const Text(
-                                    '• LIVE CAMERA SENSOR',
-                                    style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700),
+                                    '• LIVE CAMERA SENSOR ONLY',
+                                    style: TextStyle(color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.w700),
                                   ),
                                 ),
                               ),
                               Positioned(
-                                bottom: 12,
-                                left: 12,
-                                right: 12,
+                                bottom: 10,
+                                left: 10,
+                                right: 10,
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                   decoration: BoxDecoration(
-                                    color: Colors.black.withOpacity(0.7),
+                                    color: Colors.black.withOpacity(0.75),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Row(
@@ -241,8 +244,8 @@ class _ReportHazardModalState extends State<ReportHazardModal> {
                                       SizedBox(width: 6),
                                       Expanded(
                                         child: Text(
-                                          'GPS EXIF L1/L5 Tamper-Locked (±1.4m)',
-                                          style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w500),
+                                          'EXIF pHash Lock (28.7499, 77.1172) • Gallery Blocked',
+                                          style: TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w500),
                                         ),
                                       ),
                                     ],
@@ -252,13 +255,52 @@ class _ReportHazardModalState extends State<ReportHazardModal> {
                             ],
                           ),
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 14),
+
+                        // Sensitive Zone Booster
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: isDark ? CivicColors.cardSurfaceDark : const Color(0xFFF0FDF4),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isDark ? CivicColors.borderDark : const Color(0xFFDCFCE7),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Checkbox(
+                                value: _isNearSensitiveZone,
+                                activeColor: CivicColors.primary,
+                                onChanged: (val) {
+                                  if (val != null) setState(() => _isNearSensitiveZone = val);
+                                },
+                              ),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Near Hospital / School / Water Body',
+                                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                                    ),
+                                    Text(
+                                      'Boosts AI Severity Score (+20 pts) for urgent priority triage.',
+                                      style: TextStyle(fontSize: 10.5, color: isDark ? Colors.white60 : Colors.black54),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 14),
 
                         // Category Dropdown
                         Text(
-                          'Hazard Category',
+                          'AI Detected Hazard Category',
                           style: TextStyle(
-                            fontSize: 13,
+                            fontSize: 12.5,
                             fontWeight: FontWeight.w600,
                             color: isDark ? Colors.white70 : CivicColors.textPrimaryLight,
                           ),
@@ -282,7 +324,7 @@ class _ReportHazardModalState extends State<ReportHazardModal> {
                                   child: Text(
                                     c,
                                     style: TextStyle(
-                                      fontSize: 13,
+                                      fontSize: 12.5,
                                       color: isDark ? Colors.white : CivicColors.textPrimaryLight,
                                     ),
                                   ),
@@ -294,13 +336,13 @@ class _ReportHazardModalState extends State<ReportHazardModal> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 14),
+                        const SizedBox(height: 12),
 
                         // Title
                         Text(
-                          'Short Title / Landmark',
+                          'Landmark / Proximity Tag',
                           style: TextStyle(
-                            fontSize: 13,
+                            fontSize: 12.5,
                             fontWeight: FontWeight.w600,
                             color: isDark ? Colors.white70 : CivicColors.textPrimaryLight,
                           ),
@@ -308,33 +350,26 @@ class _ReportHazardModalState extends State<ReportHazardModal> {
                         const SizedBox(height: 6),
                         TextField(
                           controller: _titleController,
-                          style: TextStyle(color: isDark ? Colors.white : CivicColors.textPrimaryLight, fontSize: 14),
+                          style: TextStyle(color: isDark ? Colors.white : CivicColors.textPrimaryLight, fontSize: 13.5),
                           decoration: InputDecoration(
-                            hintText: 'e.g. Broken pavement near Metro Gate 2',
-                            hintStyle: TextStyle(
-                              fontSize: 13,
-                              color: isDark ? CivicColors.textMutedDark : CivicColors.textMutedLight,
-                            ),
+                            hintText: 'e.g. DTU North Gate / Metro Pillar 24',
                             filled: true,
                             fillColor: isDark ? CivicColors.cardSurfaceDark : CivicColors.bgLight,
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide(color: isDark ? CivicColors.borderDark : CivicColors.borderLight),
-                            ),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(10),
                               borderSide: BorderSide(color: isDark ? CivicColors.borderDark : CivicColors.borderLight),
                             ),
                           ),
                         ),
-                        const SizedBox(height: 14),
+                        const SizedBox(height: 12),
 
                         // Description
                         Text(
-                          'Observations & Severity Details',
+                          'Observations & Public Risk Notes',
                           style: TextStyle(
-                            fontSize: 13,
+                            fontSize: 12.5,
                             fontWeight: FontWeight.w600,
                             color: isDark ? Colors.white70 : CivicColors.textPrimaryLight,
                           ),
@@ -345,18 +380,11 @@ class _ReportHazardModalState extends State<ReportHazardModal> {
                           maxLines: 2,
                           style: TextStyle(color: isDark ? Colors.white : CivicColors.textPrimaryLight, fontSize: 13),
                           decoration: InputDecoration(
-                            hintText: 'Describe obstruction or safety risk to pedestrians...',
-                            hintStyle: TextStyle(
-                              fontSize: 13,
-                              color: isDark ? CivicColors.textMutedDark : CivicColors.textMutedLight,
-                            ),
+                            hintText: 'Describe public blockage, odor, or safety hazard...',
                             filled: true,
                             fillColor: isDark ? CivicColors.cardSurfaceDark : CivicColors.bgLight,
                             contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide(color: isDark ? CivicColors.borderDark : CivicColors.borderLight),
-                            ),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(10),
                               borderSide: BorderSide(color: isDark ? CivicColors.borderDark : CivicColors.borderLight),
@@ -392,7 +420,7 @@ class _ReportHazardModalState extends State<ReportHazardModal> {
                                 child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                               ),
                               SizedBox(width: 10),
-                              Text('Running AI Dedup & AWS S3 Upload...'),
+                              Text('Running Duplicate Merge Check & pHash EXIF...'),
                             ],
                           )
                         : const Row(
@@ -401,8 +429,8 @@ class _ReportHazardModalState extends State<ReportHazardModal> {
                               Icon(Icons.send_rounded, size: 18),
                               SizedBox(width: 8),
                               Text(
-                                'Dispatch Hazard (+25 KP)',
-                                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                                'Dispatch Live Report (+25 KP)',
+                                style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700),
                               ),
                             ],
                           ),

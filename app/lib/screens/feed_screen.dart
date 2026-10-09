@@ -6,6 +6,7 @@ import '../models/hazard_model.dart';
 import 'report_hazard_modal.dart';
 import 'qr_scanner_modal.dart';
 import 'redeem_karma_modal.dart';
+import 'suggest_fix_modal.dart';
 
 class FeedScreen extends StatelessWidget {
   const FeedScreen({super.key});
@@ -14,7 +15,6 @@ class FeedScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final state = context.watch<CivicAppState>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final user = state.currentUser;
     final activeSub = state.activeSubmission;
 
     return SingleChildScrollView(
@@ -23,12 +23,12 @@ class FeedScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. Citizen Profile / Hero Card with Karma Badge
+          // 1. Citizen Profile / Hero Card with Karma & Trust Badge
           _buildHeroProfileCard(context, state, isDark),
           const SizedBox(height: 16),
 
           // 2. Action Buttons Row (Report Civic Hazard & Scan QR)
-          _buildActionGrid(context, isDark),
+          _buildActionGrid(context, state, isDark),
           const SizedBox(height: 20),
 
           // 3. My Active Submission Section
@@ -50,6 +50,7 @@ class FeedScreen extends StatelessWidget {
     final user = state.currentUser;
     final karmaPoints = user?.karmaPoints ?? 340;
     final streak = user?.streakDays ?? 7;
+    final trustScore = user?.trustScore ?? 98.4;
 
     return Container(
       decoration: BoxDecoration(
@@ -100,7 +101,6 @@ class FeedScreen extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  // Blue/purple badge icon
                   Container(
                     width: 36,
                     height: 36,
@@ -114,7 +114,6 @@ class FeedScreen extends StatelessWidget {
                   ),
                   const SizedBox(width: 12),
 
-                  // Points & streak details
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -132,7 +131,7 @@ class FeedScreen extends StatelessWidget {
                             const SizedBox(width: 4),
                             Text(
                               'KP',
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
                                 color: CivicColors.primary,
@@ -151,7 +150,7 @@ class FeedScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'Redeemable for DTC Metro & Bus passes',
+                          'Trust: $trustScore% • Redeemable for DTC Metro passes',
                           style: TextStyle(
                             fontSize: 10.5,
                             color: isDark ? CivicColors.textSecondaryDark : CivicColors.textSecondaryLight,
@@ -209,10 +208,10 @@ class FeedScreen extends StatelessWidget {
   }
 
   // 2. Action Buttons Row (Report & QR Scan)
-  Widget _buildActionGrid(BuildContext context, bool isDark) {
+  Widget _buildActionGrid(BuildContext context, CivicAppState state, bool isDark) {
     return Row(
       children: [
-        // Left: Report Civic Hazard (Solid Gradient Blue/Purple)
+        // Left: Report Civic Hazard
         Expanded(
           child: GestureDetector(
             onTap: () {
@@ -241,7 +240,6 @@ class FeedScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Icon
                   Container(
                     width: 36,
                     height: 36,
@@ -253,22 +251,20 @@ class FeedScreen extends StatelessWidget {
                       child: Icon(Icons.camera_alt_outlined, color: Colors.white, size: 20),
                     ),
                   ),
-
-                  // Text content
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
+                    children: [
                       Text(
-                        'Report Civic\nHazard',
-                        style: TextStyle(
-                          fontSize: 15,
+                        state.tr('reportHazard'),
+                        style: const TextStyle(
+                          fontSize: 14.5,
                           fontWeight: FontWeight.w800,
                           color: Colors.white,
                           height: 1.15,
                         ),
                       ),
-                      SizedBox(height: 4),
-                      Text(
+                      const SizedBox(height: 4),
+                      const Text(
                         'AI Auto-Triage • Auto-\nGPS & S3 Pre-signed',
                         style: TextStyle(
                           fontSize: 9.5,
@@ -278,8 +274,6 @@ class FeedScreen extends StatelessWidget {
                       ),
                     ],
                   ),
-
-                  // Link
                   Row(
                     children: const [
                       Text(
@@ -301,7 +295,7 @@ class FeedScreen extends StatelessWidget {
         ),
         const SizedBox(width: 12),
 
-        // Right: Scan QR to Back Issue (White / Surface)
+        // Right: Scan QR to Back Issue
         Expanded(
           child: GestureDetector(
             onTap: () {
@@ -333,7 +327,6 @@ class FeedScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Icon
                   Container(
                     width: 36,
                     height: 36,
@@ -345,15 +338,13 @@ class FeedScreen extends StatelessWidget {
                       child: Icon(Icons.qr_code_scanner, color: CivicColors.mintDark, size: 20),
                     ),
                   ),
-
-                  // Text content
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Scan QR to\nBack Issue',
+                        state.tr('scanQr'),
                         style: TextStyle(
-                          fontSize: 15,
+                          fontSize: 14.5,
                           fontWeight: FontWeight.w800,
                           color: isDark ? Colors.white : CivicColors.textPrimaryLight,
                           height: 1.15,
@@ -370,8 +361,6 @@ class FeedScreen extends StatelessWidget {
                       ),
                     ],
                   ),
-
-                  // Link
                   Row(
                     children: const [
                       Text(
@@ -400,7 +389,6 @@ class FeedScreen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Header
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -438,7 +426,6 @@ class FeedScreen extends StatelessWidget {
         ),
         const SizedBox(height: 10),
 
-        // Active Submission Card
         Container(
           decoration: BoxDecoration(
             color: isDark ? CivicColors.cardDark : Colors.white,
@@ -457,7 +444,6 @@ class FeedScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Title & Status Pill
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -519,9 +505,9 @@ class FeedScreen extends StatelessWidget {
                 ),
               ),
 
-              // 4-Step Horizontal Stepper
+              // 5-Step Horizontal Stepper (Reported -> Assigned -> In progress -> Resolved -> Verified)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 8),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -535,10 +521,10 @@ class FeedScreen extends StatelessWidget {
                     ),
                     _buildStepConnector(isCompleted: true),
                     _buildStepItem(
-                      icon: Icons.domain,
+                      icon: Icons.assignment_ind_outlined,
                       iconBg: const Color(0xFF007A78),
-                      title: 'AI Dedup',
-                      subtitle: 'Verified',
+                      title: 'Assigned',
+                      subtitle: 'Unit #12',
                       subtitleColor: const Color(0xFF007A78),
                       isCompleted: true,
                       isDark: isDark,
@@ -547,19 +533,30 @@ class FeedScreen extends StatelessWidget {
                     _buildStepItem(
                       icon: Icons.bolt,
                       iconBg: const Color(0xFF4F32E5),
-                      title: 'Dispatched',
-                      subtitle: 'Unit #12',
+                      title: 'In Progress',
+                      subtitle: 'En Route',
                       subtitleColor: const Color(0xFF4F32E5),
                       isCompleted: true,
                       isDark: isDark,
                     ),
                     _buildStepConnector(isCompleted: false),
                     _buildStepItem(
-                      icon: Icons.difference_outlined,
+                      icon: Icons.camera_alt_outlined,
                       iconBg: isDark ? Colors.grey.shade700 : const Color(0xFFE2E8F0),
                       iconColor: isDark ? Colors.grey.shade400 : const Color(0xFF94A3B8),
-                      title: 'Visual Diff',
+                      title: 'Resolved',
                       subtitle: 'Pending',
+                      subtitleColor: isDark ? Colors.grey.shade400 : const Color(0xFF94A3B8),
+                      isCompleted: false,
+                      isDark: isDark,
+                    ),
+                    _buildStepConnector(isCompleted: false),
+                    _buildStepItem(
+                      icon: Icons.verified_outlined,
+                      iconBg: isDark ? Colors.grey.shade700 : const Color(0xFFE2E8F0),
+                      iconColor: isDark ? Colors.grey.shade400 : const Color(0xFF94A3B8),
+                      title: 'Verified',
+                      subtitle: 'Zonal SE',
                       subtitleColor: isDark ? Colors.grey.shade400 : const Color(0xFF94A3B8),
                       isCompleted: false,
                       isDark: isDark,
@@ -632,21 +629,21 @@ class FeedScreen extends StatelessWidget {
     return Column(
       children: [
         Container(
-          width: 32,
-          height: 32,
+          width: 28,
+          height: 28,
           decoration: BoxDecoration(
             color: iconBg,
             shape: BoxShape.circle,
           ),
           child: Center(
-            child: Icon(icon, color: iconColor, size: 16),
+            child: Icon(icon, color: iconColor, size: 14),
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 4),
         Text(
           title,
           style: TextStyle(
-            fontSize: 10,
+            fontSize: 9,
             fontWeight: FontWeight.w700,
             color: isDark ? Colors.white : CivicColors.textPrimaryLight,
           ),
@@ -654,7 +651,7 @@ class FeedScreen extends StatelessWidget {
         Text(
           subtitle,
           style: TextStyle(
-            fontSize: 9.5,
+            fontSize: 8.5,
             fontWeight: FontWeight.w600,
             color: subtitleColor ?? (isDark ? CivicColors.textMutedDark : CivicColors.textMutedLight),
           ),
@@ -667,7 +664,7 @@ class FeedScreen extends StatelessWidget {
     return Expanded(
       child: Container(
         height: 2,
-        margin: const EdgeInsets.only(bottom: 24),
+        margin: const EdgeInsets.only(bottom: 20),
         color: isCompleted ? CivicColors.mint : Colors.grey.shade300,
       ),
     );
@@ -678,7 +675,6 @@ class FeedScreen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Section Header
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -697,7 +693,7 @@ class FeedScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Nearby Hazard Radar',
+                      state.tr('nearbyRadar'),
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
@@ -734,7 +730,6 @@ class FeedScreen extends StatelessWidget {
         ),
         const SizedBox(height: 14),
 
-        // List of hazard cards
         ...state.hazards.map((hazard) => _buildHazardCard(context, state, hazard, isDark)),
       ],
     );
@@ -760,7 +755,6 @@ class FeedScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Image with Bounding Boxes & Tag pills
           ClipRRect(
             borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
             child: SizedBox(
@@ -772,13 +766,7 @@ class FeedScreen extends StatelessWidget {
                   Image.network(
                     hazard.imageUrl,
                     fit: BoxFit.cover,
-                    errorBuilder: (ctx, err, stack) => Container(
-                      color: Colors.grey.shade800,
-                      child: const Center(child: Icon(Icons.image_not_supported, color: Colors.white54)),
-                    ),
                   ),
-
-                  // Top Tags
                   Positioned(
                     top: 10,
                     left: 10,
@@ -827,8 +815,6 @@ class FeedScreen extends StatelessWidget {
                       ],
                     ),
                   ),
-
-                  // Bottom Watermark over Image
                   Positioned(
                     bottom: 0,
                     left: 0,
@@ -837,7 +823,7 @@ class FeedScreen extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [Colors.transparent, Colors.black.withOpacity(0.8)],
+                          colors: [Colors.transparent, Colors.black.withOpacity(0.85)],
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
                         ),
@@ -871,7 +857,6 @@ class FeedScreen extends StatelessWidget {
             ),
           ),
 
-          // Content Details
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -899,7 +884,6 @@ class FeedScreen extends StatelessWidget {
                 // Meta Info Row
                 Row(
                   children: [
-                    // Backers
                     Expanded(
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -944,7 +928,6 @@ class FeedScreen extends StatelessWidget {
                     ),
                     const SizedBox(width: 10),
 
-                    // SLA
                     Expanded(
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -1002,7 +985,6 @@ class FeedScreen extends StatelessWidget {
                 // Action Row
                 Row(
                   children: [
-                    // Main Support Issue Button
                     Expanded(
                       child: ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
@@ -1019,7 +1001,7 @@ class FeedScreen extends StatelessWidget {
                           size: 16,
                         ),
                         label: Text(
-                          hazard.hasSupported ? 'Backed (+10 KP Earned)' : 'Support Issue (+10 KP)',
+                          hazard.hasSupported ? state.tr('backed') : state.tr('supportIssue'),
                           style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
                         ),
                         onPressed: () {
@@ -1039,26 +1021,25 @@ class FeedScreen extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
 
-                    // Secondary Grid / Share Icon
+                    // Suggest a Fix button
                     Container(
-                      width: 44,
                       height: 44,
                       decoration: BoxDecoration(
                         color: isDark ? CivicColors.cardSurfaceDark : const Color(0xFFF1F5F9),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: isDark ? CivicColors.borderDark : CivicColors.borderLight),
                       ),
-                      child: IconButton(
-                        icon: Icon(
-                          hazard.isUrgent ? Icons.grid_view : Icons.share_outlined,
-                          size: 18,
-                          color: isDark ? Colors.white70 : CivicColors.textSecondaryLight,
-                        ),
+                      child: TextButton.icon(
+                        icon: const Icon(Icons.lightbulb_outline, size: 16, color: CivicColors.primary),
+                        label: const Text('Suggest Fix', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
                         onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Node Link copied: civicpulse.delhi.gov.in/issue/${hazard.ticketCode}'),
-                              behavior: SnackBarBehavior.floating,
+                          showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            backgroundColor: Colors.transparent,
+                            builder: (ctx) => SuggestFixModal(
+                              ticketCode: hazard.ticketCode,
+                              hazardTitle: hazard.title,
                             ),
                           );
                         },
@@ -1092,11 +1073,13 @@ class FeedScreen extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: const [
+            Text('• 5-Step Workflow: Reported ➔ Assigned ➔ In Progress ➔ Resolved ➔ Verified'),
+            SizedBox(height: 4),
             Text('• Max Turnaround Target: 4.0 Hours'),
             SizedBox(height: 4),
             Text('• Assigned Team: PWD Sanitation Unit #12'),
             SizedBox(height: 4),
-            Text('• GPS Geofence Lock: Active & Verified'),
+            Text('• Cryptographic EXIF Geofence: Active & Verified'),
             SizedBox(height: 4),
             Text('• Expected Resolution: Today 11:30 AM'),
           ],

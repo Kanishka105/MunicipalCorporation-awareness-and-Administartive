@@ -18,6 +18,8 @@ class _LoginScreenState extends State<LoginScreen> {
   final _nameController = TextEditingController(text: 'Aarav Sharma');
   final _wardController = TextEditingController(text: 'DTU Ward 42');
   final _unitController = TextEditingController(text: 'Unit #3');
+  final _otpController = TextEditingController(text: '420188');
+  bool _isOtpSent = false;
   bool _isLoading = false;
 
   @override
@@ -26,6 +28,7 @@ class _LoginScreenState extends State<LoginScreen> {
     _nameController.dispose();
     _wardController.dispose();
     _unitController.dispose();
+    _otpController.dispose();
     super.dispose();
   }
 
@@ -43,6 +46,24 @@ class _LoginScreenState extends State<LoginScreen> {
         _phoneController.text = '+91 98111 22334';
       }
     });
+  }
+
+  void _sendOtp() async {
+    setState(() => _isLoading = true);
+    await Future.delayed(const Duration(milliseconds: 600));
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+        _isOtpSent = true;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: CivicColors.mintDark,
+          content: Text('📱 OTP sent to ${_phoneController.text.trim()} (Auto-filled: 420188)'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   void _submitLogin() async {
@@ -84,7 +105,7 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Top Row with Theme Toggle
+                  // Top Row with Language Switcher and Theme Toggle
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -103,7 +124,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           const SizedBox(width: 10),
                           Text(
-                            'CivicPulse',
+                            state.tr('appName'),
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w800,
@@ -124,32 +145,57 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ],
                       ),
-                      IconButton(
-                        icon: Icon(
-                          isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
-                          color: isDark ? Colors.amber : CivicColors.textSecondaryLight,
-                        ),
-                        onPressed: () => state.toggleTheme(),
+                      Row(
+                        children: [
+                          InkWell(
+                            onTap: () => state.toggleLanguage(),
+                            borderRadius: BorderRadius.circular(8),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: isDark ? CivicColors.cardSurfaceDark : CivicColors.primarySoft,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: CivicColors.primaryBorder),
+                              ),
+                              child: Text(
+                                state.language.toUpperCase(),
+                                style: const TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w800,
+                                  color: CivicColors.primary,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          IconButton(
+                            icon: Icon(
+                              isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+                              color: isDark ? Colors.amber : CivicColors.textSecondaryLight,
+                            ),
+                            onPressed: () => state.toggleTheme(),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                  const SizedBox(height: 28),
+                  const SizedBox(height: 24),
 
                   // Welcome Header
                   Text(
-                    'Municipal Corporation of Delhi',
-                    style: TextStyle(
-                      fontSize: 13,
+                    'Municipal Corporation of Delhi (ap-south-1)',
+                    style: const TextStyle(
+                      fontSize: 12.5,
                       fontWeight: FontWeight.w700,
                       color: CivicColors.primary,
-                      letterSpacing: 0.5,
+                      letterSpacing: 0.4,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'CivicPulse Portal Access',
+                    state.tr('loginTitle'),
                     style: TextStyle(
-                      fontSize: 24,
+                      fontSize: 22,
                       fontWeight: FontWeight.w800,
                       color: isDark ? Colors.white : CivicColors.textPrimaryLight,
                       letterSpacing: -0.5,
@@ -157,24 +203,24 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'AI-powered citizen triage, geofenced proof audit & real-time telemetry dispatch.',
+                    state.tr('loginSubtitle'),
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: 12.5,
                       color: isDark ? CivicColors.textSecondaryDark : CivicColors.textSecondaryLight,
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
 
                   // Role Switcher Tabs
                   Text(
-                    'Select Your Operating Role',
+                    'Select Operating Role',
                     style: TextStyle(
-                      fontSize: 12.5,
+                      fontSize: 12,
                       fontWeight: FontWeight.w700,
                       color: isDark ? Colors.white70 : CivicColors.textPrimaryLight,
                     ),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 8),
                   Row(
                     children: [
                       _buildRoleButton(
@@ -183,43 +229,50 @@ class _LoginScreenState extends State<LoginScreen> {
                         icon: Icons.person_outline,
                         isDark: isDark,
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 6),
                       _buildRoleButton(
                         role: UserRole.fieldOfficer,
-                        label: 'Field Officer',
+                        label: 'Field Worker',
                         icon: Icons.engineering_outlined,
                         isDark: isDark,
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 6),
                       _buildRoleButton(
-                        role: UserRole.zonalSupervisor,
-                        label: 'Supervisor',
+                        role: UserRole.zonalInspector,
+                        label: 'Official / SE',
                         icon: Icons.verified_user_outlined,
                         isDark: isDark,
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 18),
 
-                  // Name field
                   _buildTextField(
                     label: 'Full Name',
                     controller: _nameController,
                     icon: Icons.badge_outlined,
                     isDark: isDark,
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 12),
 
-                  // Phone / ID
                   _buildTextField(
-                    label: _selectedRole == UserRole.citizen ? 'Mobile Phone (+91)' : 'Officer ID / Mobile',
+                    label: 'Mobile Phone (+91)',
                     controller: _phoneController,
                     icon: Icons.phone_outlined,
                     isDark: isDark,
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 12),
 
-                  // Unit ID for Officer
+                  if (_isOtpSent) ...[
+                    _buildTextField(
+                      label: 'Enter 6-Digit Mobile OTP (MFA)',
+                      controller: _otpController,
+                      icon: Icons.lock_clock_outlined,
+                      isDark: isDark,
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+
                   if (_selectedRole == UserRole.fieldOfficer) ...[
                     _buildTextField(
                       label: 'Assigned Unit Tag',
@@ -227,30 +280,29 @@ class _LoginScreenState extends State<LoginScreen> {
                       icon: Icons.fire_truck_outlined,
                       isDark: isDark,
                     ),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 12),
                   ],
 
-                  // Ward selection
                   _buildTextField(
-                    label: 'Municipal Jurisdiction',
+                    label: 'Jurisdiction Ward',
                     controller: _wardController,
                     icon: Icons.location_city_outlined,
                     isDark: isDark,
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
 
-                  // Submit Login Button
+                  // Submit / OTP Button
                   SizedBox(
                     width: double.infinity,
-                    height: 50,
+                    height: 48,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: CivicColors.primary,
                         foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         elevation: 2,
                       ),
-                      onPressed: _isLoading ? null : _submitLogin,
+                      onPressed: _isLoading ? null : (_isOtpSent ? _submitLogin : _sendOtp),
                       child: _isLoading
                           ? const SizedBox(
                               width: 20,
@@ -258,31 +310,33 @@ class _LoginScreenState extends State<LoginScreen> {
                               child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                             )
                           : Text(
-                              'Enter CivicPulse as ${_selectedRole == UserRole.citizen ? 'Citizen' : _selectedRole == UserRole.fieldOfficer ? 'Field Officer' : 'Supervisor'}',
-                              style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700),
+                              _isOtpSent
+                                  ? 'Verify OTP & Enter as ${_selectedRole.name.toUpperCase()}'
+                                  : 'Send Mobile OTP (MFA)',
+                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
                             ),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
 
                   // Quick Demo One-Tap Buttons
                   Center(
                     child: Text(
-                      'Or quick launch with verified profiles:',
+                      'Or instant bypass with 1-tap demo:',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: 11.5,
                         color: isDark ? CivicColors.textMutedDark : CivicColors.textMutedLight,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 8),
                   Row(
                     children: [
                       Expanded(
                         child: OutlinedButton(
                           style: OutlinedButton.styleFrom(
                             side: BorderSide(color: isDark ? CivicColors.borderDark : CivicColors.borderLight),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                           ),
                           onPressed: () {
                             _onRoleChanged(UserRole.citizen);
@@ -291,18 +345,32 @@ class _LoginScreenState extends State<LoginScreen> {
                           child: const Text('Aarav (Citizen)', style: TextStyle(fontSize: 11)),
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 6),
                       Expanded(
                         child: OutlinedButton(
                           style: OutlinedButton.styleFrom(
                             side: BorderSide(color: isDark ? CivicColors.borderDark : CivicColors.borderLight),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                           ),
                           onPressed: () {
                             _onRoleChanged(UserRole.fieldOfficer);
                             _submitLogin();
                           },
-                          child: const Text('Rajesh (Unit #3)', style: TextStyle(fontSize: 11)),
+                          child: const Text('Rajesh (Field)', style: TextStyle(fontSize: 11)),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(color: isDark ? CivicColors.borderDark : CivicColors.borderLight),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                          onPressed: () {
+                            _onRoleChanged(UserRole.zonalInspector);
+                            _submitLogin();
+                          },
+                          child: const Text('Official / SE', style: TextStyle(fontSize: 11)),
                         ),
                       ),
                     ],
@@ -328,12 +396,12 @@ class _LoginScreenState extends State<LoginScreen> {
       child: GestureDetector(
         onTap: () => _onRoleChanged(role),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
             color: isSelected
                 ? CivicColors.primary
                 : (isDark ? CivicColors.cardSurfaceDark : const Color(0xFFF1F5F9)),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: isSelected
                   ? CivicColors.primary
@@ -344,14 +412,14 @@ class _LoginScreenState extends State<LoginScreen> {
             children: [
               Icon(
                 icon,
-                size: 20,
+                size: 18,
                 color: isSelected ? Colors.white : (isDark ? Colors.white70 : CivicColors.textPrimaryLight),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 2),
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 11.5,
+                  fontSize: 10.5,
                   fontWeight: FontWeight.w700,
                   color: isSelected ? Colors.white : (isDark ? Colors.white70 : CivicColors.textPrimaryLight),
                 ),
@@ -375,29 +443,29 @@ class _LoginScreenState extends State<LoginScreen> {
         Text(
           label,
           style: TextStyle(
-            fontSize: 12,
+            fontSize: 11.5,
             fontWeight: FontWeight.w600,
             color: isDark ? Colors.white70 : CivicColors.textSecondaryLight,
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 4),
         TextField(
           controller: controller,
           style: TextStyle(
-            fontSize: 13.5,
+            fontSize: 13,
             color: isDark ? Colors.white : CivicColors.textPrimaryLight,
           ),
           decoration: InputDecoration(
-            prefixIcon: Icon(icon, size: 18, color: CivicColors.primary),
+            prefixIcon: Icon(icon, size: 16, color: CivicColors.primary),
             filled: true,
             fillColor: isDark ? CivicColors.cardSurfaceDark : const Color(0xFFF8FAFC),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
               borderSide: BorderSide(color: isDark ? CivicColors.borderDark : CivicColors.borderLight),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
               borderSide: BorderSide(color: isDark ? CivicColors.borderDark : CivicColors.borderLight),
             ),
           ),

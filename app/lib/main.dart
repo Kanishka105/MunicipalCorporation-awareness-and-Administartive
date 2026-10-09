@@ -8,6 +8,7 @@ import 'screens/feed_screen.dart';
 import 'screens/tasks_screen.dart';
 import 'screens/copilot_screen.dart';
 import 'screens/analytics_screen.dart';
+import 'screens/executive_dashboard_screen.dart';
 import 'screens/login_screen.dart';
 
 void main() {
@@ -68,6 +69,7 @@ class MainNavigationShell extends StatelessWidget {
           TasksScreen(),
           CopilotScreen(),
           AnalyticsScreen(),
+          ExecutiveDashboardScreen(),
         ],
       ),
       bottomNavigationBar: const BottomNavBar(),

@@ -34,7 +34,7 @@ class BottomNavBar extends StatelessWidget {
         top: false,
         child: Container(
           height: 64,
-          padding: const EdgeInsets.symmetric(horizontal: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 4),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
@@ -43,7 +43,7 @@ class BottomNavBar extends StatelessWidget {
                 index: 0,
                 icon: Icons.article_outlined,
                 activeIcon: Icons.article_rounded,
-                label: 'Feed',
+                label: state.tr('feedTab'),
                 isSelected: currentIndex == 0,
                 isDark: isDark,
                 onTap: () => state.setNavIndex(0),
@@ -54,7 +54,7 @@ class BottomNavBar extends StatelessWidget {
                 index: 1,
                 icon: Icons.checklist_rtl_outlined,
                 activeIcon: Icons.checklist_rtl_rounded,
-                label: 'Tasks',
+                label: state.tr('tasksTab'),
                 isSelected: currentIndex == 1,
                 isDark: isDark,
                 onTap: () => state.setNavIndex(1),
@@ -71,8 +71,8 @@ class BottomNavBar extends StatelessWidget {
                   );
                 },
                 child: Container(
-                  width: 50,
-                  height: 50,
+                  width: 48,
+                  height: 48,
                   decoration: BoxDecoration(
                     gradient: CivicColors.primaryGradient,
                     shape: BoxShape.circle,
@@ -88,7 +88,7 @@ class BottomNavBar extends StatelessWidget {
                     child: Icon(
                       Icons.camera_alt_rounded,
                       color: Colors.white,
-                      size: 24,
+                      size: 22,
                     ),
                   ),
                 ),
@@ -99,21 +99,21 @@ class BottomNavBar extends StatelessWidget {
                 index: 2,
                 icon: Icons.smart_toy_outlined,
                 activeIcon: Icons.smart_toy_rounded,
-                label: 'Copilot',
+                label: state.tr('copilotTab'),
                 isSelected: currentIndex == 2,
                 isDark: isDark,
                 onTap: () => state.setNavIndex(2),
               ),
 
-              // 5. Analytics
+              // 5. Executive Dashboard
               _buildNavItem(
-                index: 3,
-                icon: Icons.insights_rounded,
-                activeIcon: Icons.insights_rounded,
-                label: 'Analytics',
-                isSelected: currentIndex == 3,
+                index: 4,
+                icon: Icons.admin_panel_settings_outlined,
+                activeIcon: Icons.admin_panel_settings_rounded,
+                label: state.tr('dashboardTab'),
+                isSelected: currentIndex == 4,
                 isDark: isDark,
-                onTap: () => state.setNavIndex(3),
+                onTap: () => state.setNavIndex(4),
               ),
             ],
           ),
@@ -138,25 +138,28 @@ class BottomNavBar extends StatelessWidget {
       onTap: onTap,
       splashColor: Colors.transparent,
       highlightColor: Colors.transparent,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            isSelected ? activeIcon : icon,
-            color: isSelected ? activeColor : inactiveColor,
-            size: 22,
-          ),
-          const SizedBox(height: 3),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              isSelected ? activeIcon : icon,
               color: isSelected ? activeColor : inactiveColor,
+              size: 22,
             ),
-          ),
-        ],
+            const SizedBox(height: 3),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10.5,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                color: isSelected ? activeColor : inactiveColor,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
