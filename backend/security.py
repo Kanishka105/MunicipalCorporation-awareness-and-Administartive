@@ -7,7 +7,7 @@ from typing import Any
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from app.config import get_settings
+from backend.config import get_settings
 
 logger = logging.getLogger(__name__)
 

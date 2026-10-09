@@ -1,10 +1,10 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from app import security
-from app.config import Settings
-from app.db import database
-from app.main import app
+from backend import security
+from backend.config import Settings
+from backend.db import database
+from backend.main import app
 
 client = TestClient(app)
 

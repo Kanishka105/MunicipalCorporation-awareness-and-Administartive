@@ -14,7 +14,7 @@ class _ReportHazardModalState extends State<ReportHazardModal> {
   final _titleController = TextEditingController();
   final _descController = TextEditingController();
   String _selectedCategory = 'Solid Waste / Garbage Overflow';
-  String _locationText = 'DTU North Gate, Sector 17 Rohini (28.7499° N, 77.1172° E)';
+  final String _locationText = 'DTU North Gate, Sector 17 Rohini (28.7499° N, 77.1172° E)';
   bool _isAiScanning = false;
   bool _isSubmitted = false;
 

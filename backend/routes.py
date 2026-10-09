@@ -5,10 +5,10 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.config import get_settings
-from app.schemas import DashboardStats, ErrorResponse, HealthResponse, ReportCreate, ReportOut, ResolutionPayload, TaskOut, UploadPresign
-from app.security import AuthUser, get_current_user, require_roles
-from app.services import service
+from backend.config import get_settings
+from backend.schemas import DashboardStats, ErrorResponse, HealthResponse, ReportCreate, ReportOut, ResolutionPayload, TaskOut, UploadPresign
+from backend.security import AuthUser, get_current_user, require_roles
+from backend.services import service
 
 router = APIRouter(prefix="/api/v1")
 

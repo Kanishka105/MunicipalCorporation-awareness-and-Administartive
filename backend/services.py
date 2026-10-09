@@ -7,8 +7,8 @@ from typing import Any, Dict, Iterable, Optional
 
 from fastapi import HTTPException, status
 
-from app.db import Database, database
-from app.schemas import DashboardStats, GPSPoint, IssueCategory, ReportCreate, ReportStatus, ResolutionPayload, Severity, TaskStatus
+from backend.db import Database, database
+from backend.schemas import DashboardStats, GPSPoint, IssueCategory, ReportCreate, ReportStatus, ResolutionPayload, Severity, TaskStatus
 
 
 class CivicPulseService:
