@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     environment: str = "development"
     demo_auth_enabled: bool = False
     secret_key: str = "dev-secret-key-do-not-use"
+    aws_access_key_id: str | None = None
+    aws_secret_access_key: str | None = None
     aws_region: str = "ap-south-1"
     cognito_region: str = "ap-south-1"
     cognito_user_pool_id: str = "ap-south-1_example_pool"

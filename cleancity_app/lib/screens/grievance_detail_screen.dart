@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import '../theme.dart';
 
 class GrievanceDetailScreen extends StatelessWidget {
@@ -271,13 +273,35 @@ class GrievanceDetailScreen extends StatelessWidget {
                   // Map Box
                   Container(
                     height: 180,
+                    clipBehavior: Clip.hardEdge,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(12),
                       color: Colors.green[100],
                     ),
                     child: Stack(
                       children: [
-                        const Center(child: Icon(Icons.map, size: 40, color: Colors.green)),
+                        FlutterMap(
+                          options: MapOptions(
+                            initialCenter: const LatLng(36.2704, -121.8081),
+                            initialZoom: 11.0,
+                          ),
+                          children: [
+                            TileLayer(
+                              urlTemplate: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png?api_key=cb1_4feh_1_87be5a2ae82834121d08d596',
+                              subdomains: const ['a', 'b', 'c'],
+                            ),
+                            const MarkerLayer(
+                              markers: [
+                                Marker(
+                                  point: LatLng(36.2704, -121.8081),
+                                  width: 40,
+                                  height: 40,
+                                  child: Icon(Icons.location_on, color: AppTheme.primaryTeal, size: 40),
+                                )
+                              ],
+                            )
+                          ],
+                        ),
                         Positioned(
                           bottom: 12,
                           left: 12,

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import uuid
+import boto3
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -28,8 +29,32 @@ def readiness() -> dict[str, Any]:
 @router.post("/uploads/presign", response_model=UploadPresign)
 def presign_upload(user: AuthUser = Depends(get_current_user)) -> dict[str, Any]:
     settings = get_settings()
+    
+    if not settings.aws_access_key_id or not settings.aws_secret_access_key:
+        raise HTTPException(status_code=500, detail="AWS credentials not configured")
+        
+    s3_client = boto3.client(
+        's3',
+        region_name=settings.aws_region,
+        aws_access_key_id=settings.aws_access_key_id,
+        aws_secret_access_key=settings.aws_secret_access_key
+    )
+    
     object_key = f"uploads/{user.user_id}/{uuid.uuid4().hex}.jpg"
-    upload_url = f"https://{settings.s3_bucket}.s3.{settings.aws_region}.amazonaws.com/{object_key}?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Expires=3600"
+    
+    try:
+        upload_url = s3_client.generate_presigned_url(
+            'put_object',
+            Params={
+                'Bucket': settings.s3_bucket,
+                'Key': object_key,
+                'ContentType': 'image/jpeg'
+            },
+            ExpiresIn=3600
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+        
     return {"object_key": object_key, "upload_url": upload_url, "expires_in": 3600}
 
 
