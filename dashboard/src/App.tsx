@@ -852,7 +852,9 @@ export default function App() {
 
   // We statically imported useEffect at the top of the file
   useEffect(() => {
-    fetch('http://localhost:5000/api/v1/reports', {
+    const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api/v1';
+    
+    fetch(`${API_BASE}/reports`, {
       headers: { 'Authorization': 'Bearer citizen-123' } // Demo officer token
     })
     .then(res => res.json())
@@ -868,7 +870,7 @@ export default function App() {
           priority: d.priority || "Medium",
           status: d.status || "Open",
           department: "Municipal Operations",
-          image: d.photo_url ? `http://localhost:5000${d.photo_url}` : roadImage,
+          image: d.photo_url ? `${API_BASE.replace('/api/v1', '')}${d.photo_url}` : roadImage,
           marker: [Math.random() * 80 + 10, Math.random() * 80 + 10] as [number, number]
         }));
         setIssues([...apiIssues, ...initialIssues]);
