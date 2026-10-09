@@ -26,12 +26,6 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
-	<key>NSCameraUsageDescription</key>
-	<string>Capture a photo of the civic issue you are reporting.</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Select an image to attach as evidence to your civic report.</string>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Attach the current location and accuracy to your civic report.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

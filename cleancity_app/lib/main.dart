@@ -1,30 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'theme.dart';
 import 'screens/login_screen.dart';
-import 'screens/main_screen.dart';
-import 'screens/report_screen.dart';
-import 'screens/grievance_detail_screen.dart';
 
 void main() {
-  runApp(const CleanCityApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        // Provider(create: (_) => ApiService()),
+      ],
+      child: const CleanCityApp(),
+    ),
+  );
 }
 
 class CleanCityApp extends StatelessWidget {
-  const CleanCityApp({Key? key}) : super(key: key);
+  const CleanCityApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'CleanCity',
+      title: 'CleanCity App',
       theme: AppTheme.lightTheme,
+      home: const LoginScreen(),
       debugShowCheckedModeBanner: false,
-      initialRoute: '/login',
-      routes: {
-        '/login': (context) => const LoginScreen(),
-        '/home': (context) => const MainScreen(),
-        '/report': (context) => const ReportScreen(),
-        '/grievance_detail': (context) => const GrievanceDetailScreen(),
-      },
     );
   }
 }

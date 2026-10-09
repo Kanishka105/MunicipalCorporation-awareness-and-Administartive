@@ -1,326 +1,346 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
-import '../services/civicpulse_api.dart';
+import 'home_screen.dart';
 
-class LoginScreen extends StatelessWidget {
-  const LoginScreen({Key? key}) : super(key: key);
+class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  bool isLogin = false; // toggle for Log In / Sign Up
+  bool autoTaggingEnabled = true;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F8FA),
+      backgroundColor: AppTheme.backgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+          padding: const EdgeInsets.all(24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Header Row
+              const SizedBox(height: 16),
+              // Status Bar mock
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.account_balance, color: AppTheme.primaryGreen),
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: AppTheme.primaryColor,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
                       const SizedBox(width: 8),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text('BBMP CIVIC CONNECT', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppTheme.textLight)),
-                          const Text('Govt. of Karnataka', style: TextStyle(fontSize: 10, color: AppTheme.textLight)),
-                        ],
-                      )
+                      Text(
+                        'GPS: ACTIVE [±3m]',
+                        style: TextStyle(
+                          color: AppTheme.textSecondary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ],
                   ),
                   Row(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: AppTheme.primaryGreen,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: const Text('EN', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
-                      ),
+                      Icon(Icons.satellite_alt, size: 14, color: AppTheme.textSecondary),
                       const SizedBox(width: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[200],
-                          borderRadius: BorderRadius.circular(20),
+                      Text(
+                        'READY',
+                        style: TextStyle(
+                          color: AppTheme.textSecondary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
                         ),
-                        child: const Text('हि', style: TextStyle(color: Colors.black54, fontWeight: FontWeight.bold, fontSize: 12)),
                       ),
                     ],
                   )
                 ],
               ),
-              const SizedBox(height: 16),
-              // Ministry Banner
+              const SizedBox(height: 40),
+              // Logo
               Container(
-                padding: const EdgeInsets.all(12),
+                width: 72,
+                height: 72,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEFF2F8),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.verified_user_outlined, color: AppTheme.primaryGreen, size: 20),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Ministry of Housing & Urban Affairs • BBMP Smart Civic Initiative',
-                        style: TextStyle(fontSize: 12, color: Colors.blueGrey[800], fontWeight: FontWeight.w600),
-                      ),
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(height: 32),
-              // Logo
-              Center(
-                child: Stack(
+                child: const Stack(
+                  alignment: Alignment.center,
                   children: [
-                    Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: AppTheme.primaryGreen,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Icon(Icons.local_florist, color: Colors.white, size: 40),
-                    ),
+                    Icon(Icons.location_on, size: 40, color: AppTheme.primaryColor),
                     Positioned(
-                      top: -4,
-                      right: -4,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
-                          color: Colors.orange,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(Icons.chevron_left, color: Colors.white, size: 12),
+                      bottom: 8,
+                      right: 8,
+                      child: CircleAvatar(
+                        radius: 10,
+                        backgroundColor: AppTheme.primaryColor,
+                        child: Icon(Icons.camera_alt, size: 12, color: Colors.white),
                       ),
                     )
                   ],
                 ),
               ),
               const SizedBox(height: 16),
-              const Text('CleanCity', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: AppTheme.textDark)),
-              const SizedBox(height: 4),
-              const Text('Report. Track. Clean.', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.primaryGreen)),
-              const SizedBox(height: 4),
-              const Text('रिपोर्ट करें • ट्रैक करें • स्वच्छ बनाएं', style: TextStyle(fontSize: 12, color: AppTheme.textLight)),
+              const Text(
+                'CleanCity',
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF0F172A),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Photo-first social discovery tagged with real-\nworld coordinates.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: AppTheme.textSecondary,
+                  fontSize: 14,
+                ),
+              ),
               const SizedBox(height: 32),
-
-              // Login Card
+              
+              // Tabs
               Container(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: AppTheme.accentBlue.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => setState(() => isLogin = true),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          decoration: BoxDecoration(
+                            color: isLogin ? Colors.white : Colors.transparent,
+                            borderRadius: BorderRadius.circular(30),
+                            boxShadow: isLogin
+                                ? [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.05),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 2),
+                                    )
+                                  ]
+                                : null,
+                          ),
+                          child: Center(
+                            child: Text(
+                              'Log In',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: isLogin ? AppTheme.primaryColor : AppTheme.textSecondary,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => setState(() => isLogin = false),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          decoration: BoxDecoration(
+                            color: !isLogin ? Colors.white : Colors.transparent,
+                            borderRadius: BorderRadius.circular(30),
+                            boxShadow: !isLogin
+                                ? [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.05),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 2),
+                                    )
+                                  ]
+                                : null,
+                          ),
+                          child: Center(
+                            child: Text(
+                              'Sign Up',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: !isLogin ? AppTheme.primaryColor : AppTheme.textSecondary,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              
+              // Form
+              Container(
+                padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(24),
                   boxShadow: [
-                    BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 5)),
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.02),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
                   ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (!isLogin) ...[
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Full Name', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                          Text('PUBLIC TAG', style: TextStyle(color: AppTheme.textSecondary, fontSize: 11, letterSpacing: 1)),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      _buildTextField(icon: Icons.person_outline, hint: 'Maya Lin'),
+                      const SizedBox(height: 16),
+                    ],
+                    
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('CivicPulse Login', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.green[50],
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Text('Access token required', style: TextStyle(color: AppTheme.primaryGreen, fontSize: 12, fontWeight: FontWeight.bold)),
-                        )
+                        const Text('Email Address', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                        Text('VERIFIED', style: TextStyle(color: AppTheme.textSecondary, fontSize: 11, letterSpacing: 1)),
                       ],
-                    ),
-                    const SizedBox(height: 4),
-                    const Text('Connect with an access token from your configured identity provider.', style: TextStyle(fontSize: 12, color: AppTheme.textLight, fontWeight: FontWeight.w600)),
-                    const SizedBox(height: 20),
-
-                    const Text.rich(
-                      TextSpan(
-                        text: 'Identity provider ',
-                        style: TextStyle(fontSize: 12, color: AppTheme.textDark, fontWeight: FontWeight.w600),
-                        children: [
-                          TextSpan(text: '*', style: TextStyle(color: Colors.red)),
-                        ],
-                      )
                     ),
                     const SizedBox(height: 8),
-
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF9FAFB),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.grey[200]!),
-                      ),
-                      child: Row(
-                        children: [
-                          const Text('JWT', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                          const SizedBox(width: 16),
-                          const Expanded(
-                            child: Text('Token entered securely on continue', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                          ),
-                          Icon(Icons.edit_outlined, color: Colors.grey[500], size: 20),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Icon(Icons.check_circle_outline, color: AppTheme.primaryGreen, size: 14),
-                        const SizedBox(width: 4),
-                        const Text('OTP sign-in is not implemented in this app prototype.', style: TextStyle(fontSize: 12, color: AppTheme.textDark, fontWeight: FontWeight.w600)),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text('The token is kept in memory only.', style: TextStyle(fontSize: 12, color: AppTheme.textLight)),
-                      ],
-                    ),
+                    _buildTextField(icon: Icons.email_outlined, hint: 'photographer@cleancity.io'),
                     const SizedBox(height: 16),
-
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF4F6FB),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Expanded(child: Text('Authentication is provided by your configured identity provider.', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600))),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          SizedBox(
-                            width: double.infinity,
-                            height: 48,
-                            child: ElevatedButton(
-                              onPressed: () async {
-                                final controller = TextEditingController();
-                                final token = await showDialog<String>(
-                                  context: context,
-                                  builder: (dialogContext) => AlertDialog(
-                                    title: const Text('Connect to CivicPulse'),
-                                    content: TextField(
-                                      controller: controller,
-                                      obscureText: true,
-                                      autocorrect: false,
-                                      enableSuggestions: false,
-                                      decoration: const InputDecoration(
-                                        labelText: 'Bearer access token',
-                                        border: OutlineInputBorder(),
-                                      ),
-                                    ),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () => Navigator.pop(dialogContext),
-                                        child: const Text('Cancel'),
-                                      ),
-                                      ElevatedButton(
-                                        onPressed: () => Navigator.pop(dialogContext, controller.text),
-                                        child: const Text('Continue'),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                                controller.dispose();
-                                if (token == null || token.trim().isEmpty) return;
-                                CivicPulseSession.accessToken = token.trim();
-                                Navigator.pushReplacementNamed(context, '/home');
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppTheme.primaryGreen,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: const [
-                                  Text('Enter access token / टोकन दर्ज करें', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-                                  SizedBox(width: 8),
-                                  Icon(Icons.arrow_forward, size: 18),
+                    
+                    const Text('Password', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                    const SizedBox(height: 8),
+                    _buildTextField(icon: Icons.lock_outline, hint: '••••••••••••', isPassword: true),
+                    const SizedBox(height: 16),
+                    
+                    if (!isLogin) ...[
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppTheme.backgroundColor,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.my_location, color: AppTheme.primaryColor),
+                            const SizedBox(width: 12),
+                            const Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('Auto-tagging Enabled', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                                  Text('Captures will attach verified coordinates', style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
                                 ],
                               ),
                             ),
-                          )
-                        ],
+                            Switch(
+                              value: autoTaggingEnabled,
+                              onChanged: (val) => setState(() => autoTaggingEnabled = val),
+                              activeColor: AppTheme.primaryColor,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+                    
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(builder: (_) => const HomeScreen()),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: const [
+                            Text('Continue to CleanCity', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                            SizedBox(width: 8),
+                            Icon(Icons.arrow_forward),
+                          ],
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 20),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(Icons.shield_outlined, color: AppTheme.primaryGreen, size: 20),
-                        const SizedBox(width: 12),
-                        const Expanded(
-                          child: Text(
-                            'This app does not issue or store identity-provider tokens. Use only a valid token from your configured sign-in provider.',
-                            style: TextStyle(fontSize: 12, color: AppTheme.textLight, height: 1.5),
-                          ),
-                        )
-                      ],
-                    )
                   ],
                 ),
               ),
               const SizedBox(height: 24),
-              // Support Banner
+              
+              // Stats Card
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEDF2FF),
-                  borderRadius: BorderRadius.circular(24),
+                  color: AppTheme.accentBlue.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(16),
                 ),
                 child: Row(
-                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
                       padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(color: Colors.red[50], shape: BoxShape.circle),
-                      child: Icon(Icons.call, color: Colors.red[400], size: 16),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF7FFFD4), // light mint
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.explore, color: AppTheme.primaryColor, size: 20),
                     ),
                     const SizedBox(width: 12),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        Text('Toll-free 1913 Swachhatha Sahayata', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                        Text('24×7 Municipal Emergency Desk', style: TextStyle(fontSize: 10, color: AppTheme.textLight)),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('12,480+ Expeditions', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                          Text('Tagged by local creators worldwide', style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+                        ],
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        _buildSmallStatIcon(Icons.terrain),
+                        const SizedBox(width: -8),
+                        _buildSmallStatIcon(Icons.water_drop),
+                        const SizedBox(width: -8),
+                        _buildSmallStatIcon(Icons.forest),
                       ],
                     )
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
-              // Footer
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
-                  Icon(Icons.lock_outline, size: 12, color: AppTheme.textLight),
-                  SizedBox(width: 4),
-                  Text('Access token required', style: TextStyle(fontSize: 10, color: AppTheme.textLight, fontWeight: FontWeight.bold)),
-                  Text('  •  ', style: TextStyle(fontSize: 10, color: AppTheme.textLight)),
-                  Text('BBMP East • Ward 142', style: TextStyle(fontSize: 10, color: AppTheme.textLight, fontWeight: FontWeight.bold)),
-                  Text('  •  ', style: TextStyle(fontSize: 10, color: AppTheme.textLight)),
-                  Text('Privacy', style: TextStyle(fontSize: 10, color: AppTheme.textLight, fontWeight: FontWeight.bold)),
-                ],
-              ),
               const SizedBox(height: 16),
+              Text(
+                'By continuing, you agree to enable camera and GPS\nlocation permissions when posting.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+              ),
+              const SizedBox(height: 24),
             ],
           ),
         ),
@@ -328,4 +348,35 @@ class LoginScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildSmallStatIcon(IconData icon) {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: AppTheme.accentBlue,
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white, width: 2),
+      ),
+      child: Icon(icon, size: 12, color: AppTheme.primaryColor),
+    );
+  }
+
+  Widget _buildTextField({required IconData icon, required String hint, bool isPassword = false}) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.backgroundColor,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: TextField(
+        obscureText: isPassword,
+        decoration: InputDecoration(
+          prefixIcon: Icon(icon, color: AppTheme.textSecondary),
+          suffixIcon: isPassword ? Icon(Icons.visibility_outlined, color: AppTheme.textSecondary) : null,
+          hintText: hint,
+          hintStyle: TextStyle(color: AppTheme.textSecondary.withOpacity(0.7)),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        ),
+      ),
+    );
+  }
 }
