@@ -4,6 +4,7 @@ import '../providers/civic_app_state.dart';
 import '../theme/app_theme.dart';
 import '../models/user_model.dart';
 import '../screens/login_screen.dart';
+import '../screens/leaderboard_modal.dart';
 
 class TopHeader extends StatelessWidget implements PreferredSizeWidget {
   const TopHeader({super.key});
@@ -57,9 +58,9 @@ class TopHeader extends StatelessWidget implements PreferredSizeWidget {
                   Row(
                     children: [
                       Text(
-                        'CivicPulse',
+                        state.tr('appName'),
                         style: TextStyle(
-                          fontSize: 18,
+                          fontSize: 17,
                           fontWeight: FontWeight.w700,
                           color: isDark ? Colors.white : CivicColors.textPrimaryLight,
                           letterSpacing: -0.3,
@@ -100,9 +101,9 @@ class TopHeader extends StatelessWidget implements PreferredSizeWidget {
                       ),
                       const SizedBox(width: 5),
                       Text(
-                        user?.ward ?? 'DTU Ward 42',
+                        user?.ward ?? state.tr('wardSubtitle'),
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 11.5,
                           fontWeight: FontWeight.w500,
                           color: isDark ? CivicColors.textSecondaryDark : CivicColors.textSecondaryLight,
                         ),
@@ -113,6 +114,43 @@ class TopHeader extends StatelessWidget implements PreferredSizeWidget {
               ),
             ),
 
+            // Language Switcher (EN / HI)
+            InkWell(
+              onTap: () => state.toggleLanguage(),
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: isDark ? CivicColors.cardSurfaceDark : CivicColors.primarySoft,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: CivicColors.primaryBorder),
+                ),
+                child: Text(
+                  state.language.toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w800,
+                    color: CivicColors.primary,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 4),
+
+            // Leaderboard Button
+            IconButton(
+              icon: const Icon(Icons.emoji_events_outlined, color: Colors.amber, size: 22),
+              tooltip: 'Ward Leaderboard',
+              onPressed: () {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (ctx) => const LeaderboardModal(),
+                );
+              },
+            ),
+
             // Theme Toggle Button
             IconButton(
               icon: Icon(
@@ -120,7 +158,7 @@ class TopHeader extends StatelessWidget implements PreferredSizeWidget {
                 color: isDark ? Colors.amber : CivicColors.textSecondaryLight,
                 size: 22,
               ),
-              tooltip: isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode',
+              tooltip: isDark ? 'Light Mode' : 'Dark Mode',
               onPressed: () {
                 state.toggleTheme();
               },
@@ -386,14 +424,14 @@ class TopHeader extends StatelessWidget implements PreferredSizeWidget {
                         ),
                         Text(
                           '${user?.role.name.toUpperCase()} • ${user?.ward}',
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                             color: CivicColors.primary,
                           ),
                         ),
                         Text(
-                          user?.phone ?? '',
+                          user?.maskedPhone ?? '',
                           style: TextStyle(
                             fontSize: 12,
                             color: isDark ? CivicColors.textSecondaryDark : CivicColors.textSecondaryLight,
@@ -404,9 +442,36 @@ class TopHeader extends StatelessWidget implements PreferredSizeWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 14),
+
+              // Security pill
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: isDark ? CivicColors.cardSurfaceDark : const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.shield, color: CivicColors.mintDark, size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Cognito: ${user?.cognitoGroup} • MFA Active • ap-south-1',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? Colors.white70 : CivicColors.textPrimaryLight,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 16),
               const Divider(),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
               Text(
                 'Switch Operating Role',
                 style: TextStyle(
@@ -451,6 +516,23 @@ class TopHeader extends StatelessWidget implements PreferredSizeWidget {
                       child: const Text('Officer'),
                     ),
                   ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        backgroundColor: user?.role == UserRole.zonalInspector ? CivicColors.primary.withOpacity(0.1) : null,
+                        side: BorderSide(
+                          color: user?.role == UserRole.zonalInspector ? CivicColors.primary : Colors.grey.shade300,
+                        ),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      onPressed: () {
+                        state.loginAs(role: UserRole.zonalInspector, name: 'Sunita Verma', phone: '+91 98111 22334');
+                        Navigator.pop(ctx);
+                      },
+                      child: const Text('Executive'),
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 16),
@@ -464,7 +546,7 @@ class TopHeader extends StatelessWidget implements PreferredSizeWidget {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   icon: const Icon(Icons.login),
-                  label: const Text('Go to Authentication Page'),
+                  label: const Text('Authentication Portal'),
                   onPressed: () {
                     Navigator.pop(ctx);
                     Navigator.push(

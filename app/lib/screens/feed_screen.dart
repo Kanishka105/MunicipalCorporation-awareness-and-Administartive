@@ -139,9 +139,9 @@ class FeedScreen extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(width: 8),
-                            const Text(
+                            Text(
                               '🔥 $streak-Day Streak',
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
                                 color: Color(0xFFE65100),
