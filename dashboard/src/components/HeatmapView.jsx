@@ -1,20 +1,36 @@
 import React from 'react';
+import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet';
 
 const HeatmapView = () => {
+  const center = [12.9784, 77.6408]; // Indiranagar, Bangalore
+
   return (
     <div style={{ display: 'flex', gap: '24px', height: '100%', margin: '-24px' }}>
       {/* Map Area */}
       <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
-        {/* Mock Map Background */}
-        <div style={{ width: '100%', height: '100%', backgroundImage: 'url(https://images.unsplash.com/photo-1524661135-423995f22d0b?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80)', backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.6 }}>
-          {/* Color overlays to simulate heatmap */}
-          <div style={{ position: 'absolute', top: '40%', left: '30%', width: '150px', height: '150px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(239,68,68,0.6) 0%, rgba(239,68,68,0) 70%)', filter: 'blur(20px)' }}></div>
-          <div style={{ position: 'absolute', top: '60%', left: '50%', width: '200px', height: '200px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(245,158,11,0.5) 0%, rgba(245,158,11,0) 70%)', filter: 'blur(20px)' }}></div>
-          <div style={{ position: 'absolute', top: '30%', left: '60%', width: '100px', height: '100px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(16,185,129,0.5) 0%, rgba(16,185,129,0) 70%)', filter: 'blur(15px)' }}></div>
-        </div>
+        
+        {/* Leaflet Map */}
+        <MapContainer center={center} zoom={14} style={{ width: '100%', height: '100%', zIndex: 0 }} zoomControl={false}>
+          <TileLayer
+            url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          />
+          
+          {/* Mock Hotspots as CircleMarkers */}
+          <CircleMarker center={[12.9784, 77.6408]} radius={30} pathOptions={{ color: 'var(--danger)', fillColor: 'var(--danger)', fillOpacity: 0.4, weight: 0 }}>
+            <Popup>Critical Waste Hub</Popup>
+          </CircleMarker>
+          <CircleMarker center={[12.9784, 77.6408]} radius={5} pathOptions={{ color: 'white', fillColor: 'var(--danger)', fillOpacity: 1, weight: 2 }} />
+          
+          <CircleMarker center={[12.9710, 77.6350]} radius={40} pathOptions={{ color: 'var(--warning)', fillColor: 'var(--warning)', fillOpacity: 0.4, weight: 0 }} />
+          <CircleMarker center={[12.9710, 77.6350]} radius={5} pathOptions={{ color: 'white', fillColor: 'var(--warning)', fillOpacity: 1, weight: 2 }} />
+
+          <CircleMarker center={[12.9850, 77.6500]} radius={20} pathOptions={{ color: 'var(--success)', fillColor: 'var(--success)', fillOpacity: 0.4, weight: 0 }} />
+          <CircleMarker center={[12.9850, 77.6500]} radius={5} pathOptions={{ color: 'white', fillColor: 'var(--success)', fillOpacity: 1, weight: 2 }} />
+        </MapContainer>
 
         {/* Map Controls */}
-        <div style={{ position: 'absolute', top: '16px', left: '16px', display: 'flex', gap: '12px', alignItems: 'center' }}>
+        <div style={{ position: 'absolute', top: '16px', left: '16px', display: 'flex', gap: '12px', alignItems: 'center', zIndex: 10 }}>
           <div className="flex bg-white rounded-lg shadow-md border overflow-hidden">
             <div className="flex items-center gap-2 px-3 py-2 bg-primary text-white text-xs font-bold" style={{ backgroundColor: '#065f46' }}>
               <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M17.5 19c-1.3 0-2.3-1-2.3-2.3a2.3 2.3 0 0 1 4.6 0c0 1.3-1 2.3-2.3 2.3z" /><path d="M6.5 19c-1.3 0-2.3-1-2.3-2.3a2.3 2.3 0 0 1 4.6 0c0 1.3-1 2.3-2.3 2.3z" /><path d="M12 5c-1.3 0-2.3-1-2.3-2.3a2.3 2.3 0 0 1 4.6 0c0 1.3-1 2.3-2.3 2.3z" /></svg>
@@ -34,25 +50,10 @@ const HeatmapView = () => {
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="12" height="12"><polyline points="6 9 12 15 18 9" /></svg>
           </div>
         </div>
-
-        {/* Map Pointers (Mockup) */}
-        <div style={{ position: 'absolute', top: '45%', left: '35%', backgroundColor: 'var(--danger)', color: 'white', padding: '4px 8px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="10" height="10"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
-          18
-        </div>
         
-        <div style={{ position: 'absolute', top: '65%', left: '55%', backgroundColor: 'var(--warning)', color: 'white', padding: '4px 8px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="10" height="10"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /></svg>
-          4
-        </div>
-        
-        <div style={{ position: 'absolute', top: '35%', left: '70%', backgroundColor: 'var(--success)', color: 'white', padding: '4px 8px', borderRadius: '100px', fontSize: '10px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="10" height="10"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
-          100% OK
-        </div>
-
+        {/* Map Pointers overlay - custom labels since we want HTML overlays on specific screen positions like the mockup, or just floating labels */}
         {/* Right side floating controls */}
-        <div style={{ position: 'absolute', top: '16px', right: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <div style={{ position: 'absolute', top: '16px', right: '16px', display: 'flex', flexDirection: 'column', gap: '8px', zIndex: 10 }}>
           <div className="bg-white rounded-lg shadow-md border flex-col overflow-hidden">
             <button style={{ padding: '8px', border: 'none', background: 'none', cursor: 'pointer', borderBottom: '1px solid #e2e8f0' }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg></button>
             <button style={{ padding: '8px', border: 'none', background: 'none', cursor: 'pointer', borderBottom: '1px solid #e2e8f0' }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16"><line x1="5" y1="12" x2="19" y2="12" /></svg></button>
@@ -61,7 +62,7 @@ const HeatmapView = () => {
         </div>
 
         {/* Bottom Legend */}
-        <div style={{ position: 'absolute', bottom: '16px', left: '16px', display: 'flex', gap: '16px', backgroundColor: 'white', padding: '12px', borderRadius: '12px', boxShadow: 'var(--shadow-md)', border: '1px solid var(--border-color)' }}>
+        <div style={{ position: 'absolute', bottom: '16px', left: '16px', display: 'flex', gap: '16px', backgroundColor: 'white', padding: '12px', borderRadius: '12px', boxShadow: 'var(--shadow-md)', border: '1px solid var(--border-color)', zIndex: 10 }}>
           <div className="flex items-center gap-4 text-xs font-bold">
             <span className="text-muted">HEAT<br/>INDEX:</span>
             <div className="flex items-center gap-2"><div style={{width:12,height:12,borderRadius:'50%',backgroundColor:'var(--danger)'}}></div> Severe /<br/>Chronic</div>
