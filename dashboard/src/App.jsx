@@ -1,14 +1,39 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import './index.css';
 import DashboardView from './components/DashboardView';
 import HeatmapView from './components/HeatmapView';
 import ReviewQueueView from './components/ReviewQueueView';
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [backendState, setBackendState] = useState({ connected: false, loading: true, error: '' });
+
+  useEffect(() => {
+    const loadDashboardStats = async () => {
+      try {
+        const response = await fetch(`${API_BASE}/api/v1/health`);
+
+        if (!response.ok) {
+          throw new Error(`API responded with ${response.status}`);
+        }
+
+        await response.json();
+        setBackendState({ connected: true, loading: false, error: '' });
+      } catch (error) {
+        setBackendState({ connected: false, loading: false, error: error.message || 'Unable to reach backend' });
+      }
+    };
+
+    loadDashboardStats();
+  }, []);
 
   return (
     <div id="root">
+      <div style={{ position: 'sticky', top: 0, zIndex: 30, padding: '8px 16px', background: backendState.connected ? '#ecfdf5' : '#fff7ed', borderBottom: '1px solid rgba(15, 23, 42, 0.08)', fontSize: 12, fontWeight: 700, color: backendState.connected ? '#065f46' : '#9a4d00' }}>
+        {backendState.loading ? 'Checking CivicPulse backend…' : backendState.connected ? 'Backend available • dashboard metrics are sample data' : `Backend unavailable • ${backendState.error}`}
+      </div>
       {/* Sidebar */}
       <aside className="sidebar">
         <div className="sidebar-header">
@@ -99,7 +124,7 @@ function App() {
             </div>
             <div className="badge-engine">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
-              AI Verification Engine: Online
+              {backendState.connected ? 'Backend connected • evidence review is manual' : 'Backend not connected • sample dashboard data'}
             </div>
           </div>
 
