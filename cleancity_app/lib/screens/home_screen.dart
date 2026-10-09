@@ -7,331 +7,498 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.background,
-      appBar: AppBar(
-        titleSpacing: 0,
-        leading: Padding(
-          padding: const EdgeInsets.all(12.0),
-          child: Container(
-            decoration: BoxDecoration(
-              color: AppTheme.primaryTeal,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Icon(Icons.location_on, color: Colors.white, size: 18),
-          ),
-        ),
-        title: Row(
-          children: const [
-            Text('CleanCity ', style: TextStyle(fontWeight: FontWeight.w900)),
-            Text('• Feed', style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryTeal)),
-          ],
-        ),
-        actions: [
-          IconButton(icon: const Icon(Icons.notifications_none), onPressed: () {}),
-          const Padding(
-            padding: EdgeInsets.only(right: 16.0),
-            child: CircleAvatar(
-              radius: 14,
-              backgroundColor: Colors.grey,
-              child: Icon(Icons.person, size: 18, color: Colors.white),
-            ),
-          )
-        ],
-      ),
-      body: Column(
-        children: [
-          // Filter Chips
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            child: Row(
-              children: [
-                _buildFilterChip('Explore All', Icons.explore, true),
-                const SizedBox(width: 8),
-                _buildFilterChip('Nearby (<5km)', Icons.near_me_outlined, false),
-                const SizedBox(width: 8),
-                _buildFilterChip('Top Upvoted', Icons.local_fire_department_outlined, false),
-              ],
-            ),
-          ),
-          
-          // GPS Status Bar
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
-            child: Wrap(
-              alignment: WrapAlignment.spaceBetween,
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                Row(
-                  children: [
-                    Container(width: 6, height: 6, decoration: const BoxDecoration(color: AppTheme.primaryTeal, shape: BoxShape.circle)),
-                    const SizedBox(width: 6),
-                    const Text('GNSS LOCK', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppTheme.primaryTeal)),
-                    const Text(' • ', style: TextStyle(fontSize: 9, color: AppTheme.textLight)),
-                    const Icon(Icons.satellite_alt, size: 10, color: AppTheme.textLight),
-                    const SizedBox(width: 4),
-                    const Text('9 SATELLITES', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppTheme.textLight)),
-                  ],
-                ),
-                const Text('ACCURACY ±2.4m', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppTheme.textLight)),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-          
-          // Feed
-          Expanded(
-            child: ListView(
-              children: [
-                _buildPostCard(
-                  context,
-                  userName: 'Elena Rostova',
-                  timeAgo: '2 hours ago',
-                  cameraInfo: 'Olympus OM-1',
-                  locationName: 'Mt. Rainier Trail',
-                  coords: '46.8523° N, 121.7603° W',
-                  elevation: '2,148m',
-                  imageUrl: 'https://images.unsplash.com/photo-1605281317010-fe5ffe798166?auto=format&fit=crop&w=800&q=80',
-                  title: 'Sunrise over Emerald Ridge',
-                  desc: 'Caught the first golden hour rays after a 4am hike. The fog cleared right at 06:14 AM.',
-                  upvotes: '342 Upvotes',
-                  comments: '48',
-                  hasPro: true,
-                ),
-                _buildPostCard(
-                  context,
-                  userName: 'Marcus Chen',
-                  timeAgo: '5 hours ago',
-                  cameraInfo: 'Sony A7IV 14mm',
-                  locationName: 'Embarcadero Bay Bridge',
-                  coords: '37.7749° N, 122.4194° W',
-                  elevation: '15s exp',
-                  imageUrl: 'https://images.unsplash.com/photo-1542314831-c6a4d1421045?auto=format&fit=crop&w=800&q=80',
-                  title: 'Urban Geometry & Reflections',
-                  desc: 'Long exposure test with the new wide lens on the pedestrian bridge.',
-                  upvotes: '128 Upvotes',
-                  comments: '19',
-                  hasPro: true,
-                  isElevationDark: true,
-                ),
-                const SizedBox(height: 80), // Padding for FAB
-              ],
-            ),
-          )
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFilterChip(String label, IconData icon, bool isSelected) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: isSelected ? AppTheme.primaryTeal : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: isSelected ? null : Border.all(color: Colors.grey[300]!),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, size: 14, color: isSelected ? Colors.white : AppTheme.textDark),
-          const SizedBox(width: 6),
-          Text(label, style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            color: isSelected ? Colors.white : AppTheme.textDark,
-          )),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPostCard(BuildContext context, {
-    required String userName, required String timeAgo, required String cameraInfo,
-    required String locationName, required String coords, required String elevation,
-    required String imageUrl, required String title, required String desc,
-    required String upvotes, required String comments, required bool hasPro,
-    bool isElevationDark = false,
-  }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      color: Colors.white,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // User header
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              children: [
-                Stack(
-                  children: [
-                    const CircleAvatar(
-                      radius: 18,
-                      backgroundColor: Colors.grey,
-                      child: Icon(Icons.person, color: Colors.white),
-                    ),
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: Container(
-                        width: 12,
-                        height: 12,
+      backgroundColor: const Color(0xFFF7F8FA),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.local_florist, color: AppTheme.primaryGreen, size: 24),
+                      const SizedBox(width: 8),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: const [
+                              Text('CLEANCITY', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppTheme.primaryGreen)),
+                              SizedBox(width: 4),
+                              Text('|', style: TextStyle(color: Colors.grey)),
+                              SizedBox(width: 4),
+                              Text('Home', style: TextStyle(fontSize: 12, color: AppTheme.textLight)),
+                            ],
+                          ),
+                          Row(
+                            children: [
+                              Container(
+                                width: 6,
+                                height: 6,
+                                decoration: const BoxDecoration(color: AppTheme.primaryGreen, shape: BoxShape.circle),
+                              ),
+                              const SizedBox(width: 4),
+                              const Text('Ward GPS Live', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppTheme.textDark)),
+                            ],
+                          )
+                        ],
+                      )
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: AppTheme.primaryTeal,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 2),
+                          color: AppTheme.primaryGreen,
+                          borderRadius: BorderRadius.circular(20),
                         ),
+                        child: const Text('EN', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                      ),
+                      const SizedBox(width: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[200],
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Text('हि', style: TextStyle(color: Colors.black54, fontWeight: FontWeight.bold, fontSize: 12)),
+                      ),
+                      const SizedBox(width: 12),
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(color: Colors.red[50], shape: BoxShape.circle),
+                        child: Icon(Icons.warning_amber_rounded, color: Colors.red[400], size: 20),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: const BoxDecoration(color: AppTheme.primaryGreen, shape: BoxShape.circle),
+                        child: const Icon(Icons.person_outline, color: Colors.white, size: 20),
+                      ),
+                    ],
+                  )
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              // Profile Section
+              Row(
+                children: [
+                  Icon(Icons.verified_user_outlined, color: AppTheme.primaryGreen, size: 16),
+                  const SizedBox(width: 4),
+                  const Text('CIVIC CITIZEN PROFILE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppTheme.primaryGreen)),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Namaste, Priya ...', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppTheme.textDark)),
+                  // Language Toggle alternative view maybe
+                ],
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: const [
+                  Icon(Icons.location_on_outlined, size: 14, color: AppTheme.textLight),
+                  SizedBox(width: 4),
+                  Text('Ward 142, Indiranagar, Bengaluru', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.textDark)),
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              // Report Card (Green Hero)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryGreen,
+                  borderRadius: BorderRadius.circular(16),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      AppTheme.primaryGreen,
+                      AppTheme.primaryGreen.withOpacity(0.8),
+                    ],
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(Icons.camera_alt_outlined, color: Colors.white, size: 28),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            children: const [
+                              Icon(Icons.auto_awesome, color: Colors.white, size: 14),
+                              SizedBox(width: 4),
+                              Text('CivicPulse Demo', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                        )
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    const Text('Report a Problem', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                    const Text('समस्या दर्ज करें', style: TextStyle(color: Colors.white70, fontSize: 14)),
+                    const SizedBox(height: 12),
+                    const Text('Select a category and submit a photo with your device location.', style: TextStyle(color: Colors.white, fontSize: 12, height: 1.4)),
+                    const SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.pushNamed(context, '/report');
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: AppTheme.primaryGreen,
+                        minimumSize: const Size(double.infinity, 48),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: const [
+                          Icon(Icons.camera_alt_outlined, size: 18),
+                          SizedBox(width: 8),
+                          Text('Tap to Capture Grievance / फोटो खींचें', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                        ],
                       ),
                     )
                   ],
                 ),
-                const SizedBox(width: 12),
-                Expanded(
+              ),
+              const SizedBox(height: 24),
+
+              // Quick Categories
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: const [
+                  Text('Quick Categories / श्रेणियां', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text('TAP TO REPORT', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppTheme.primaryGreen)),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              GridView.count(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisCount: 2,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 2.2,
+                children: [
+                  _buildCategoryCard(Icons.delete_outline, 'Garbage Du...', 'कचरा ढेर', Colors.green[100]!, Colors.green[800]!),
+                  _buildCategoryCard(Icons.restore_from_trash, 'Overflowing...', 'भरा हुआ कूड़ादान', Colors.blue[50]!, Colors.blue[800]!),
+                  _buildCategoryCardWithTag(Icons.local_fire_department_outlined, 'Waste Burning', 'कचरा जलाना', Colors.orange[100]!, Colors.orange[800]!, 'Urgent', Colors.orange[800]!),
+                  _buildCategoryCard(Icons.water_drop_outlined, 'Drain Blocked', 'नाली जाम', Colors.grey[200]!, Colors.grey[800]!),
+                  _buildCategoryCard(Icons.construction, 'Construction', 'मलवे का ढेर', Colors.grey[200]!, Colors.grey[800]!),
+                  _buildCategoryCardWithTag(Icons.warning_amber_rounded, 'Chemical', 'रासायनिक कचरा', Colors.red[700]!, Colors.white, 'High Risk', Colors.red[900]!, bg: Colors.red[100]),
+                ],
+              ),
+              const SizedBox(height: 24),
+
+              // Your Latest Report
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: const [
+                  Text('Your Latest Report / आपकी रिपोर्ट', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text('View All (4)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppTheme.primaryGreen)),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              GestureDetector(
+                onTap: () => Navigator.pushNamed(context, '/grievance_detail'),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 5)),
+                    ],
+                  ),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Text(userName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                          if (hasPro) ...[
-                            const SizedBox(width: 6),
+                      Padding(
+                        padding: const EdgeInsets.all(12.0),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                              decoration: BoxDecoration(color: Colors.blue[50], borderRadius: BorderRadius.circular(4)),
-                              child: const Text('PRO', style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Colors.blue)),
+                              width: 80,
+                              height: 80,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(8),
+                                color: Colors.grey[300],
+                                image: const DecorationImage(
+                                  // Placeholder image
+                                  image: NetworkImage('https://images.unsplash.com/photo-1605281317010-fe5ffe798166?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80'),
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                              child: Align(
+                                alignment: Alignment.bottomCenter,
+                                child: Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.primaryGreen.withOpacity(0.9),
+                                    borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(8), bottomRight: Radius.circular(8)),
+                                  ),
+                                  child: const Text('Sample', textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(4)),
+                                        child: const Text('#CC-84920', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(color: Colors.green[100], borderRadius: BorderRadius.circular(4)),
+                                        child: const Text('Overflowing Bin', style: TextStyle(fontSize: 10, color: AppTheme.primaryGreen, fontWeight: FontWeight.bold)),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: const [
+                                      Icon(Icons.location_on_outlined, size: 14, color: AppTheme.textLight),
+                                      SizedBox(width: 4),
+                                      Expanded(child: Text('12th Main Road, Near Metro Pillar 84', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600))),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    children: const [
+                                      Icon(Icons.schedule, size: 14, color: AppTheme.warning),
+                                      SizedBox(width: 4),
+                                      Text('Resolving within ', style: TextStyle(fontSize: 10, color: AppTheme.textLight)),
+                                      Text('2h 45m', style: TextStyle(fontSize: 10, color: AppTheme.warning, fontWeight: FontWeight.bold)),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  const Text('Assigned: BBMP Sanitation Squad 14', style: TextStyle(fontSize: 10, color: AppTheme.textLight)),
+                                ],
+                              ),
                             )
-                          ]
+                          ],
+                        ),
+                      ),
+                      // Progress bar
+                      Stack(
+                        children: [
+                          Container(height: 4, width: double.infinity, color: Colors.grey[200]),
+                          Container(height: 4, width: MediaQuery.of(context).size.width * 0.6, color: AppTheme.primaryGreen),
                         ],
                       ),
-                      Text('$timeAgo • $cameraInfo', style: const TextStyle(fontSize: 10, color: AppTheme.textLight)),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: const [
+                            Text('Submitted 08:30 AM', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                            Text('SLA On-Track', style: TextStyle(fontSize: 10, color: AppTheme.primaryGreen, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      )
                     ],
                   ),
                 ),
-                IconButton(icon: const Icon(Icons.more_horiz, color: AppTheme.textLight), onPressed: () {}),
-              ],
-            ),
-          ),
-          
-          // Image with Overlays
-          GestureDetector(
-            onTap: () {
-              Navigator.pushNamed(context, '/grievance_detail');
-            },
-            child: Stack(
-              children: [
-                Container(
-                  width: double.infinity, 
-                  height: 350, 
-                  color: Colors.blueGrey[100],
-                  child: const Center(child: Icon(Icons.landscape, size: 60, color: Colors.white)),
+              ),
+              const SizedBox(height: 24),
+
+              // Impact Section
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.green[50],
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                Positioned(
-                  top: 12,
-                  left: 12,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.9),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.location_on_outlined, size: 12, color: AppTheme.primaryTeal),
-                        const SizedBox(width: 6),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(locationName, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
-                            Text(coords, style: const TextStyle(fontSize: 8, color: AppTheme.primaryTeal, fontWeight: FontWeight.bold)),
-                          ],
-                        )
-                      ],
-                    ),
-                  ),
-                ),
-                Positioned(
-                  top: 12,
-                  right: 12,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: isElevationDark ? Colors.black.withOpacity(0.6) : Colors.black.withOpacity(0.4),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.landscape, size: 10, color: Colors.white),
-                        const SizedBox(width: 4),
-                        Text(elevation, style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                  ),
-                )
-              ],
-            ),
-          ),
-          
-          // Content
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textDark)),
-                const SizedBox(height: 6),
-                Text(desc, style: const TextStyle(fontSize: 13, color: AppTheme.textLight, height: 1.4)),
-                const SizedBox(height: 16),
-                
-                // Bottom Actions
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
+                child: Row(
+                  children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: AppTheme.primaryTeal,
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                      child: Row(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(color: Colors.green[200], shape: BoxShape.circle),
+                      child: const Icon(Icons.emoji_events, color: AppTheme.primaryGreen, size: 24),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(Icons.arrow_upward, size: 16, color: Colors.white),
-                          const SizedBox(width: 6),
-                          Text(upvotes, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                          Row(
+                            children: [
+                              const Text('SWACHH WARD IMPACT', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppTheme.primaryGreen)),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(color: AppTheme.primaryGreen.withOpacity(0.2), borderRadius: BorderRadius.circular(4)),
+                                child: const Text('Ward 142', style: TextStyle(fontSize: 8, color: AppTheme.primaryGreen, fontWeight: FontWeight.bold)),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          const Text('1,240 complaints resolved in your\nward this month!', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 4),
+                          const Text.rich(
+                            TextSpan(
+                              text: '98.4%',
+                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.primaryGreen),
+                              children: [
+                                TextSpan(text: ' cleared within municipal SLA\ntimelines.', style: TextStyle(color: AppTheme.textLight, fontWeight: FontWeight.normal)),
+                              ]
+                            )
+                          ),
                         ],
                       ),
+                    )
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Contact banner
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey[200]!),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(color: Colors.blue[50], shape: BoxShape.circle),
+                      child: Icon(Icons.support_agent, color: Colors.blue[400], size: 20),
                     ),
                     const SizedBox(width: 12),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: AppTheme.background,
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.chat_bubble_outline, size: 16, color: AppTheme.textDark),
-                          const SizedBox(width: 6),
-                          Text(comments, style: const TextStyle(color: AppTheme.textDark, fontSize: 12, fontWeight: FontWeight.bold)),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: const [
+                          Text('Ward Supervisor Contact', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                          Text('K. Suresh (East Zone Zone-Officer)', style: TextStyle(fontSize: 10, color: AppTheme.textLight)),
                         ],
                       ),
                     ),
-                    const Spacer(),
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: const BoxDecoration(color: AppTheme.background, shape: BoxShape.circle),
-                      child: const Icon(Icons.share_outlined, size: 16, color: AppTheme.textDark),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: const BoxDecoration(color: AppTheme.background, shape: BoxShape.circle),
-                      child: const Icon(Icons.bookmark_border, size: 16, color: AppTheme.textDark),
-                    ),
+                    ElevatedButton.icon(
+                      onPressed: () {},
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue[50],
+                        foregroundColor: Colors.blue[800],
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      icon: const Icon(Icons.call, size: 14),
+                      label: const Text('Call Desk', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                    )
                   ],
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCategoryCard(IconData icon, String title, String subtitle, Color iconBg, Color iconColor, {Color? bg}) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: bg ?? Colors.white,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(8)),
+            child: Icon(icon, color: iconColor, size: 20),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(title, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: bg != null ? Colors.white : AppTheme.textDark)),
+                Text(subtitle, style: TextStyle(fontSize: 10, color: bg != null ? Colors.white70 : AppTheme.textLight)),
+              ],
+            ),
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCategoryCardWithTag(IconData icon, String title, String subtitle, Color iconBg, Color iconColor, String tag, Color tagColor, {Color? bg}) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: bg ?? Colors.white,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(8)),
+            child: Icon(icon, color: iconColor, size: 20),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(title, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: bg != null ? Colors.white : AppTheme.textDark)),
+                Text(subtitle, style: TextStyle(fontSize: 10, color: bg != null ? Colors.white70 : AppTheme.textLight)),
+                const SizedBox(height: 2),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  decoration: BoxDecoration(color: bg != null ? tagColor : tagColor.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if(bg != null) const Icon(Icons.star, color: Colors.white, size: 8),
+                      if(bg == null) Icon(Icons.warning, color: tagColor, size: 8),
+                      const SizedBox(width: 2),
+                      Text(tag, style: TextStyle(fontSize: 8, color: bg != null ? Colors.white : tagColor, fontWeight: FontWeight.bold)),
+                    ],
                   ),
                 )
               ],
