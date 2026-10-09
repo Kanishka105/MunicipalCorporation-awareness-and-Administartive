@@ -31,13 +31,11 @@ class FeedScreen extends StatelessWidget {
           _buildActionGrid(context, state, isDark),
           const SizedBox(height: 20),
 
-          // 3. My Active Submission Section
-          if (activeSub != null) ...[
-            _buildActiveSubmissionSection(context, activeSub, isDark),
-            const SizedBox(height: 24),
-          ],
+          // 3. My Active Submission Section (Real dynamic state)
+          _buildActiveSubmissionSection(context, activeSub, isDark),
+          const SizedBox(height: 24),
 
-          // 4. Nearby Hazard Radar Section
+          // 4. Nearby Hazard Radar Section (Real dynamic state)
           _buildHazardRadarSection(context, state, isDark),
           const SizedBox(height: 24),
         ],
@@ -45,158 +43,123 @@ class FeedScreen extends StatelessWidget {
     );
   }
 
-  // 1. Hero Profile & Karma Card
+  // 1. Citizen Karma & Trust Badge Card (Profile image removed)
   Widget _buildHeroProfileCard(BuildContext context, CivicAppState state, bool isDark) {
     final user = state.currentUser;
-    final karmaPoints = user?.karmaPoints ?? 340;
-    final streak = user?.streakDays ?? 7;
-    final trustScore = user?.trustScore ?? 98.4;
+    final karmaPoints = user?.karmaPoints ?? 0;
+    final streak = user?.streakDays ?? 1;
+    final trustScore = user?.trustScore ?? 100.0;
 
     return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: isDark ? CivicColors.cardDark : Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        color: isDark ? CivicColors.cardSurfaceDark : CivicColors.primarySoft,
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isDark ? CivicColors.borderDark : CivicColors.borderLight,
+          color: isDark ? CivicColors.borderDark : const Color(0xFFC7D2FE),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 12,
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
             offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Column(
+      child: Row(
         children: [
-          // Profile Photo with curved arch mask
-          Padding(
-            padding: const EdgeInsets.only(top: 14, left: 14, right: 14, bottom: 8),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(20),
-              child: AspectRatio(
-                aspectRatio: 1.15,
-                child: Image.network(
-                  user?.avatarUrl ?? 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=80',
-                  fit: BoxFit.cover,
-                  errorBuilder: (ctx, err, stack) {
-                    return Container(
-                      color: CivicColors.primary.withOpacity(0.1),
-                      child: const Icon(Icons.person, size: 80, color: CivicColors.primary),
-                    );
-                  },
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              gradient: CivicColors.primaryGradient,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Center(
+              child: Icon(Icons.verified, color: Colors.white, size: 22),
+            ),
+          ),
+          const SizedBox(width: 12),
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      '$karmaPoints',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: isDark ? Colors.white : CivicColors.textPrimaryLight,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    const Text(
+                      'KP',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: CivicColors.primary,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '🔥 $streak-Day Streak',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFFE65100),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
+                const SizedBox(height: 2),
+                Text(
+                  'Trust: $trustScore% • Redeemable for DTC Metro passes',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: isDark ? CivicColors.textSecondaryDark : CivicColors.textSecondaryLight,
+                  ),
+                ),
+              ],
             ),
           ),
 
-          // Karma Points Bar Overlay
-          Padding(
-            padding: const EdgeInsets.only(left: 14, right: 14, bottom: 14),
+          // Redeem Button
+          InkWell(
+            onTap: () {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (ctx) => const RedeemKarmaModal(),
+              );
+            },
+            borderRadius: BorderRadius.circular(20),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: isDark ? CivicColors.cardSurfaceDark : CivicColors.primarySoft,
-                borderRadius: BorderRadius.circular(16),
+                color: isDark ? CivicColors.primary.withOpacity(0.2) : const Color(0xFFE0E7FE),
+                borderRadius: BorderRadius.circular(20),
               ),
               child: Row(
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  Text(
+                    'Redeem',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w700,
                       color: CivicColors.primary,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Center(
-                      child: Icon(Icons.verified, color: Colors.white, size: 20),
                     ),
                   ),
-                  const SizedBox(width: 12),
-
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Text(
-                              '$karmaPoints',
-                              style: TextStyle(
-                                fontSize: 17,
-                                fontWeight: FontWeight.w800,
-                                color: isDark ? Colors.white : CivicColors.textPrimaryLight,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'KP',
-                              style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: CivicColors.primary,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              '🔥 $streak-Day Streak',
-                              style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFFE65100),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Trust: $trustScore% • Redeemable for DTC Metro passes',
-                          style: TextStyle(
-                            fontSize: 10.5,
-                            color: isDark ? CivicColors.textSecondaryDark : CivicColors.textSecondaryLight,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // Redeem Button
-                  InkWell(
-                    onTap: () {
-                      showModalBottomSheet(
-                        context: context,
-                        isScrollControlled: true,
-                        backgroundColor: Colors.transparent,
-                        builder: (ctx) => const RedeemKarmaModal(),
-                      );
-                    },
-                    borderRadius: BorderRadius.circular(20),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: isDark ? CivicColors.primary.withOpacity(0.2) : const Color(0xFFE0E7FE),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: const [
-                          Text(
-                            'Redeem',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: CivicColors.primary,
-                            ),
-                          ),
-                          SizedBox(width: 3),
-                          Icon(
-                            Icons.arrow_forward,
-                            size: 13,
-                            color: CivicColors.primary,
-                          ),
-                        ],
-                      ),
-                    ),
+                  SizedBox(width: 4),
+                  Icon(
+                    Icons.arrow_forward,
+                    size: 13,
+                    color: CivicColors.primary,
                   ),
                 ],
               ),
@@ -384,8 +347,8 @@ class FeedScreen extends StatelessWidget {
     );
   }
 
-  // 3. My Active Submission Section
-  Widget _buildActiveSubmissionSection(BuildContext context, ActiveSubmissionModel sub, bool isDark) {
+  // 3. My Active Submission Section (Real dynamic state with graceful empty state)
+  Widget _buildActiveSubmissionSection(BuildContext context, ActiveSubmissionModel? sub, bool isDark) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -413,205 +376,254 @@ class FeedScreen extends StatelessWidget {
                 ),
               ],
             ),
-            Text(
-              sub.ticketCode,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: isDark ? CivicColors.textMutedDark : CivicColors.textMutedLight,
-                letterSpacing: 0.4,
+            if (sub != null)
+              Text(
+                sub.ticketCode,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? CivicColors.textMutedDark : CivicColors.textMutedLight,
+                  letterSpacing: 0.4,
+                ),
               ),
-            ),
           ],
         ),
         const SizedBox(height: 10),
 
-        Container(
-          decoration: BoxDecoration(
-            color: isDark ? CivicColors.cardDark : Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: isDark ? CivicColors.borderDark : CivicColors.borderLight,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.04),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
+        if (sub == null)
+          Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: isDark ? CivicColors.cardDark : Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: isDark ? CivicColors.borderDark : CivicColors.borderLight,
               ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            sub.title,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: isDark ? Colors.white : CivicColors.textPrimaryLight,
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: CivicColors.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.camera_alt_outlined, color: CivicColors.primary, size: 24),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'No Active Submissions',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: isDark ? Colors.white : CivicColors.textPrimaryLight,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Tap "Report Civic Hazard" to file a real-time live camera report.',
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          color: isDark ? CivicColors.textSecondaryDark : CivicColors.textSecondaryLight,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
+          Container(
+            decoration: BoxDecoration(
+              color: isDark ? CivicColors.cardDark : Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: isDark ? CivicColors.borderDark : CivicColors.borderLight,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              sub.title,
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: isDark ? Colors.white : CivicColors.textPrimaryLight,
+                              ),
                             ),
                           ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF80EED2),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                width: 5,
-                                height: 5,
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFF065F46),
-                                  shape: BoxShape.circle,
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF80EED2),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 5,
+                                  height: 5,
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFF065F46),
+                                    shape: BoxShape.circle,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 5),
-                              Text(
-                                sub.status,
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFF065F46),
+                                const SizedBox(width: 5),
+                                Text(
+                                  sub.status,
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF065F46),
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      sub.location,
-                      style: TextStyle(
-                        fontSize: 11.5,
-                        color: isDark ? CivicColors.textSecondaryDark : CivicColors.textSecondaryLight,
+                        ],
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 4),
+                      Text(
+                        '${sub.location} • ${sub.timeAgo}',
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          color: isDark ? CivicColors.textSecondaryDark : CivicColors.textSecondaryLight,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
 
-              // 5-Step Horizontal Stepper (Reported -> Assigned -> In progress -> Resolved -> Verified)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _buildStepItem(
-                      icon: Icons.check,
-                      iconBg: const Color(0xFF006C4C),
-                      title: 'Reported',
-                      subtitle: '08:15 AM',
-                      isCompleted: true,
-                      isDark: isDark,
-                    ),
-                    _buildStepConnector(isCompleted: true),
-                    _buildStepItem(
-                      icon: Icons.assignment_ind_outlined,
-                      iconBg: const Color(0xFF007A78),
-                      title: 'Assigned',
-                      subtitle: 'Unit #12',
-                      subtitleColor: const Color(0xFF007A78),
-                      isCompleted: true,
-                      isDark: isDark,
-                    ),
-                    _buildStepConnector(isCompleted: true),
-                    _buildStepItem(
-                      icon: Icons.bolt,
-                      iconBg: const Color(0xFF4F32E5),
-                      title: 'In Progress',
-                      subtitle: 'En Route',
-                      subtitleColor: const Color(0xFF4F32E5),
-                      isCompleted: true,
-                      isDark: isDark,
-                    ),
-                    _buildStepConnector(isCompleted: false),
-                    _buildStepItem(
-                      icon: Icons.camera_alt_outlined,
-                      iconBg: isDark ? Colors.grey.shade700 : const Color(0xFFE2E8F0),
-                      iconColor: isDark ? Colors.grey.shade400 : const Color(0xFF94A3B8),
-                      title: 'Resolved',
-                      subtitle: 'Pending',
-                      subtitleColor: isDark ? Colors.grey.shade400 : const Color(0xFF94A3B8),
-                      isCompleted: false,
-                      isDark: isDark,
-                    ),
-                    _buildStepConnector(isCompleted: false),
-                    _buildStepItem(
-                      icon: Icons.verified_outlined,
-                      iconBg: isDark ? Colors.grey.shade700 : const Color(0xFFE2E8F0),
-                      iconColor: isDark ? Colors.grey.shade400 : const Color(0xFF94A3B8),
-                      title: 'Verified',
-                      subtitle: 'Zonal SE',
-                      subtitleColor: isDark ? Colors.grey.shade400 : const Color(0xFF94A3B8),
-                      isCompleted: false,
-                      isDark: isDark,
-                    ),
-                  ],
+                // Stepper
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _buildStepItem(
+                        icon: Icons.check,
+                        iconBg: const Color(0xFF006C4C),
+                        title: 'Reported',
+                        subtitle: 'Live Camera',
+                        isCompleted: true,
+                        isDark: isDark,
+                      ),
+                      _buildStepConnector(isCompleted: true),
+                      _buildStepItem(
+                        icon: Icons.assignment_ind_outlined,
+                        iconBg: const Color(0xFF007A78),
+                        title: 'Assigned',
+                        subtitle: 'Unit #3',
+                        subtitleColor: const Color(0xFF007A78),
+                        isCompleted: true,
+                        isDark: isDark,
+                      ),
+                      _buildStepConnector(isCompleted: true),
+                      _buildStepItem(
+                        icon: Icons.bolt,
+                        iconBg: const Color(0xFF4F32E5),
+                        title: 'In Progress',
+                        subtitle: 'En Route',
+                        subtitleColor: const Color(0xFF4F32E5),
+                        isCompleted: true,
+                        isDark: isDark,
+                      ),
+                      _buildStepConnector(isCompleted: false),
+                      _buildStepItem(
+                        icon: Icons.camera_alt_outlined,
+                        iconBg: isDark ? Colors.grey.shade700 : const Color(0xFFE2E8F0),
+                        iconColor: isDark ? Colors.grey.shade400 : const Color(0xFF94A3B8),
+                        title: 'Resolved',
+                        subtitle: 'Pending',
+                        subtitleColor: isDark ? Colors.grey.shade400 : const Color(0xFF94A3B8),
+                        isCompleted: false,
+                        isDark: isDark,
+                      ),
+                      _buildStepConnector(isCompleted: false),
+                      _buildStepItem(
+                        icon: Icons.verified_outlined,
+                        iconBg: isDark ? Colors.grey.shade700 : const Color(0xFFE2E8F0),
+                        iconColor: isDark ? Colors.grey.shade400 : const Color(0xFF94A3B8),
+                        title: 'Verified',
+                        subtitle: 'Zonal SE',
+                        subtitleColor: isDark ? Colors.grey.shade400 : const Color(0xFF94A3B8),
+                        isCompleted: false,
+                        isDark: isDark,
+                      ),
+                    ],
+                  ),
                 ),
-              ),
 
-              const SizedBox(height: 14),
+                const SizedBox(height: 14),
 
-              // Bottom Lock & SLA banner
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                decoration: BoxDecoration(
-                  color: isDark ? CivicColors.cardSurfaceDark : const Color(0xFFEEF2FF),
-                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.shield_outlined, size: 15, color: CivicColors.primary),
-                        const SizedBox(width: 6),
-                        Text(
-                          sub.securityLockText,
+                // Bottom Lock & SLA banner
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: isDark ? CivicColors.cardSurfaceDark : const Color(0xFFEEF2FF),
+                    borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.shield_outlined, size: 15, color: CivicColors.primary),
+                          const SizedBox(width: 6),
+                          Text(
+                            sub.securityLockText,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: isDark ? Colors.white70 : CivicColors.textPrimaryLight,
+                            ),
+                          ),
+                        ],
+                      ),
+                      InkWell(
+                        onTap: () {
+                          _showSlaDetails(context, sub, isDark);
+                        },
+                        child: const Text(
+                          'View Live\nSLA',
+                          textAlign: TextAlign.right,
                           style: TextStyle(
                             fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            color: isDark ? Colors.white70 : CivicColors.textPrimaryLight,
+                            fontWeight: FontWeight.w700,
+                            color: CivicColors.primary,
+                            height: 1.1,
                           ),
                         ),
-                      ],
-                    ),
-                    InkWell(
-                      onTap: () {
-                        _showSlaDetails(context, sub, isDark);
-                      },
-                      child: const Text(
-                        'View Live\nSLA',
-                        textAlign: TextAlign.right,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: CivicColors.primary,
-                          height: 1.1,
-                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
       ],
     );
   }
@@ -670,7 +682,7 @@ class FeedScreen extends StatelessWidget {
     );
   }
 
-  // 4. Nearby Hazard Radar Section
+  // 4. Nearby Hazard Radar Section (Real dynamic data)
   Widget _buildHazardRadarSection(BuildContext context, CivicAppState state, bool isDark) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -730,7 +742,44 @@ class FeedScreen extends StatelessWidget {
         ),
         const SizedBox(height: 14),
 
-        ...state.hazards.map((hazard) => _buildHazardCard(context, state, hazard, isDark)),
+        if (state.hazards.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: isDark ? CivicColors.cardDark : Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: isDark ? CivicColors.borderDark : CivicColors.borderLight,
+              ),
+            ),
+            child: Center(
+              child: Column(
+                children: [
+                  const Icon(Icons.check_circle_outline, color: CivicColors.mintDark, size: 40),
+                  const SizedBox(height: 8),
+                  Text(
+                    'All Clear in Your Radar Zone',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? Colors.white : CivicColors.textPrimaryLight,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'No open hazard complaints nearby. Tap "Report Civic Hazard" above if you spot an issue.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isDark ? CivicColors.textSecondaryDark : CivicColors.textSecondaryLight,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else
+          ...state.hazards.map((hazard) => _buildHazardCard(context, state, hazard, isDark)),
       ],
     );
   }
@@ -766,6 +815,10 @@ class FeedScreen extends StatelessWidget {
                   Image.network(
                     hazard.imageUrl,
                     fit: BoxFit.cover,
+                    errorBuilder: (ctx, err, stack) => Container(
+                      color: Colors.grey.shade800,
+                      child: const Center(child: Icon(Icons.broken_image, color: Colors.white54)),
+                    ),
                   ),
                   Positioned(
                     top: 10,
@@ -1075,13 +1128,9 @@ class FeedScreen extends StatelessWidget {
           children: const [
             Text('• 5-Step Workflow: Reported ➔ Assigned ➔ In Progress ➔ Resolved ➔ Verified'),
             SizedBox(height: 4),
-            Text('• Max Turnaround Target: 4.0 Hours'),
-            SizedBox(height: 4),
-            Text('• Assigned Team: PWD Sanitation Unit #12'),
+            Text('• Turnaround Target: 4.0 Hours'),
             SizedBox(height: 4),
             Text('• Cryptographic EXIF Geofence: Active & Verified'),
-            SizedBox(height: 4),
-            Text('• Expected Resolution: Today 11:30 AM'),
           ],
         ),
         actions: [

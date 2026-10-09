@@ -5,6 +5,7 @@ import '../theme/app_theme.dart';
 import '../models/user_model.dart';
 import '../screens/login_screen.dart';
 import '../screens/leaderboard_modal.dart';
+import 'system_workflow_sheet.dart';
 
 class TopHeader extends StatelessWidget implements PreferredSizeWidget {
   const TopHeader({super.key});
@@ -136,6 +137,20 @@ class TopHeader extends StatelessWidget implements PreferredSizeWidget {
               ),
             ),
             const SizedBox(width: 4),
+
+            // System Architecture Workflow Button
+            IconButton(
+              icon: const Icon(Icons.account_tree_outlined, color: CivicColors.primary, size: 22),
+              tooltip: 'System Architecture Workflow',
+              onPressed: () {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (ctx) => const SystemWorkflowSheet(),
+                );
+              },
+            ),
 
             // Leaderboard Button
             IconButton(

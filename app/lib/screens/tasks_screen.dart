@@ -29,7 +29,9 @@ class _TasksScreenState extends State<TasksScreen> {
     final slaSeconds = state.urgentSlaRemainingSeconds;
     final minutes = (slaSeconds / 60).floor();
     final seconds = slaSeconds % 60;
-    final timeFormatted = '${minutes.toString().padLeft(2, '0')}m ${seconds.toString().padLeft(2, '0')}s remaining';
+    final timeFormatted = slaSeconds > 0
+        ? '${minutes.toString().padLeft(2, '0')}m ${seconds.toString().padLeft(2, '0')}s remaining'
+        : 'SLA Triage Active';
 
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
@@ -38,69 +40,117 @@ class _TasksScreenState extends State<TasksScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 1. Officer Profile Header Card
-          _buildOfficerProfileHeader(context, user, isDark),
+          _buildOfficerProfileHeader(context, user, state, isDark),
           const SizedBox(height: 16),
 
-          // 2. Urgent Action Required Header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: const [
-                  Icon(Icons.warning_amber_rounded, color: CivicColors.urgentRed, size: 20),
-                  SizedBox(width: 6),
-                  Text(
-                    'Urgent Action\nRequired',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      color: CivicColors.textPrimaryLight,
-                      height: 1.1,
-                    ),
-                  ),
-                ],
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFE4E6),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 5,
-                      height: 5,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFBE123C),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 5),
+          // 2. Urgent Action Required Header (Only if urgent task exists)
+          if (urgentTask != null && !urgentTask.isResolved) ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: const [
+                    Icon(Icons.warning_amber_rounded, color: CivicColors.urgentRed, size: 20),
+                    SizedBox(width: 6),
                     Text(
-                      timeFormatted,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFFBE123C),
+                      'Urgent Action\nRequired',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: CivicColors.textPrimaryLight,
+                        height: 1.1,
                       ),
                     ),
                   ],
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFE4E6),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 5,
+                        height: 5,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFBE123C),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        timeFormatted,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFFBE123C),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
 
-          // 3. Urgent Task Card
-          if (urgentTask != null) ...[
+            // 3. Urgent Task Card
             _buildUrgentTaskCard(context, state, urgentTask, isDark),
             const SizedBox(height: 20),
-          ],
 
-          // 4. Tamper-Proof Resolution Proof Card
-          _buildTamperProofSection(context, state, isDark),
-          const SizedBox(height: 24),
+            // 4. Tamper-Proof Resolution Proof Card
+            _buildTamperProofSection(context, state, isDark),
+            const SizedBox(height: 24),
+          ] else ...[
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: isDark ? CivicColors.cardDark : Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: isDark ? CivicColors.borderDark : CivicColors.borderLight,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: CivicColors.mint.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.check_circle_outline, color: CivicColors.mintDark, size: 26),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'No Urgent Pending Tasks',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: isDark ? Colors.white : CivicColors.textPrimaryLight,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'All assigned squad tasks in Ward 42 are currently cleared. Standby for dispatch alerts.',
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            color: isDark ? CivicColors.textSecondaryDark : CivicColors.textSecondaryLight,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+          ],
 
           // 5. Completed (Audit In-Progress) Section
           _buildCompletedSection(context, state, isDark),
@@ -115,7 +165,7 @@ class _TasksScreenState extends State<TasksScreen> {
   }
 
   // 1. Officer Profile Header Card
-  Widget _buildOfficerProfileHeader(BuildContext context, UserModel? user, bool isDark) {
+  Widget _buildOfficerProfileHeader(BuildContext context, UserModel? user, CivicAppState state, bool isDark) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -129,7 +179,6 @@ class _TasksScreenState extends State<TasksScreen> {
         children: [
           Row(
             children: [
-              // Avatar with Online indicator
               Stack(
                 children: [
                   Container(
@@ -141,7 +190,7 @@ class _TasksScreenState extends State<TasksScreen> {
                     ),
                     child: Center(
                       child: Text(
-                        user != null && user.role == UserRole.fieldOfficer ? 'RK' : 'RK',
+                        user != null ? user.name.split(' ').map((e) => e.isNotEmpty ? e[0] : '').take(2).join() : 'RK',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 16,
@@ -167,7 +216,6 @@ class _TasksScreenState extends State<TasksScreen> {
               ),
               const SizedBox(width: 12),
 
-              // Officer Info
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -175,12 +223,11 @@ class _TasksScreenState extends State<TasksScreen> {
                     Row(
                       children: [
                         Text(
-                          user?.role == UserRole.fieldOfficer ? user!.name : 'Rajesh\nKumar',
+                          user?.name ?? 'Rajesh Kumar',
                           style: TextStyle(
-                            fontSize: 16,
+                            fontSize: 15.5,
                             fontWeight: FontWeight.w800,
                             color: isDark ? Colors.white : CivicColors.textPrimaryLight,
-                            height: 1.1,
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -192,18 +239,15 @@ class _TasksScreenState extends State<TasksScreen> {
                             border: Border.all(color: Colors.grey.shade300),
                           ),
                           child: Text(
-                            user?.unitId ?? 'Unit\n#3',
-                            textAlign: TextAlign.center,
+                            user?.unitId ?? 'Unit #3',
                             style: const TextStyle(
-                              fontSize: 9.5,
+                              fontSize: 10,
                               fontWeight: FontWeight.w700,
                               color: CivicColors.textPrimaryLight,
-                              height: 1.1,
                             ),
                           ),
                         ),
                         const Spacer(),
-                        // Region & Accuracy Badge
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
@@ -254,7 +298,7 @@ class _TasksScreenState extends State<TasksScreen> {
                           ],
                         ),
                         Text(
-                          'Accuracy ±1.8m',
+                          'Accuracy ±${user?.gpsAccuracy ?? 1.8}m',
                           style: TextStyle(
                             fontSize: 10,
                             color: isDark ? CivicColors.textMutedDark : CivicColors.textSecondaryLight,
@@ -269,16 +313,16 @@ class _TasksScreenState extends State<TasksScreen> {
           ),
           const SizedBox(height: 14),
 
-          // 4 Metric Boxes
+          // 4 Metric Boxes (Live dynamic counters)
           Row(
             children: [
-              _buildStatBox('4', 'Assigned', isDark, false),
+              _buildStatBox('${state.urgentTask != null ? 1 : 0}', 'Assigned', isDark, false),
               const SizedBox(width: 8),
-              _buildStatBox('2', 'Cleared', isDark, false),
+              _buildStatBox('${state.completedTasks.length}', 'Cleared', isDark, false),
               const SizedBox(width: 8),
-              _buildStatBox('1', 'Critical', isDark, true),
+              _buildStatBox('${state.urgentTask != null ? 1 : 0}', 'Critical', isDark, state.urgentTask != null),
               const SizedBox(width: 8),
-              _buildStatBox('⭐ 4.9', 'Rating', isDark, false),
+              _buildStatBox('⭐ ${user?.rating ?? 5.0}', 'Rating', isDark, false),
             ],
           ),
         ],
@@ -354,7 +398,6 @@ class _TasksScreenState extends State<TasksScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Tags
                 Row(
                   children: [
                     Container(
@@ -379,9 +422,9 @@ class _TasksScreenState extends State<TasksScreen> {
                         color: const Color(0xFFEEF2FF),
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      child: const Text(
-                        'PWD Sanitation',
-                        style: TextStyle(
+                      child: Text(
+                        task.departmentTag,
+                        style: const TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
                           color: CivicColors.primary,
@@ -392,8 +435,8 @@ class _TasksScreenState extends State<TasksScreen> {
                     Container(
                       width: 28,
                       height: 28,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEEF2FF),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFEEF2FF),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(Icons.more_vert, size: 16, color: CivicColors.primary),
@@ -402,7 +445,6 @@ class _TasksScreenState extends State<TasksScreen> {
                 ),
                 const SizedBox(height: 10),
 
-                // Title
                 Text(
                   task.title,
                   style: TextStyle(
@@ -413,7 +455,6 @@ class _TasksScreenState extends State<TasksScreen> {
                 ),
                 const SizedBox(height: 8),
 
-                // Location Details Box
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
@@ -456,7 +497,7 @@ class _TasksScreenState extends State<TasksScreen> {
             ),
           ),
 
-          // Image with Simulated AI Bounding Box
+          // Image with Bounding Box
           ClipRRect(
             child: SizedBox(
               height: 180,
@@ -472,8 +513,6 @@ class _TasksScreenState extends State<TasksScreen> {
                       child: const Center(child: Icon(Icons.broken_image, color: Colors.white54)),
                     ),
                   ),
-
-                  // Bounding Box Rectangle Overlay
                   Positioned(
                     top: 40,
                     left: 40,
@@ -486,8 +525,6 @@ class _TasksScreenState extends State<TasksScreen> {
                       ),
                     ),
                   ),
-
-                  // Top Tags
                   Positioned(
                     top: 10,
                     left: 10,
@@ -497,52 +534,12 @@ class _TasksScreenState extends State<TasksScreen> {
                         color: Colors.black.withOpacity(0.8),
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      child: Row(
-                        children: const [
-                          Icon(Icons.close, size: 12, color: Colors.white70),
-                          SizedBox(width: 4),
-                          Text(
-                            'AWS Rekognition Confirmed',
-                            style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w600),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    top: 10,
-                    right: 10,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.8),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
                       child: Text(
-                        task.reportedTime,
+                        'AWS Rekognition: ${task.aiRekognitionLabel}',
                         style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w600),
                       ),
                     ),
                   ),
-
-                  // Drain Clog Pill inside bounding box
-                  Positioned(
-                    top: 42,
-                    right: 44,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFDC2626),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: const Text(
-                        'Drain Clog 98.4%',
-                        style: TextStyle(color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.w700),
-                      ),
-                    ),
-                  ),
-
-                  // Bottom Watermark
                   Positioned(
                     bottom: 0,
                     left: 0,
@@ -582,7 +579,6 @@ class _TasksScreenState extends State<TasksScreen> {
             ),
           ),
 
-          // Action Buttons: MapLibre Route & Resolve Now
           Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
@@ -603,8 +599,8 @@ class _TasksScreenState extends State<TasksScreen> {
                     ),
                     onPressed: () {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('MapLibre Vector Navigation: Routing to Pillar 24 (120m away)'),
+                        SnackBar(
+                          content: Text('MapLibre Vector Navigation: Routing to ${task.locationName}'),
                           behavior: SnackBarBehavior.floating,
                         ),
                       );
@@ -653,7 +649,6 @@ class _TasksScreenState extends State<TasksScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -711,7 +706,6 @@ class _TasksScreenState extends State<TasksScreen> {
           ),
           const SizedBox(height: 14),
 
-          // Geofence Validation Box
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -757,7 +751,6 @@ class _TasksScreenState extends State<TasksScreen> {
                 ),
                 const SizedBox(height: 8),
 
-                // Precision meter line
                 ClipRRect(
                   borderRadius: BorderRadius.circular(4),
                   child: Container(
@@ -791,7 +784,6 @@ class _TasksScreenState extends State<TasksScreen> {
           ),
           const SizedBox(height: 14),
 
-          // Post-Resolution Camera Capture Container
           Text(
             'Post-Resolution Camera Capture',
             style: TextStyle(
@@ -813,13 +805,21 @@ class _TasksScreenState extends State<TasksScreen> {
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: isDark ? CivicColors.borderDark : const Color(0xFFCBD5E1),
-                  style: BorderStyle.solid,
                 ),
               ),
               child: state.capturedProofImage != null
                   ? ClipRRect(
                       borderRadius: BorderRadius.circular(16),
-                      child: Image.network(state.capturedProofImage!, fit: BoxFit.cover),
+                      child: Image.network(
+                        state.capturedProofImage!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (ctx, err, stack) => Container(
+                          color: const Color(0xFF007A78),
+                          child: const Center(
+                            child: Icon(Icons.check_circle_outline, color: Colors.white, size: 36),
+                          ),
+                        ),
+                      ),
                     )
                   : Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -858,7 +858,6 @@ class _TasksScreenState extends State<TasksScreen> {
           ),
           const SizedBox(height: 14),
 
-          // Sanitation Disposal Audit Log dropdown
           Text(
             'Sanitation Disposal Audit Log',
             style: TextStyle(
@@ -902,7 +901,6 @@ class _TasksScreenState extends State<TasksScreen> {
           ),
           const SizedBox(height: 12),
 
-          // Automated Verification Pipeline info
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
@@ -929,7 +927,6 @@ class _TasksScreenState extends State<TasksScreen> {
           ),
           const SizedBox(height: 14),
 
-          // Upload Proof & Trigger AI Audit Button
           SizedBox(
             width: double.infinity,
             height: 46,
@@ -1006,7 +1003,26 @@ class _TasksScreenState extends State<TasksScreen> {
         ),
         const SizedBox(height: 12),
 
-        ...state.completedTasks.map((task) => _buildCompletedCard(task, isDark)),
+        if (state.completedTasks.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isDark ? CivicColors.cardDark : Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: isDark ? CivicColors.borderDark : CivicColors.borderLight),
+            ),
+            child: Center(
+              child: Text(
+                'No verified tasks completed today yet.',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: isDark ? CivicColors.textMutedDark : CivicColors.textMutedLight,
+                ),
+              ),
+            ),
+          )
+        else
+          ...state.completedTasks.map((task) => _buildCompletedCard(task, isDark)),
       ],
     );
   }
@@ -1025,7 +1041,6 @@ class _TasksScreenState extends State<TasksScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Tags
           Row(
             children: [
               Container(
@@ -1079,7 +1094,6 @@ class _TasksScreenState extends State<TasksScreen> {
           ),
           const SizedBox(height: 8),
 
-          // Title
           Text(
             task.title,
             style: TextStyle(
@@ -1090,10 +1104,8 @@ class _TasksScreenState extends State<TasksScreen> {
           ),
           const SizedBox(height: 12),
 
-          // Before & After Split Image View
           Row(
             children: [
-              // Before
               Expanded(
                 child: Column(
                   children: [
@@ -1145,7 +1157,6 @@ class _TasksScreenState extends State<TasksScreen> {
               ),
               const SizedBox(width: 10),
 
-              // After
               Expanded(
                 child: Column(
                   children: [
@@ -1199,7 +1210,6 @@ class _TasksScreenState extends State<TasksScreen> {
           ),
           const SizedBox(height: 12),
 
-          // Triage Score Banner
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             decoration: BoxDecoration(

@@ -12,7 +12,6 @@ class ExecutiveDashboardScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final state = context.watch<CivicAppState>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final currentRole = state.dashboardRole;
 
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
@@ -32,7 +31,7 @@ class ExecutiveDashboardScreen extends StatelessWidget {
           _buildKpiCardsRow(state, isDark),
           const SizedBox(height: 16),
 
-          // 4. Low-Confidence AI Manual Review Queue (< 80% AI Confidence)
+          // 4. Low-Confidence AI Manual Review Queue
           _buildReviewQueueSection(context, state, isDark),
           const SizedBox(height: 20),
 
@@ -40,11 +39,7 @@ class ExecutiveDashboardScreen extends StatelessWidget {
           _buildWardComparisonSection(state, isDark),
           const SizedBox(height: 20),
 
-          // 6. Cold Zones (No Reports in 14d - Preventive Patrol)
-          _buildColdZonesSection(context, state, isDark),
-          const SizedBox(height: 20),
-
-          // 7. Security & Compliance Footer
+          // 6. Security & Compliance Footer
           _buildSecurityFooter(isDark),
           const SizedBox(height: 24),
         ],
@@ -65,10 +60,7 @@ class ExecutiveDashboardScreen extends StatelessWidget {
       scrollDirection: Axis.horizontal,
       child: Row(
         children: roles.map((r) {
-          final isSelected = state.dashboardRole == r['role'] &&
-              (r['label'] == 'Zonal Officer'
-                  ? state.currentUser?.role == UserRole.zonalInspector
-                  : state.dashboardRole == r['role']);
+          final isSelected = state.dashboardRole == r['role'];
 
           return Container(
             margin: const EdgeInsets.only(right: 8),
@@ -96,6 +88,10 @@ class ExecutiveDashboardScreen extends StatelessWidget {
 
   // 2. Bedrock AI-Written Executive Summary
   Widget _buildBedrockExecutiveSummary(CivicAppState state, bool isDark) {
+    final openCount = state.hazards.length;
+    final clearedCount = state.completedTasks.length;
+    final trustScore = state.currentUser?.trustScore ?? 100.0;
+
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -131,31 +127,31 @@ class ExecutiveDashboardScreen extends StatelessWidget {
                   color: Colors.white.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(6),
                 ),
-                child: const Text('Hourly Sync', style: TextStyle(color: Colors.white, fontSize: 10)),
+                child: const Text('Live Sync', style: TextStyle(color: Colors.white, fontSize: 10)),
               ),
             ],
           ),
           const SizedBox(height: 8),
-          const Text(
-            '“12 SLA misses in Ward 7 (Civil Lines) this week due to compactor chassis repair. Ward 42 Rohini maintained 96.4% on-time resolution. Action: Divert backup Compactor DL-1GC-4921 to Ward 7 at 14:00.”',
-            style: TextStyle(color: Colors.white, fontSize: 12.5, height: 1.35, fontWeight: FontWeight.w500),
+          Text(
+            '“Ward 42 Telemetry: $openCount active complaints registered in system. $clearedCount tasks cleared with verified cryptographic EXIF proof. Average citizen trust index is $trustScore%.”',
+            style: const TextStyle(color: Colors.white, fontSize: 12.5, height: 1.35, fontWeight: FontWeight.w500),
           ),
         ],
       ),
     );
   }
 
-  // 3. Top KPI Cards
+  // 3. Top KPI Cards (Real dynamic counts)
   Widget _buildKpiCardsRow(CivicAppState state, bool isDark) {
     return Row(
       children: [
-        _buildKpiCard('24', 'Open Tickets', CivicColors.primary, isDark),
+        _buildKpiCard('${state.hazards.length}', 'Open Tickets', CivicColors.primary, isDark),
         const SizedBox(width: 8),
-        _buildKpiCard('0', 'Ward 42 SLA Miss', CivicColors.mintDark, isDark),
+        _buildKpiCard('${state.completedTasks.length}', 'Cleared Today', CivicColors.mintDark, isDark),
         const SizedBox(width: 8),
-        _buildKpiCard('12', 'Regional Misses', CivicColors.urgentRed, isDark),
+        _buildKpiCard('${state.urgentTask != null ? 1 : 0}', 'Urgent Action', CivicColors.urgentRed, isDark),
         const SizedBox(width: 8),
-        _buildKpiCard('98.4%', 'Trust Score', const Color(0xFFD97706), isDark),
+        _buildKpiCard('${state.currentUser?.trustScore ?? 100.0}%', 'Trust Score', const Color(0xFFD97706), isDark),
       ],
     );
   }
@@ -193,6 +189,8 @@ class ExecutiveDashboardScreen extends StatelessWidget {
 
   // 4. Low-Confidence AI Manual Review Queue
   Widget _buildReviewQueueSection(BuildContext context, CivicAppState state, bool isDark) {
+    final pendingCount = state.reviewQueue.where((r) => r.status == 'pending').length;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -216,19 +214,43 @@ class ExecutiveDashboardScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                color: const Color(0xFFFEE2E2),
+                color: pendingCount > 0 ? const Color(0xFFFEE2E2) : const Color(0xFFDCFCE7),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text(
-                '${state.reviewQueue.where((r) => r.status == 'pending').length} Pending Review',
-                style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: Color(0xFF991B1B)),
+                '$pendingCount Pending Review',
+                style: TextStyle(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w700,
+                  color: pendingCount > 0 ? const Color(0xFF991B1B) : const Color(0xFF065F46),
+                ),
               ),
             ),
           ],
         ),
         const SizedBox(height: 10),
 
-        ...state.reviewQueue.map((item) => _buildReviewItemCard(context, state, item, isDark)),
+        if (state.reviewQueue.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isDark ? CivicColors.cardDark : Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: isDark ? CivicColors.borderDark : CivicColors.borderLight),
+            ),
+            child: Center(
+              child: Text(
+                'All incoming citizen reports verified by Rekognition. Review queue empty.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: isDark ? CivicColors.textMutedDark : CivicColors.textMutedLight,
+                ),
+              ),
+            ),
+          )
+        else
+          ...state.reviewQueue.map((item) => _buildReviewItemCard(context, state, item, isDark)),
       ],
     );
   }
@@ -260,7 +282,14 @@ class ExecutiveDashboardScreen extends StatelessWidget {
                 child: SizedBox(
                   width: 70,
                   height: 70,
-                  child: Image.network(item.imageUrl, fit: BoxFit.cover),
+                  child: Image.network(
+                    item.imageUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (ctx, err, stack) => Container(
+                      color: Colors.grey.shade800,
+                      child: const Center(child: Icon(Icons.broken_image, color: Colors.white54)),
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(width: 10),
@@ -320,7 +349,6 @@ class ExecutiveDashboardScreen extends StatelessWidget {
           ),
           const SizedBox(height: 10),
 
-          // Action buttons: Approve / Reject
           if (item.status == 'pending')
             Row(
               children: [
@@ -392,7 +420,7 @@ class ExecutiveDashboardScreen extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Ward SLA & Escalation Comparison',
+          'Ward SLA & Telemetry Summary',
           style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w800,
@@ -448,15 +476,15 @@ class ExecutiveDashboardScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
-                          '${ward.clearanceRatePct}% Resolved',
+                          '${ward.clearanceRatePct.toStringAsFixed(1)}% Resolved',
                           style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: CivicColors.primary),
                         ),
                         Text(
-                          '${ward.slaMisses} SLA Misses',
-                          style: TextStyle(
+                          '${ward.openComplaints} Open Complaints',
+                          style: const TextStyle(
                             fontSize: 10.5,
                             fontWeight: FontWeight.w600,
-                            color: ward.slaMisses > 0 ? const Color(0xFFDC2626) : Colors.grey,
+                            color: Colors.grey,
                           ),
                         ),
                       ],
@@ -471,79 +499,7 @@ class ExecutiveDashboardScreen extends StatelessWidget {
     );
   }
 
-  // 6. Cold Zones (No Reports in 14d)
-  Widget _buildColdZonesSection(BuildContext context, CivicAppState state, bool isDark) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: const [
-            Icon(Icons.ac_unit, color: Colors.blueAccent, size: 16),
-            SizedBox(width: 6),
-            Text(
-              'Cold Zones (Zero Reports in 14d - Preventive Patrol)',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-
-        ...state.coldZones.map((cz) {
-          return Container(
-            margin: const EdgeInsets.only(bottom: 8),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: isDark ? CivicColors.cardDark : const Color(0xFFF0F9FF),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: isDark ? CivicColors.borderDark : const Color(0xFFBAE6FD)),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '${cz.name} (${cz.daysWithoutReport})',
-                        style: TextStyle(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w700,
-                          color: isDark ? Colors.white : CivicColors.textPrimaryLight,
-                        ),
-                      ),
-                      Text(
-                        'Risk: ${cz.riskFactor} • Action: ${cz.suggestedAction}',
-                        style: TextStyle(
-                          fontSize: 10.5,
-                          color: isDark ? CivicColors.textSecondaryDark : CivicColors.textSecondaryLight,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: CivicColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Patrol squad routed to ${cz.name}!')),
-                    );
-                  },
-                  child: const Text('Dispatch Patrol', style: TextStyle(fontSize: 10.5)),
-                ),
-              ],
-            ),
-          );
-        }),
-      ],
-    );
-  }
-
-  // 7. Security & Compliance Footer
+  // 6. Security & Compliance Footer
   Widget _buildSecurityFooter(bool isDark) {
     return Container(
       padding: const EdgeInsets.all(12),

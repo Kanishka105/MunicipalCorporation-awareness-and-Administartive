@@ -49,7 +49,7 @@ class CivicAppState extends ChangeNotifier {
   List<CopilotChatMessage> _copilotMessages = [];
   List<CopilotChatMessage> get copilotMessages => _copilotMessages;
 
-  // Leaderboard & Citizen Fixes
+  // Leaderboard & Citizen Fixes (Live dynamic list)
   List<CitizenLeaderboardEntry> _leaderboard = [];
   List<CitizenLeaderboardEntry> get leaderboard => _leaderboard;
 
@@ -77,9 +77,9 @@ class CivicAppState extends ChangeNotifier {
 
   // Real-time SLA timer & 75% Escalation Tracker
   Timer? _slaTimer;
-  int _urgentSlaRemainingSeconds = 1680; // 28m 00s
+  int _urgentSlaRemainingSeconds = 0;
   int get urgentSlaRemainingSeconds => _urgentSlaRemainingSeconds;
-  String _escalationStatus = 'Escalated to Field Unit #3';
+  String _escalationStatus = 'Normal Monitoring';
   String get escalationStatus => _escalationStatus;
 
   // Tamper proof form state
@@ -103,349 +103,74 @@ class CivicAppState extends ChangeNotifier {
       _themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
     }
 
-    // Load user
+    // Load saved user session from SharedPreferences
     final savedUser = await _storage.loadUser();
-    if (savedUser != null) {
-      _currentUser = savedUser;
-    } else {
-      _currentUser = const UserModel(
-        id: 'usr_del_4201',
-        name: 'Aarav Sharma',
-        phone: '+91 98765 43210',
-        email: 'aarav.sharma@dtu.ac.in',
-        ward: 'DTU Ward 42',
-        role: UserRole.citizen,
-        karmaPoints: 340,
-        streakDays: 7,
-        trustScore: 98.4,
-        avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=80',
-        cognitoGroup: 'MCD-Citizen-Verified',
-      );
+    _currentUser = savedUser;
+
+    // Load active submission from persistent storage
+    _activeSubmission = await _storage.loadActiveSubmission();
+
+    // Load hazards from persistent storage
+    final savedHazards = await _storage.loadHazards();
+    _hazards = savedHazards ?? [];
+
+    // Load urgent task from persistent storage
+    final savedTask = await _storage.loadUrgentTask();
+    _urgentTask = savedTask;
+    if (_urgentTask != null && !_urgentTask!.isResolved) {
+      _urgentSlaRemainingSeconds = _urgentTask!.slaRemaining.inSeconds;
+      _startSlaTimer();
     }
 
-    // Load active submission
-    final savedSub = await _storage.loadActiveSubmission();
-    _activeSubmission = savedSub ??
-        const ActiveSubmissionModel(
-          id: 'sub_8840',
-          ticketCode: 'CP-DEL-8840',
-          title: 'Cracked Concrete Manhole Cover',
-          location: 'Pocket 2, Sector 17 Rohini • Submitted 3h ago',
-          timeAgo: 'Submitted 3h ago',
-          status: 'Crew En Route',
-          statusColor: 'mint',
-          steps: [
-            ActiveSubmissionStep(
-              title: 'Reported',
-              subtitle: '08:15 AM',
-              isCompleted: true,
-              isCurrent: false,
-              iconType: 'check',
-            ),
-            ActiveSubmissionStep(
-              title: 'Assigned',
-              subtitle: 'Unit #12',
-              isCompleted: true,
-              isCurrent: false,
-              iconType: 'dedup',
-            ),
-            ActiveSubmissionStep(
-              title: 'In Progress',
-              subtitle: 'En Route',
-              isCompleted: true,
-              isCurrent: false,
-              iconType: 'dispatch',
-            ),
-            ActiveSubmissionStep(
-              title: 'Resolved',
-              subtitle: 'Pending Proof',
-              isCompleted: false,
-              isCurrent: true,
-              iconType: 'pending',
-            ),
-            ActiveSubmissionStep(
-              title: 'Verified',
-              subtitle: 'Zonal SE',
-              isCompleted: false,
-              isCurrent: false,
-              iconType: 'pending',
-            ),
-          ],
-          securityLockText: 'Tamper-safe GPS camera lock applied',
-          liveSlaUrl: 'https://civicpulse.delhi.gov.in/sla/8840',
-        );
-
-    // Load hazards
-    final savedHazards = await _storage.loadHazards();
-    _hazards = savedHazards ??
-        [
-          HazardRadarModel(
-            id: 'hz_8921',
-            ticketCode: 'CP-DEL-8921',
-            title: 'Severe Overflowing Dumpster at DTU North Gate',
-            description:
-                'Municipal container over capacity by 200%. Proximity to DTU Campus entrance. High footfall obstruction.',
-            locationTag: 'DTU North Gate • Node #DTU-042',
-            nodeCode: '#DTU-042',
-            aiTag: 'Rekognition: Solid Waste (98.4%)',
-            badgeTag: '• Urgent SLA',
-            isUrgent: true,
-            backers: 148,
-            backerSubtext: '+12 in last hour',
-            slaTimeLeft: '1h 42m Left',
-            slaSubtext: 'Field Triage SLA',
-            imageUrl: 'https://images.unsplash.com/photo-1605600659908-0ef719419d41?auto=format&fit=crop&w=800&q=80',
-            hasSupported: false,
-            createdAt: DateTime.now().subtract(const Duration(minutes: 50)),
-          ),
-          HazardRadarModel(
-            id: 'hz_9014',
-            ticketCode: 'CP-DEL-9014',
-            title: 'Stormwater Drain Silt & Plastic Clogging',
-            description:
-                'Runoff backflow risk detected before upcoming rainfall near Dr. BSA Hospital approach road.',
-            locationTag: 'Rohini Sec-17 Road 3 • Node #ROH-19',
-            nodeCode: '#ROH-19',
-            aiTag: 'Rekognition: Silt Clog (94%)',
-            badgeTag: 'Sanitation Unit #4',
-            isUrgent: false,
-            backers: 42,
-            backerSubtext: 'Hospital Zone (High Priority)',
-            slaTimeLeft: 'In Progress',
-            slaSubtext: 'ETA: Today 4:00 PM',
-            imageUrl: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&w=800&q=80',
-            hasSupported: false,
-            createdAt: DateTime.now().subtract(const Duration(hours: 2)),
-          ),
-        ];
-
-    // Load urgent task
-    final savedTask = await _storage.loadUrgentTask();
-    _urgentTask = savedTask ??
-        const UrgentOfficerTaskModel(
-          taskId: '#TSK-881',
-          departmentTag: 'PWD Sanitation',
-          title: 'Shahbad Main Drain Desilting & Overflow Clearance',
-          locationName: 'Sector 17 Ring Rd (Near Metro Pillar 24)',
-          gpsCoordinates: '28.7499° N, 77.1172° E',
-          distanceAway: '120m away from current spot',
-          aiRekognitionLabel: 'Drain Clog',
-          aiConfidence: '98.4%',
-          reportedTime: 'Reported 42m',
-          citizenTicket: '#CIT-29019',
-          originalProofUrl: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&w=800&q=80',
-          slaRemaining: Duration(minutes: 28),
-        );
-
-    // Completed tasks
+    // Load completed tasks from persistent storage
     final savedCompleted = await _storage.loadCompletedTasks();
-    _completedTasks = savedCompleted ??
-        const [
-          CompletedTaskModel(
-            taskId: '#TSK-879',
-            aiDiffPercent: 'AI Diff: 96% Cleared',
-            completionTime: '12:35 PM',
-            title: 'DTU Gate 1 Road Debris Removal',
-            beforeImageUrl: 'https://images.unsplash.com/photo-1530587191325-3db32d826c18?auto=format&fit=crop&w=400&q=80',
-            afterImageUrl: 'https://images.unsplash.com/photo-1517649763962-0c623266ddc0?auto=format&fit=crop&w=400&q=80',
-            citizenLabel: 'Citizen Upload (EXIF Locked)',
-            officerProofLabel: 'Field Proof RK-Unit#3',
-            triageScore: 0.98,
-            supervisorStatus: 'Officer Sunita Verma (Zonal SE) Pending Signature',
-          ),
-        ];
+    _completedTasks = savedCompleted ?? [];
 
-    // Hotspots
+    // Load hotspots from persistent storage
     final savedHotspots = await _storage.loadHotspots();
-    _hotspots = savedHotspots ??
-        const [
-          HotspotLedgerItemModel(
-            id: 'hs_bawana',
-            title: 'Bawana Road Culvert Drainage',
-            badgeText: '3 Recurring Silt Runs',
-            locationSubtext: 'Sector 17 Junction • Chainage 4+200',
-            scheduleTitle: 'Scheduled: Preventive Dredging Cycle',
-            scheduleEta: 'T-Minus 48h',
-            telemetryText: 'Bedrock Sensor Telemetry: 74% Culvert Choke',
-            actionButtonText: 'Force Task Crew →',
-            isDispatched: false,
-          ),
-          HotspotLedgerItemModel(
-            id: 'hs_sec16',
-            title: 'Sector 16 Outer Ring Road',
-            badgeText: '89% AI Refailure Prob.',
-            locationSubtext: 'Poles #42-A through #58-C',
-            scheduleTitle: 'Ballast Heat Cycle Breakdown Pattern',
-            scheduleEta: 'Replace 12 Units',
-            telemetryText: 'Preventive Requisition: ₹42,000 Inventory Ready',
-            actionButtonText: 'Queue Dispatcher →',
-            isDispatched: false,
-          ),
-        ];
+    _hotspots = savedHotspots ?? [];
 
-    // Initialize Leaderboard
-    _leaderboard = const [
-      CitizenLeaderboardEntry(
-        rank: 1,
-        name: 'Aarav Sharma (You)',
-        ward: 'Ward 42 Rohini',
-        karmaPoints: 340,
-        verifiedReports: 14,
-        trustScore: 98.4,
-        badge: 'Civic Guardian 🛡️',
-        avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
-      ),
-      CitizenLeaderboardEntry(
-        rank: 2,
-        name: 'Priya Verma',
-        ward: 'Ward 42 DTU Sector',
-        karmaPoints: 310,
-        verifiedReports: 12,
-        trustScore: 97.8,
-        badge: 'Sanitation Champion 🌟',
-        avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
-      ),
-      CitizenLeaderboardEntry(
-        rank: 3,
-        name: 'Rohit Sen',
-        ward: 'Ward 42 Sector 16',
-        karmaPoints: 280,
-        verifiedReports: 10,
-        trustScore: 96.5,
-        badge: 'Green Warden 🌿',
-        avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80',
-      ),
-      CitizenLeaderboardEntry(
-        rank: 4,
-        name: 'Meera Deshmukh',
-        ward: 'Ward 42 Shahbad',
-        karmaPoints: 240,
-        verifiedReports: 8,
-        trustScore: 95.0,
-        badge: 'Civic Scout 🔍',
-        avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=400&q=80',
-      ),
-    ];
+    _refreshLeaderboard();
+    _refreshWardComparisons();
 
-    // Fix suggestions
-    _fixSuggestions = [
-      CitizenFixSuggestion(
-        id: 'fix_1',
-        ticketCode: 'CP-DEL-8921',
-        citizenName: 'Aarav Sharma',
-        suggestionText: 'Install 2 additional high-capacity 2.4m³ compactor bins at DTU North Gate student exit.',
-        upvotes: 24,
-        createdAt: DateTime.now().subtract(const Duration(hours: 3)),
-        hasUpvoted: true,
-      ),
-      CitizenFixSuggestion(
-        id: 'fix_2',
-        ticketCode: 'CP-DEL-9014',
-        citizenName: 'Dr. Neha Rao',
-        suggestionText: 'Install heavy-duty silt catchment mesh before monsoon culvert entry.',
-        upvotes: 18,
-        createdAt: DateTime.now().subtract(const Duration(hours: 5)),
-        hasUpvoted: false,
-      ),
-    ];
-
-    // Low Confidence Review Queue
-    _reviewQueue = [
-      LowConfidenceReviewItem(
-        id: 'rev_1',
-        ticketCode: 'CP-DEL-8940',
-        title: 'Possible waste burning at Bawana border',
-        ward: 'Ward 42 Rohini',
-        aiConfidence: 64.2,
-        flagReason: 'Low-light EXIF capture • pHash similarity 78% to generic campfire',
-        detectedCategory: 'Waste Burning & Smoke Detection',
-        imageUrl: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&w=600&q=80',
-        pHashScore: '0x8f2a110b',
-        citizenMaskedPhone: '+91 98*** **412',
-        severityScore: 82,
-        isNearSensitiveZone: true,
-        sensitiveZoneName: 'Bawana Nature Water Body',
-      ),
-      LowConfidenceReviewItem(
-        id: 'rev_2',
-        ticketCode: 'CP-DEL-8955',
-        title: 'Loose construction debris on Sector 17 flyover',
-        ward: 'Ward 42 Rohini',
-        aiConfidence: 68.8,
-        flagReason: 'Partial occlusion by moving vehicular traffic',
-        detectedCategory: 'Construction & Demolition Debris',
-        imageUrl: 'https://images.unsplash.com/photo-1530587191325-3db32d826c18?auto=format&fit=crop&w=600&q=80',
-        pHashScore: '0x3c99e4f0',
-        citizenMaskedPhone: '+91 94*** **908',
-        severityScore: 74,
-        isNearSensitiveZone: false,
-        sensitiveZoneName: '',
-      ),
-    ];
-
-    // Cold zones
-    _coldZones = const [
-      ColdZoneInspectionItem(
-        zoneId: 'cz_1',
-        name: 'Sector 17 Block D Corridor',
-        ward: 'Ward 42',
-        daysWithoutReport: '14 Days',
-        riskFactor: 'High monsoon backflow vulnerability',
-        suggestedAction: 'Deploy motorized inspection squad with GPS scanner',
-      ),
-      ColdZoneInspectionItem(
-        zoneId: 'cz_2',
-        name: 'Shahbad Extension Industrial Pocket 3',
-        ward: 'Ward 42',
-        daysWithoutReport: '18 Days',
-        riskFactor: 'Unmonitored night construction debris dumping',
-        suggestedAction: 'Route CCTV pole telemetry inspection pass',
-      ),
-    ];
-
-    // Ward performance comparison
-    _wardComparisons = const [
-      WardPerformanceComparison(
-        wardName: 'Ward 42 (Rohini - DTU)',
-        openComplaints: 3,
-        slaMisses: 0,
-        clearanceRatePct: 96.4,
-        citizenTrustAvg: 98.4,
-        activeSquads: 4,
-        escalationLevel: 'Normal (Unit #3 on duty)',
-      ),
-      WardPerformanceComparison(
-        wardName: 'Ward 7 (Civil Lines)',
-        openComplaints: 18,
-        slaMisses: 12,
-        clearanceRatePct: 68.2,
-        citizenTrustAvg: 89.1,
-        activeSquads: 2,
-        escalationLevel: 'Level 2 Escalated (Zonal Officer Brief)',
-      ),
-      WardPerformanceComparison(
-        wardName: 'Ward 18 (Dwarka Sector 9)',
-        openComplaints: 7,
-        slaMisses: 1,
-        clearanceRatePct: 91.0,
-        citizenTrustAvg: 94.5,
-        activeSquads: 3,
-        escalationLevel: 'Level 1 (Inspector Alert)',
-      ),
-      WardPerformanceComparison(
-        wardName: 'Ward 31 (Karol Bagh)',
-        openComplaints: 14,
-        slaMisses: 5,
-        clearanceRatePct: 79.4,
-        citizenTrustAvg: 91.2,
-        activeSquads: 3,
-        escalationLevel: 'Level 2 (Zonal SE Review)',
-      ),
-    ];
-
-    _startSlaTimer();
     _isInitialized = true;
     notifyListeners();
+  }
+
+  void _refreshLeaderboard() {
+    if (_currentUser != null) {
+      _leaderboard = [
+        CitizenLeaderboardEntry(
+          rank: 1,
+          name: '${_currentUser!.name} (You)',
+          ward: _currentUser!.ward,
+          karmaPoints: _currentUser!.karmaPoints,
+          verifiedReports: _completedTasks.length + (_activeSubmission != null ? 1 : 0),
+          trustScore: _currentUser!.trustScore,
+          badge: _currentUser!.karmaPoints > 300 ? 'Civic Guardian 🛡️' : 'Active Reporter 🔍',
+          avatarUrl: _currentUser!.avatarUrl,
+        ),
+      ];
+    } else {
+      _leaderboard = [];
+    }
+  }
+
+  void _refreshWardComparisons() {
+    final userWard = _currentUser?.ward ?? 'DTU Ward 42';
+    _wardComparisons = [
+      WardPerformanceComparison(
+        wardName: userWard,
+        openComplaints: _hazards.length,
+        slaMisses: _urgentSlaRemainingSeconds == 0 && _urgentTask != null ? 1 : 0,
+        clearanceRatePct: _completedTasks.isEmpty && _hazards.isEmpty
+            ? 100.0
+            : ((_completedTasks.length / (_completedTasks.length + _hazards.length + (_urgentTask != null ? 1 : 0))) * 100).clamp(0.0, 100.0),
+        citizenTrustAvg: _currentUser?.trustScore ?? 98.0,
+        activeSquads: _currentUser?.role == UserRole.fieldOfficer ? 1 : 0,
+        escalationLevel: _urgentTask != null ? 'Active Duty Dispatch' : 'Normal Patrol',
+      ),
+    ];
   }
 
   void toggleLanguage() {
@@ -458,10 +183,12 @@ class CivicAppState extends ChangeNotifier {
     _slaTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_urgentSlaRemainingSeconds > 0) {
         _urgentSlaRemainingSeconds--;
-        if (_urgentSlaRemainingSeconds < 420) {
+        if (_urgentSlaRemainingSeconds < 420 && _urgentSlaRemainingSeconds > 0) {
           _escalationStatus = 'Level 2 Escalation: Zonal Officer Alert Sent (75% SLA Passed)';
         }
         notifyListeners();
+      } else {
+        _slaTimer?.cancel();
       }
     });
   }
@@ -498,63 +225,48 @@ class CivicAppState extends ChangeNotifier {
     required String phone,
     String? unitId,
   }) async {
+    final avatar = role == UserRole.fieldOfficer
+        ? 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=400&q=80'
+        : (role == UserRole.zonalInspector || role == UserRole.commissioner
+            ? 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80'
+            : 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=80');
+
+    _currentUser = UserModel(
+      id: 'usr_${DateTime.now().millisecondsSinceEpoch}',
+      name: name.isNotEmpty ? name : (role == UserRole.fieldOfficer ? 'Field Officer' : 'Citizen User'),
+      phone: phone.isNotEmpty ? phone : '+91 98765 43210',
+      email: '${name.toLowerCase().replaceAll(' ', '.')}@civicpulse.delhi.gov.in',
+      ward: 'DTU Ward 42',
+      role: role,
+      karmaPoints: role == UserRole.citizen ? 100 : 0,
+      streakDays: 1,
+      trustScore: 100.0,
+      unitId: unitId ?? (role == UserRole.fieldOfficer ? 'Unit #3' : null),
+      awsRegion: 'ap-south-1 (Mumbai)',
+      gpsAccuracy: 1.8,
+      assignedTasks: role == UserRole.fieldOfficer ? (_urgentTask != null ? 1 : 0) : 0,
+      clearedTasks: 0,
+      criticalTasks: role == UserRole.fieldOfficer ? (_urgentTask != null ? 1 : 0) : 0,
+      rating: 5.0,
+      avatarUrl: avatar,
+      cognitoGroup: role == UserRole.commissioner
+          ? 'MCD-Commissioners-Apex'
+          : (role == UserRole.fieldOfficer ? 'MCD-Field-Officers' : 'MCD-Citizen-Verified'),
+      mfaVerified: true,
+    );
+
     if (role == UserRole.fieldOfficer) {
-      _currentUser = UserModel(
-        id: 'usr_off_rk03',
-        name: name.isNotEmpty ? name : 'Rajesh Kumar',
-        phone: phone.isNotEmpty ? phone : '+91 94123 78901',
-        email: 'rajesh.kumar@mcd.gov.in',
-        ward: 'DTU Ward 42',
-        role: UserRole.fieldOfficer,
-        unitId: unitId ?? 'Unit #3',
-        awsRegion: 'ap-south-1 (Mumbai)',
-        gpsAccuracy: 1.8,
-        assignedTasks: 4,
-        clearedTasks: 2,
-        criticalTasks: 1,
-        rating: 4.9,
-        avatarUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=400&q=80',
-        cognitoGroup: 'MCD-Field-Officers',
-        mfaVerified: true,
-      );
       _currentNavIndex = 1;
-    } else if (role == UserRole.zonalInspector || role == UserRole.commissioner || role == UserRole.stateAdmin) {
-      _currentUser = UserModel(
-        id: 'usr_sup_sv42',
-        name: name.isNotEmpty ? name : 'Sunita Verma',
-        phone: phone.isNotEmpty ? phone : '+91 98111 22334',
-        email: 'sunita.verma@pwd.delhi.gov.in',
-        ward: 'DTU Ward 42',
-        role: role,
-        unitId: 'Zonal SE #42',
-        assignedTasks: 18,
-        clearedTasks: 15,
-        criticalTasks: 3,
-        rating: 4.95,
-        avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80',
-        cognitoGroup: role == UserRole.commissioner ? 'MCD-Commissioners-Apex' : 'MCD-Zonal-Officers',
-        mfaVerified: true,
-      );
+    } else if (role == UserRole.zonalInspector || role == UserRole.commissioner) {
       _dashboardRole = role;
-      _currentNavIndex = 4; // Executive Dashboard
+      _currentNavIndex = 4;
     } else {
-      _currentUser = UserModel(
-        id: 'usr_del_4201',
-        name: name.isNotEmpty ? name : 'Aarav Sharma',
-        phone: phone.isNotEmpty ? phone : '+91 98765 43210',
-        email: 'aarav.sharma@dtu.ac.in',
-        ward: 'DTU Ward 42',
-        role: UserRole.citizen,
-        karmaPoints: 340,
-        streakDays: 7,
-        trustScore: 98.4,
-        avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=80',
-        cognitoGroup: 'MCD-Citizen-Verified',
-      );
       _currentNavIndex = 0;
     }
 
     await _storage.saveUser(_currentUser!);
+    _refreshLeaderboard();
+    _refreshWardComparisons();
     notifyListeners();
   }
 
@@ -564,13 +276,36 @@ class CivicAppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> clearAllAppData() async {
+    _hazards.clear();
+    _completedTasks.clear();
+    _urgentTask = null;
+    _activeSubmission = null;
+    _reviewQueue.clear();
+    _coldZones.clear();
+    _fixSuggestions.clear();
+    _copilotMessages.clear();
+    _slaTimer?.cancel();
+    _urgentSlaRemainingSeconds = 0;
+
+    await _storage.saveHazards([]);
+    await _storage.saveCompletedTasks([]);
+    if (_currentUser != null) {
+      _currentUser = _currentUser!.copyWith(karmaPoints: 100, clearedTasks: 0, assignedTasks: 0);
+      await _storage.saveUser(_currentUser!);
+    }
+    _refreshLeaderboard();
+    _refreshWardComparisons();
+    notifyListeners();
+  }
+
   // Support / Back an issue
   Future<void> supportHazard(String hazardId) async {
     final index = _hazards.indexWhere((h) => h.id == hazardId);
     if (index != -1) {
       final hazard = _hazards[index];
       final newSupported = !hazard.hasSupported;
-      final newBackers = newSupported ? hazard.backers + 1 : hazard.backers - 1;
+      final newBackers = newSupported ? hazard.backers + 1 : (hazard.backers > 0 ? hazard.backers - 1 : 0);
 
       _hazards[index] = hazard.copyWith(
         hasSupported: newSupported,
@@ -585,6 +320,7 @@ class CivicAppState extends ChangeNotifier {
       }
 
       await _storage.saveHazards(_hazards);
+      _refreshLeaderboard();
       notifyListeners();
     }
   }
@@ -595,7 +331,7 @@ class CivicAppState extends ChangeNotifier {
     final newFix = CitizenFixSuggestion(
       id: 'fix_${DateTime.now().millisecondsSinceEpoch}',
       ticketCode: ticketCode,
-      citizenName: _currentUser?.name ?? 'Aarav Sharma',
+      citizenName: _currentUser?.name ?? 'Citizen',
       suggestionText: text.trim(),
       upvotes: 1,
       createdAt: DateTime.now(),
@@ -609,6 +345,7 @@ class CivicAppState extends ChangeNotifier {
       );
       _storage.saveUser(_currentUser!);
     }
+    _refreshLeaderboard();
     notifyListeners();
   }
 
@@ -619,7 +356,7 @@ class CivicAppState extends ChangeNotifier {
       final newUpvoted = !item.hasUpvoted;
       _fixSuggestions[idx] = item.copyWith(
         hasUpvoted: newUpvoted,
-        upvotes: newUpvoted ? item.upvotes + 1 : item.upvotes - 1,
+        upvotes: newUpvoted ? item.upvotes + 1 : (item.upvotes > 0 ? item.upvotes - 1 : 0),
       );
       notifyListeners();
     }
@@ -632,48 +369,52 @@ class CivicAppState extends ChangeNotifier {
         karmaPoints: _currentUser!.karmaPoints - pointsToRedeem,
       );
       _storage.saveUser(_currentUser!);
+      _refreshLeaderboard();
       notifyListeners();
       return true;
     }
     return false;
   }
 
-  // Duplicate Check & Severity Calculation for Report Submission
+  // Duplicate Check & Real Hazard Report Creation
   Future<Map<String, dynamic>> submitNewHazardReport({
     required String title,
     required String description,
     required String category,
     required String locationTag,
-    bool isNearHospitalOrSchool = true,
+    bool isNearHospitalOrSchool = false,
     String? customImageUrl,
   }) async {
-    // Proximity Duplicate Merge Check (within 50m of DTU North Gate)
-    if (locationTag.toLowerCase().contains('dtu north gate') || locationTag.toLowerCase().contains('dtu-042')) {
-      // Merge with existing #CP-DEL-8921
-      final index = _hazards.indexWhere((h) => h.ticketCode == 'CP-DEL-8921');
-      if (index != -1) {
-        _hazards[index] = _hazards[index].copyWith(
-          backers: _hazards[index].backers + 1,
-          hasSupported: true,
+    // Proximity Duplicate Merge Check: check if any existing hazard matches location within proximity
+    final normalizedLoc = locationTag.toLowerCase().trim();
+    final duplicateIndex = _hazards.indexWhere(
+      (h) => h.locationTag.toLowerCase().contains(normalizedLoc) || (normalizedLoc.isNotEmpty && normalizedLoc.contains(h.locationTag.toLowerCase())),
+    );
+
+    if (duplicateIndex != -1) {
+      final dup = _hazards[duplicateIndex];
+      _hazards[duplicateIndex] = dup.copyWith(
+        backers: dup.backers + 1,
+        hasSupported: true,
+      );
+      if (_currentUser != null) {
+        _currentUser = _currentUser!.copyWith(
+          karmaPoints: _currentUser!.karmaPoints + 10,
         );
-        if (_currentUser != null) {
-          _currentUser = _currentUser!.copyWith(
-            karmaPoints: _currentUser!.karmaPoints + 10,
-          );
-          await _storage.saveUser(_currentUser!);
-        }
-        await _storage.saveHazards(_hazards);
-        notifyListeners();
-        return {
-          'isDuplicateMerged': true,
-          'ticketCode': 'CP-DEL-8921',
-          'message': 'Duplicate detected within 50m of Node #DTU-042! Merged as Upvote & Boosted SLA (+10 KP).',
-        };
+        await _storage.saveUser(_currentUser!);
       }
+      await _storage.saveHazards(_hazards);
+      _refreshLeaderboard();
+      notifyListeners();
+      return {
+        'isDuplicateMerged': true,
+        'ticketCode': dup.ticketCode,
+        'message': 'Duplicate detected at location! Merged as Upvote & Boosted SLA (+10 KP).',
+      };
     }
 
-    // Severity Calculation (0 to 100)
-    int baseSeverity = 65;
+    // Dynamic Severity Calculation (0 to 100)
+    int baseSeverity = 60;
     if (category.toLowerCase().contains('waste burning') || category.toLowerCase().contains('smoke')) {
       baseSeverity = 85;
     } else if (category.toLowerCase().contains('drain')) {
@@ -684,7 +425,7 @@ class CivicAppState extends ChangeNotifier {
     }
 
     final newId = 'hz_${DateTime.now().millisecondsSinceEpoch}';
-    final ticketCode = 'CP-DEL-${1000 + _hazards.length + 8922}';
+    final ticketCode = 'CP-DEL-${1000 + _hazards.length + 1}';
 
     final newHazard = HazardRadarModel(
       id: newId,
@@ -698,7 +439,7 @@ class CivicAppState extends ChangeNotifier {
       isUrgent: baseSeverity > 80,
       backers: 1,
       backerSubtext: 'Your verified live report',
-      slaTimeLeft: '3h 30m Left',
+      slaTimeLeft: '4h 00m Left',
       slaSubtext: 'AI Auto-Triage SLA',
       imageUrl: customImageUrl ?? 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&w=800&q=80',
       hasSupported: true,
@@ -706,6 +447,78 @@ class CivicAppState extends ChangeNotifier {
     );
 
     _hazards.insert(0, newHazard);
+
+    // Create Active Submission for Citizen
+    _activeSubmission = ActiveSubmissionModel(
+      id: 'sub_${DateTime.now().millisecondsSinceEpoch}',
+      ticketCode: ticketCode,
+      title: title,
+      location: locationTag,
+      timeAgo: 'Just now',
+      status: 'Reported',
+      statusColor: 'mint',
+      steps: [
+        const ActiveSubmissionStep(
+          title: 'Reported',
+          subtitle: 'Live Camera',
+          isCompleted: true,
+          isCurrent: false,
+          iconType: 'check',
+        ),
+        const ActiveSubmissionStep(
+          title: 'Assigned',
+          subtitle: 'Pending Squad',
+          isCompleted: false,
+          isCurrent: true,
+          iconType: 'dedup',
+        ),
+        const ActiveSubmissionStep(
+          title: 'In Progress',
+          subtitle: 'Queued',
+          isCompleted: false,
+          isCurrent: false,
+          iconType: 'dispatch',
+        ),
+        const ActiveSubmissionStep(
+          title: 'Resolved',
+          subtitle: 'Pending Proof',
+          isCompleted: false,
+          isCurrent: false,
+          iconType: 'pending',
+        ),
+        const ActiveSubmissionStep(
+          title: 'Verified',
+          subtitle: 'Zonal SE',
+          isCompleted: false,
+          isCurrent: false,
+          iconType: 'pending',
+        ),
+      ],
+      securityLockText: 'Tamper-safe GPS camera lock applied',
+      liveSlaUrl: 'https://civicpulse.delhi.gov.in/sla/$ticketCode',
+    );
+    await _storage.saveActiveSubmission(_activeSubmission!);
+
+    // If high severity, automatically generate an urgent task for field officers
+    if (baseSeverity > 75) {
+      _urgentTask = UrgentOfficerTaskModel(
+        taskId: '#TSK-${DateTime.now().millisecond}',
+        departmentTag: 'PWD Sanitation',
+        title: title,
+        locationName: locationTag,
+        gpsCoordinates: '28.7499° N, 77.1172° E',
+        distanceAway: 'Within Ward perimeter',
+        aiRekognitionLabel: category,
+        aiConfidence: '96.8%',
+        reportedTime: 'Just now',
+        citizenTicket: ticketCode,
+        originalProofUrl: newHazard.imageUrl,
+        slaRemaining: const Duration(hours: 3),
+      );
+      _urgentSlaRemainingSeconds = 10800;
+      _startSlaTimer();
+      await _storage.saveUrgentTask(_urgentTask!);
+    }
 
     if (_currentUser != null) {
       _currentUser = _currentUser!.copyWith(
@@ -715,6 +528,8 @@ class CivicAppState extends ChangeNotifier {
     }
 
     await _storage.saveHazards(_hazards);
+    _refreshLeaderboard();
+    _refreshWardComparisons();
     notifyListeners();
     return {
       'isDuplicateMerged': false,
@@ -731,6 +546,7 @@ class CivicAppState extends ChangeNotifier {
         karmaPoints: _currentUser!.karmaPoints + 10,
       );
       _storage.saveUser(_currentUser!);
+      _refreshLeaderboard();
       notifyListeners();
     }
   }
@@ -758,20 +574,21 @@ class CivicAppState extends ChangeNotifier {
       return {
         'success': false,
         'aiDiffScore': 62.4,
-        'message': 'AI Rekognition Diff Alert: 37.6% silt residue still detected! Task Reopened & Escalated to Inspector.',
+        'message': 'AI Rekognition Diff Alert: 37.6% residue still detected! Task Reopened & Escalated to Inspector.',
       };
     }
 
     if (_urgentTask != null) {
-      _urgentTask = _urgentTask!.copyWith(isResolved: true);
-      await _storage.saveUrgentTask(_urgentTask!);
+      final completedTaskId = _urgentTask!.taskId;
+      final completedTitle = _urgentTask!.title;
+      final beforeUrl = _urgentTask!.originalProofUrl;
 
       final newCompleted = CompletedTaskModel(
-        taskId: _urgentTask!.taskId,
+        taskId: completedTaskId,
         aiDiffPercent: 'AI Diff: 98% Cleared',
         completionTime: '${TimeOfDay.now().hour}:${TimeOfDay.now().minute.toString().padLeft(2, '0')} ${TimeOfDay.now().period == DayPeriod.am ? 'AM' : 'PM'}',
-        title: _urgentTask!.title,
-        beforeImageUrl: _urgentTask!.originalProofUrl,
+        title: completedTitle,
+        beforeImageUrl: beforeUrl,
         afterImageUrl: _capturedProofImage ?? 'https://images.unsplash.com/photo-1517649763962-0c623266ddc0?auto=format&fit=crop&w=400&q=80',
         citizenLabel: 'Citizen Upload (EXIF Locked)',
         officerProofLabel: 'Field Proof RK-Unit#3',
@@ -781,6 +598,50 @@ class CivicAppState extends ChangeNotifier {
 
       _completedTasks.insert(0, newCompleted);
       await _storage.saveCompletedTasks(_completedTasks);
+
+      _urgentTask = null;
+      _urgentSlaRemainingSeconds = 0;
+      _slaTimer?.cancel();
+      await _storage.saveUrgentTask(
+        const UrgentOfficerTaskModel(
+          taskId: '',
+          departmentTag: '',
+          title: '',
+          locationName: '',
+          gpsCoordinates: '',
+          distanceAway: '',
+          aiRekognitionLabel: '',
+          aiConfidence: '',
+          reportedTime: '',
+          citizenTicket: '',
+          originalProofUrl: '',
+          slaRemaining: Duration.zero,
+          isResolved: true,
+        ),
+      );
+
+      // Update active submission status if it matches
+      if (_activeSubmission != null) {
+        _activeSubmission = ActiveSubmissionModel(
+          id: _activeSubmission!.id,
+          ticketCode: _activeSubmission!.ticketCode,
+          title: _activeSubmission!.title,
+          location: _activeSubmission!.location,
+          timeAgo: 'Resolved just now',
+          status: 'Resolved (Audit In-Progress)',
+          statusColor: 'mint',
+          steps: [
+            const ActiveSubmissionStep(title: 'Reported', subtitle: 'Live Camera', isCompleted: true, isCurrent: false, iconType: 'check'),
+            const ActiveSubmissionStep(title: 'Assigned', subtitle: 'Unit #3', isCompleted: true, isCurrent: false, iconType: 'dedup'),
+            const ActiveSubmissionStep(title: 'In Progress', subtitle: 'Cleared', isCompleted: true, isCurrent: false, iconType: 'dispatch'),
+            const ActiveSubmissionStep(title: 'Resolved', subtitle: 'Proof Verified', isCompleted: true, isCurrent: false, iconType: 'check'),
+            const ActiveSubmissionStep(title: 'Verified', subtitle: 'Pending Sign', isCompleted: false, isCurrent: true, iconType: 'pending'),
+          ],
+          securityLockText: 'Tamper-safe EXIF verified',
+          liveSlaUrl: _activeSubmission!.liveSlaUrl,
+        );
+        await _storage.saveActiveSubmission(_activeSubmission!);
+      }
 
       if (_currentUser != null && _currentUser!.role == UserRole.fieldOfficer) {
         _currentUser = _currentUser!.copyWith(
@@ -793,11 +654,13 @@ class CivicAppState extends ChangeNotifier {
 
     _isSubmittingProof = false;
     _capturedProofImage = null;
+    _refreshLeaderboard();
+    _refreshWardComparisons();
     notifyListeners();
     return {
       'success': true,
       'aiDiffScore': 98.4,
-      'message': 'Audit Passed! Cryptographic EXIF proof verified. Ticket marked Resolved.',
+      'message': 'Audit Passed! Cryptographic EXIF proof verified. Task marked Resolved.',
     };
   }
 
@@ -857,25 +720,24 @@ class CivicAppState extends ChangeNotifier {
     String aiResponse = '';
     final qLower = query.toLowerCase();
 
-    if (qLower.contains('flood') || qLower.contains('sector 17')) {
+    if (qLower.contains('flood') || qLower.contains('sector 17') || qLower.contains('drain')) {
       aiResponse =
-          '**Bedrock Diagnostic Analysis for Sector 17 Flooding**:\n\n'
-          '• **Primary Cause**: Stormwater drainage culvert at Bawana Rd chainage 4+200 has 74% silt accumulation.\n'
-          '• **Inflow Rate**: Peak monsoon inflow exceeds 2.8m³/s against designed 1.2m³/s culvert clearance.\n'
-          '• **Severity Score**: 94/100 (due to close proximity to Dr. BSA Hospital approach road).\n'
-          '• **Recommendation**: Immediate deployment of suction compactor DL-1GC-4921 and hydro-jetting before upcoming 16:00 precipitation.';
-    } else if (qLower.contains('brief') || qLower.contains('draft') || qLower.contains('miss')) {
+          '**Bedrock Diagnostic Analysis for ${_currentUser?.ward ?? "Ward 42"}**:\n\n'
+          '• **Telemetry Assessment**: Active complaints: ${_hazards.length}. Cleared today: ${_completedTasks.length}.\n'
+          '• **Drainage Status**: Inflow sensor telemetry active on ap-south-1 Mumbai.\n'
+          '• **Recommendation**: Immediate deployment of suction compactor before upcoming rainfall.';
+    } else if (qLower.contains('brief') || qLower.contains('draft') || qLower.contains('summary')) {
       aiResponse =
-          '**Bedrock Executive Brief (Ward 42 vs Regional Benchmarks)**:\n\n'
-          '1. **Ward 42 Status**: 0 SLA misses this week. Clearance rate: 96.4%.\n'
-          '2. **Regional Alerts**: 12 SLA misses in Ward 7 (Civil Lines) due to compactor shortage.\n'
-          '3. **AI Action**: Recommended routing 2 reserve compactor units from Sector 16 depot to Ward 7.\n'
-          '4. **Citizen Reliability**: Average Trust Score in Ward 42 is 98.4% with 0 fake EXIF attempts.';
+          '**Bedrock Executive Brief (${_currentUser?.ward ?? "Ward 42"})**:\n\n'
+          '1. **Active Incidents**: ${_hazards.length} open complaints registered.\n'
+          '2. **Tasks Resolved Today**: ${_completedTasks.length} verified jobs with EXIF diff pass.\n'
+          '3. **Citizen Trust Index**: ${_currentUser?.trustScore ?? 100.0}% verified reliability.\n'
+          '4. **SLA Compliance**: 100% on-time resolution across active squads.';
     } else {
       aiResponse =
           '**Bedrock Claude 3 Municipal Engine**:\n\n'
-          'Processed telemetry for **$query** across DTU Ward 42 GIS database (ap-south-1 Mumbai). '
-          'SLA compliance is currently at 96.4% with 4 active field squads deployed. Preventive risk score is within baseline limits (0.34 low risk).';
+          'Processed telemetry for **$query** across ${_currentUser?.ward ?? "DTU Ward 42"} GIS database (ap-south-1 Mumbai). '
+          'Active incidents count is ${_hazards.length}. No anomalous telemetry detected.';
     }
 
     _copilotMessages.removeLast();
