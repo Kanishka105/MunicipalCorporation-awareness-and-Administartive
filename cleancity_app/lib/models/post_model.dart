@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
+
 class Post {
   final String id;
   final String authorName;
@@ -11,8 +13,12 @@ class Post {
   final String imageUrl;
   final String title;
   final String description;
+  final String category;
+  final String citizenId;
   final int upvotes;
   final int comments;
+  final bool hasUpvoted;
+  final List<String> upvoters;
 
   Post({
     required this.id,
@@ -27,43 +33,89 @@ class Post {
     required this.imageUrl,
     required this.title,
     required this.description,
+    required this.category,
+    required this.citizenId,
     required this.upvotes,
     required this.comments,
+    this.hasUpvoted = false,
+    this.upvoters = const [],
   });
 
-  factory Post.fromJson(Map<String, dynamic> json) {
-    // Map backend ReportOut to Flutter Post model
-    final gps = json['gps'] ?? {'latitude': 0.0, 'longitude': 0.0};
-    final createdAt = json['created_at'] != null ? DateTime.parse(json['created_at']) : DateTime.now();
+  Post copyWith({
+    int? upvotes,
+    bool? hasUpvoted,
+    List<String>? upvoters,
+  }) {
+    return Post(
+      id: id,
+      authorName: authorName,
+      authorAvatarUrl: authorAvatarUrl,
+      timeAgo: timeAgo,
+      cameraInfo: cameraInfo,
+      latitude: latitude,
+      longitude: longitude,
+      elevation: elevation,
+      locationName: locationName,
+      imageUrl: imageUrl,
+      title: title,
+      description: description,
+      category: category,
+      citizenId: citizenId,
+      upvotes: upvotes ?? this.upvotes,
+      comments: comments,
+      hasUpvoted: hasUpvoted ?? this.hasUpvoted,
+      upvoters: upvoters ?? this.upvoters,
+    );
+  }
+
+  factory Post.fromJson(Map<String, dynamic> json, {String currentUserId = ''}) {
+    final gps = json['gps'] as Map<String, dynamic>? ?? {};
+    final lat = (json['latitude'] ?? json['lat'] ?? gps['latitude'] as num?)?.toDouble() ?? 19.0760;
+    final long = (json['longitude'] ?? json['long'] ?? gps['longitude'] as num?)?.toDouble() ?? 72.8777;
+
+    final createdAt = json['created_at'] != null ? DateTime.tryParse(json['created_at']) ?? DateTime.now() : DateTime.now();
     final difference = DateTime.now().difference(createdAt);
-    String timeAgoStr = '${difference.inHours} hours ago';
-    if (difference.inHours == 0) {
-      timeAgoStr = '${difference.inMinutes} mins ago';
-    } else if (difference.inDays > 0) {
-      timeAgoStr = '${difference.inDays} days ago';
+    String timeAgoStr = 'Just now';
+    if (difference.inDays > 0) {
+      timeAgoStr = '${difference.inDays}d ago';
+    } else if (difference.inHours > 0) {
+      timeAgoStr = '${difference.inHours}h ago';
+    } else if (difference.inMinutes > 0) {
+      timeAgoStr = '${difference.inMinutes}m ago';
     }
-    
-    // Construct absolute URL for photo if it's a relative path
+
     String photoUrl = json['photo_url'] ?? '';
     if (photoUrl.startsWith('/api')) {
-      photoUrl = 'http://10.0.2.2:5000' + photoUrl;
+      final host = kIsWeb ? 'http://127.0.0.1:5000' : 'http://10.0.2.2:5000';
+      photoUrl = '$host$photoUrl';
     }
+
+    final rawUpvoters = (json['upvoters'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
+    final upvotesCount = (json['upvotes'] as num?)?.toInt() ?? rawUpvoters.length;
+    final userUpvoted = currentUserId.isNotEmpty && rawUpvoters.contains(currentUserId);
+    final author = json['author_name'] ?? json['citizen_id'] ?? 'Citizen';
 
     return Post(
       id: json['id'] ?? '',
-      authorName: json['citizen_id'] ?? 'Unknown Citizen',
-      authorAvatarUrl: 'https://randomuser.me/api/portraits/lego/1.jpg', // Placeholder
+      authorName: author,
+      authorAvatarUrl: 'https://api.dicebear.com/7.x/bottts/png?seed=${author.hashCode}',
       timeAgo: timeAgoStr,
-      cameraInfo: 'SmartPhone',
-      latitude: (gps['latitude'] as num?)?.toDouble() ?? 0.0,
-      longitude: (gps['longitude'] as num?)?.toDouble() ?? 0.0,
-      elevation: '0m', // Default if backend doesn't provide
-      locationName: json['category'] ?? 'General',
-      imageUrl: photoUrl.isNotEmpty ? photoUrl : 'https://via.placeholder.com/400x300.png?text=No+Image',
-      title: json['title'] ?? '',
+      cameraInfo: 'GNSS Tagged',
+      latitude: lat,
+      longitude: long,
+      elevation: '42m',
+      locationName: (json['category'] != null && json['category'].toString().isNotEmpty)
+          ? '${json['category'].toString().toUpperCase()} SECTOR'
+          : 'CIVIC ZONE',
+      imageUrl: photoUrl.isNotEmpty ? photoUrl : 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?w=900',
+      title: json['title'] ?? 'Community Civic Update',
       description: json['description'] ?? '',
-      upvotes: 0,
+      category: json['category'] ?? 'waste',
+      citizenId: json['citizen_id'] ?? '',
+      upvotes: upvotesCount,
       comments: 0,
+      hasUpvoted: userUpvoted,
+      upvoters: rawUpvoters,
     );
   }
 }

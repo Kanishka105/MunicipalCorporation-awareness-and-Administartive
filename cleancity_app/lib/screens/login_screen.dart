@@ -14,9 +14,18 @@ class _LoginScreenState extends State<LoginScreen> {
   bool isLogin = false; // toggle for Log In / Sign Up
   bool autoTaggingEnabled = true;
   bool isLoading = false;
+  final TextEditingController nameController = TextEditingController();
   final TextEditingController mobileController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final ApiService _apiService = ApiService();
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    mobileController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +38,7 @@ class _LoginScreenState extends State<LoginScreen> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               const SizedBox(height: 16),
-              // Status Bar mock
+              // Status Bar
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -45,7 +54,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        'GPS: ACTIVE [±3m]',
+                        'AWS COGNITO AUTH',
                         style: TextStyle(
                           color: AppTheme.textSecondary,
                           fontSize: 12,
@@ -56,12 +65,12 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   Row(
                     children: [
-                      Icon(Icons.satellite_alt, size: 14, color: AppTheme.textSecondary),
+                      Icon(Icons.lock_clock, size: 14, color: AppTheme.primaryColor),
                       const SizedBox(width: 4),
                       Text(
-                        'READY',
+                        'SECURE',
                         style: TextStyle(
-                          color: AppTheme.textSecondary,
+                          color: AppTheme.primaryColor,
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
                         ),
@@ -113,7 +122,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Photo-first social discovery tagged with real-\nworld coordinates.',
+                'Citizen Engagement & Field Geotagging Platform',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: AppTheme.textSecondary,
@@ -218,11 +227,11 @@ class _LoginScreenState extends State<LoginScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           const Text('Full Name', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-                          Text('PUBLIC TAG', style: TextStyle(color: AppTheme.textSecondary, fontSize: 11, letterSpacing: 1)),
+                          Text('CITIZEN PROFILE', style: TextStyle(color: AppTheme.textSecondary, fontSize: 11, letterSpacing: 1)),
                         ],
                       ),
                       const SizedBox(height: 8),
-                      _buildTextField(icon: Icons.person_outline, hint: 'Maya Lin'),
+                      _buildTextField(icon: Icons.person_outline, hint: 'e.g. Gaurav Shukla', controller: nameController),
                       const SizedBox(height: 16),
                     ],
                     
@@ -230,7 +239,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text('Mobile Number', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-                        Text('VERIFIED', style: TextStyle(color: AppTheme.textSecondary, fontSize: 11, letterSpacing: 1)),
+                        Text('COGNITO VERIFIED', style: TextStyle(color: AppTheme.textSecondary, fontSize: 11, letterSpacing: 1)),
                       ],
                     ),
                     const SizedBox(height: 8),
@@ -243,7 +252,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     if (!isLogin) ...[
                       const SizedBox(height: 4),
                       Text(
-                        'Must be 8+ characters with uppercase, lowercase, number & special char (e.g. Clean@123)',
+                        'Must be 8+ chars (e.g. Clean@123)',
                         style: TextStyle(fontSize: 11, color: AppTheme.textSecondary),
                       ),
                     ],
@@ -288,23 +297,34 @@ class _LoginScreenState extends State<LoginScreen> {
                             : () async {
                                 final mobile = mobileController.text.trim();
                                 final password = passwordController.text;
+                                final name = nameController.text.trim();
                                 
-                                final mobileRegExp = RegExp(r'^\+91[0-9]{10}$');
-                                if (!mobileRegExp.hasMatch(mobile) && mobile.isNotEmpty) {
+                                if (mobile.isEmpty) {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Please enter a valid number starting with +91 followed by 10 digits')),
+                                    const SnackBar(content: Text('Please enter your 10-digit mobile number')),
+                                  );
+                                  return;
+                                }
+
+                                if (password.isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Please enter your password')),
+                                  );
+                                  return;
+                                }
+
+                                if (!isLogin && name.isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Please enter your full name')),
                                   );
                                   return;
                                 }
                                 
                                 setState(() => isLoading = true);
                                 
-                                // Default to a demo Indian number if empty for testing
-                                final targetMobile = mobile.isEmpty ? '+919876543210' : mobile;
-                                
                                 if (!isLogin) {
                                   // Sign Up Flow
-                                  final result = await _apiService.signUp(targetMobile, password, "Citizen");
+                                  final result = await _apiService.signUp(mobile, password, name.isNotEmpty ? name : "Citizen");
                                   if (!mounted) return;
                                   setState(() => isLoading = false);
                                   
@@ -322,7 +342,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
                                             Text(
-                                              'Enter the 6-digit OTP sent to $targetMobile:',
+                                              'Enter the 6-digit verification OTP sent to $mobile:',
                                               style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
                                             ),
                                             const SizedBox(height: 16),
@@ -359,8 +379,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                                 );
                                                 return;
                                               }
-                                              final verified = await _apiService.verifyOtp(targetMobile, otp);
-                                              if (verified) {
+                                              final verifyRes = await _apiService.verifyOtp(mobile, otp);
+                                              if (verifyRes['success'] == true) {
                                                 Navigator.of(dialogCtx).pop();
                                                 if (mounted) {
                                                   ScaffoldMessenger.of(context).showSnackBar(
@@ -369,7 +389,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                                         children: [
                                                           Icon(Icons.check_circle, color: Colors.white),
                                                           SizedBox(width: 8),
-                                                          Text('Registration successful!'),
+                                                          Text('Account verified with AWS Cognito!'),
                                                         ],
                                                       ),
                                                       backgroundColor: Color(0xFF16A34A),
@@ -378,19 +398,19 @@ class _LoginScreenState extends State<LoginScreen> {
                                                   );
                                                 }
                                                 // Auto login after verification
-                                                final loginSuccess = await _apiService.login(targetMobile, password);
-                                                if (loginSuccess && mounted) {
+                                                final loginRes = await _apiService.login(mobile, password);
+                                                if (loginRes['success'] == true && mounted) {
                                                   Navigator.of(context).pushReplacement(
                                                     MaterialPageRoute(builder: (_) => const HomeScreen()),
                                                   );
                                                 }
                                               } else {
                                                 ScaffoldMessenger.of(context).showSnackBar(
-                                                  const SnackBar(content: Text('Invalid OTP. Please try again.')),
+                                                  SnackBar(content: Text(verifyRes['message'] ?? 'Invalid OTP. Please try again.')),
                                                 );
                                               }
                                             },
-                                            child: const Text('Verify & Register'),
+                                            child: const Text('Verify & Complete'),
                                           ),
                                         ],
                                       ),
@@ -402,18 +422,18 @@ class _LoginScreenState extends State<LoginScreen> {
                                   }
                                 } else {
                                   // Login Flow
-                                  final success = await _apiService.login(targetMobile, password);
+                                  final loginRes = await _apiService.login(mobile, password);
                                   if (!mounted) return;
+                                  setState(() => isLoading = false);
                                   
-                                  if (success) {
+                                  if (loginRes['success'] == true) {
                                     Navigator.pushReplacement(
                                       context,
                                       MaterialPageRoute(builder: (_) => const HomeScreen()),
                                     );
                                   } else {
-                                    setState(() => isLoading = false);
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('Login failed - check credentials or verify account')),
+                                      SnackBar(content: Text(loginRes['message'] ?? 'Login failed. Check credentials.')),
                                     );
                                   }
                                 }
@@ -429,32 +449,12 @@ class _LoginScreenState extends State<LoginScreen> {
                               )
                             : Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
-                                children: const [
-                                  Text('Continue to CleanCity', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                                  SizedBox(width: 8),
-                                  Icon(Icons.arrow_forward),
+                                children: [
+                                  Text(isLogin ? 'Sign In to CleanCity' : 'Create Cognito Account', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                                  const SizedBox(width: 8),
+                                  const Icon(Icons.arrow_forward),
                                 ],
                               ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Center(
-                      child: TextButton.icon(
-                        onPressed: () async {
-                          setState(() => isLoading = true);
-                          await _apiService.login('+919876543210', 'password123');
-                          if (mounted) {
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(builder: (_) => const HomeScreen()),
-                            );
-                          }
-                        },
-                        icon: const Icon(Icons.bolt, size: 18, color: AppTheme.primaryColor),
-                        label: const Text(
-                          'Instant Demo Access',
-                          style: TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.w600, fontSize: 13),
-                        ),
                       ),
                     ),
                   ],

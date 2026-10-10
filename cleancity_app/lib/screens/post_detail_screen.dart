@@ -2,12 +2,53 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../models/post_model.dart';
+import '../services/api_service.dart';
 import '../theme.dart';
 
-class PostDetailScreen extends StatelessWidget {
+class PostDetailScreen extends StatefulWidget {
   final Post post;
 
   const PostDetailScreen({super.key, required this.post});
+
+  @override
+  State<PostDetailScreen> createState() => _PostDetailScreenState();
+}
+
+class _PostDetailScreenState extends State<PostDetailScreen> {
+  final ApiService _apiService = ApiService();
+  late Post _post;
+  bool _isUpvoting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _post = widget.post;
+  }
+
+  Future<void> _toggleUpvote() async {
+    if (_isUpvoting) return;
+    setState(() => _isUpvoting = true);
+
+    try {
+      final res = await _apiService.upvotePost(_post.id);
+      if (res != null && mounted) {
+        setState(() {
+          _post = _post.copyWith(
+            upvotes: res['upvotes'] as int? ?? _post.upvotes,
+            hasUpvoted: res['has_upvoted'] as bool? ?? !_post.hasUpvoted,
+          );
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not update upvote: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isUpvoting = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -16,7 +57,7 @@ class PostDetailScreen extends StatelessWidget {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.pop(context, _post),
         ),
         title: Row(
           mainAxisSize: MainAxisSize.min,
@@ -27,16 +68,16 @@ class PostDetailScreen extends StatelessWidget {
                 color: AppTheme.primaryColor,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(Icons.location_on, color: Colors.white, size: 16),
+              child: const Icon(Icons.cloud_done, color: Colors.white, size: 16),
             ),
             const SizedBox(width: 8),
-            const Text('Post Detail', style: TextStyle(fontWeight: FontWeight.bold)),
+            const Text('AWS S3 Civic Report', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           ],
         ),
         centerTitle: true,
         actions: [
           CircleAvatar(
-            backgroundImage: NetworkImage(post.authorAvatarUrl),
+            backgroundImage: NetworkImage(_post.authorAvatarUrl),
             radius: 14,
           ),
           const SizedBox(width: 16),
@@ -52,7 +93,7 @@ class PostDetailScreen extends StatelessWidget {
               child: Row(
                 children: [
                   CircleAvatar(
-                    backgroundImage: NetworkImage(post.authorAvatarUrl),
+                    backgroundImage: NetworkImage(_post.authorAvatarUrl),
                     radius: 20,
                   ),
                   const SizedBox(width: 12),
@@ -63,22 +104,29 @@ class PostDetailScreen extends StatelessWidget {
                         Row(
                           children: [
                             Text(
-                              post.authorName,
+                              _post.authorName,
                               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                             ),
-                            const SizedBox(width: 4),
+                            const SizedBox(width: 6),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
                                 color: AppTheme.accentBlue,
                                 borderRadius: BorderRadius.circular(4),
                               ),
-                              child: Text('PRO', style: TextStyle(color: AppTheme.primaryColor, fontSize: 10, fontWeight: FontWeight.bold)),
+                              child: Text(
+                                _post.category.toUpperCase(),
+                                style: const TextStyle(
+                                  color: AppTheme.primaryColor,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             )
                           ],
                         ),
                         Text(
-                          'Oct 14, 2024 • 17:42 PST',
+                          'S3 Ref: ${_post.id.substring(0, _post.id.length > 8 ? 8 : _post.id.length)}...',
                           style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
                         ),
                       ],
@@ -86,25 +134,28 @@ class PostDetailScreen extends StatelessWidget {
                   ),
                   Row(
                     children: [
-                      _buildIconBtn(Icons.edit_outlined),
-                      const SizedBox(width: 8),
-                      _buildIconBtn(Icons.delete_outline),
-                      const SizedBox(width: 8),
                       _buildIconBtn(Icons.share_outlined),
                     ],
                   ),
                 ],
               ),
             ),
-            
+
             // Image
             Stack(
               children: [
                 Image.network(
-                  post.imageUrl,
+                  _post.imageUrl,
                   width: double.infinity,
-                  height: 400,
+                  height: 380,
                   fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    height: 300,
+                    color: AppTheme.surfaceColor,
+                    child: const Center(
+                      child: Icon(Icons.broken_image_outlined, size: 50, color: Colors.grey),
+                    ),
+                  ),
                 ),
                 Positioned(
                   top: 16,
@@ -112,16 +163,19 @@ class PostDetailScreen extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Colors.white.withOpacity(0.95),
                       borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4),
+                      ],
                     ),
                     child: Row(
                       children: [
                         const Icon(Icons.circle, size: 8, color: AppTheme.primaryColor),
                         const SizedBox(width: 6),
-                        Text(post.locationName, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                        Text(_post.locationName, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                         const SizedBox(width: 6),
-                        Text('±2.4m', style: TextStyle(fontSize: 10, color: AppTheme.textSecondary)),
+                        Text('GNSS Fix', style: TextStyle(fontSize: 10, color: AppTheme.textSecondary)),
                       ],
                     ),
                   ),
@@ -132,39 +186,21 @@ class PostDetailScreen extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.6),
+                      color: Colors.black.withOpacity(0.7),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.terrain, size: 14, color: Colors.white),
+                        const Icon(Icons.cloud_upload_outlined, size: 14, color: Colors.white),
                         const SizedBox(width: 6),
-                        Text('${post.elevation} Elev', style: const TextStyle(color: Colors.white, fontSize: 12)),
-                      ],
-                    ),
-                  ),
-                ),
-                Positioned(
-                  bottom: 16,
-                  right: 16,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.6),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.camera_alt_outlined, size: 14, color: Colors.white),
-                        const SizedBox(width: 6),
-                        const Text('24mm • f/2.8 • 1/320s', style: TextStyle(color: Colors.white, fontSize: 12)),
+                        const Text('Stored in AWS S3', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
                       ],
                     ),
                   ),
                 ),
               ],
             ),
-            
+
             // Content
             Padding(
               padding: const EdgeInsets.all(16),
@@ -172,48 +208,74 @@ class PostDetailScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    post.title,
+                    _post.title,
                     style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    post.description,
+                    _post.description,
                     style: TextStyle(color: AppTheme.textSecondary, fontSize: 15, height: 1.5),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
+
+                  // Upvote & Action Bar
                   Row(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: AppTheme.primaryColor,
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.thumb_up_alt_outlined, color: Colors.white, size: 18),
-                            const SizedBox(width: 8),
-                            const Text('Upvoted', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(10),
+                      InkWell(
+                        onTap: _toggleUpvote,
+                        borderRadius: BorderRadius.circular(24),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: _post.hasUpvoted ? AppTheme.primaryColor : AppTheme.accentBlue.withOpacity(0.8),
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                _post.hasUpvoted ? Icons.thumb_up : Icons.thumb_up_alt_outlined,
+                                color: _post.hasUpvoted ? Colors.white : AppTheme.primaryColor,
+                                size: 18,
                               ),
-                              child: Text('${post.upvotes}', style: const TextStyle(color: Colors.white, fontSize: 12)),
-                            )
-                          ],
+                              const SizedBox(width: 8),
+                              Text(
+                                _post.hasUpvoted ? 'Upvoted' : 'Upvote Issue',
+                                style: TextStyle(
+                                  color: _post.hasUpvoted ? Colors.white : AppTheme.primaryColor,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: _post.hasUpvoted ? Colors.white.withOpacity(0.2) : Colors.white,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  '${_post.upvotes}',
+                                  style: TextStyle(
+                                    color: _post.hasUpvoted ? Colors.white : AppTheme.primaryColor,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              )
+                            ],
+                          ),
                         ),
                       ),
                       const Spacer(),
-                      // Avatars overlap mockup
-                      Text('voted this spot', style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+                      Text(
+                        '${_post.upvotes} Citizens Supported',
+                        style: TextStyle(color: AppTheme.textSecondary, fontSize: 13, fontWeight: FontWeight.w500),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 24),
-                  
-                  // Map Area
+
+                  // Map & Telemetry
                   Container(
                     decoration: BoxDecoration(
                       color: AppTheme.accentBlue.withOpacity(0.3),
@@ -238,8 +300,8 @@ class PostDetailScreen extends StatelessWidget {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text('Spatial Telemetry', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                                  Text('${post.locationName}, CA', style: TextStyle(color: AppTheme.textSecondary, fontSize: 13)),
+                                  const Text('AWS S3 Geotag Telemetry', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                  Text(_post.locationName, style: TextStyle(color: AppTheme.textSecondary, fontSize: 13)),
                                 ],
                               ),
                             ),
@@ -250,7 +312,7 @@ class PostDetailScreen extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(16),
                               ),
                               child: Text(
-                                '${post.latitude}°N • ${post.longitude}°W',
+                                '${_post.latitude.toStringAsFixed(4)}°, ${_post.longitude.toStringAsFixed(4)}°',
                                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
                               ),
                             ),
@@ -268,13 +330,13 @@ class PostDetailScreen extends StatelessWidget {
                             child: !kIsWeb
                                 ? GoogleMap(
                                     initialCameraPosition: CameraPosition(
-                                      target: LatLng(post.latitude, post.longitude),
+                                      target: LatLng(_post.latitude, _post.longitude),
                                       zoom: 14,
                                     ),
                                     markers: {
                                       Marker(
                                         markerId: const MarkerId('postLocation'),
-                                        position: LatLng(post.latitude, post.longitude),
+                                        position: LatLng(_post.latitude, _post.longitude),
                                       ),
                                     },
                                     zoomControlsEnabled: false,
@@ -289,11 +351,11 @@ class PostDetailScreen extends StatelessWidget {
                                           const Icon(Icons.location_on, color: AppTheme.primaryColor, size: 36),
                                           const SizedBox(height: 6),
                                           Text(
-                                            post.locationName,
+                                            _post.locationName,
                                             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                                           ),
                                           Text(
-                                            '${post.latitude}° N, ${post.longitude}° W',
+                                            'Lat: ${_post.latitude.toStringAsFixed(5)}, Long: ${_post.longitude.toStringAsFixed(5)}',
                                             style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
                                           ),
                                         ],
@@ -305,23 +367,10 @@ class PostDetailScreen extends StatelessWidget {
                         const SizedBox(height: 16),
                         Row(
                           children: [
-                            Expanded(child: _buildCoordCard('Latitude', '${post.latitude}° N')),
+                            Expanded(child: _buildCoordCard('Latitude', '${_post.latitude.toStringAsFixed(5)}°')),
                             const SizedBox(width: 12),
-                            Expanded(child: _buildCoordCard('Longitude', '${post.longitude}° W')),
+                            Expanded(child: _buildCoordCard('Longitude', '${_post.longitude.toStringAsFixed(5)}°')),
                           ],
-                        ),
-                        const SizedBox(height: 16),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            onPressed: () {},
-                            icon: const Icon(Icons.navigation_outlined),
-                            label: const Text('Open in Navigation Maps', style: TextStyle(fontWeight: FontWeight.bold)),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF005b8f),
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                            ),
-                          ),
                         ),
                       ],
                     ),
@@ -361,7 +410,7 @@ class PostDetailScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(title, style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
-              Icon(Icons.copy, size: 12, color: AppTheme.textSecondary),
+              Icon(Icons.gps_fixed, size: 12, color: AppTheme.textSecondary),
             ],
           ),
           const SizedBox(height: 4),
@@ -371,3 +420,4 @@ class PostDetailScreen extends StatelessWidget {
     );
   }
 }
+

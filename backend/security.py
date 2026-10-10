@@ -168,10 +168,12 @@ async def get_current_user(
             },
         )
 
-        if payload.get("token_use") != "access":
+        token_use = payload.get("token_use")
+        if token_use not in {"access", "id"}:
             raise _unauthorized()
 
-        if payload.get("client_id") not in client_ids:
+        token_client_id = payload.get("client_id") if token_use == "access" else payload.get("aud")
+        if token_client_id not in client_ids:
             raise _unauthorized()
 
         subject = payload.get("sub")
@@ -185,16 +187,17 @@ async def get_current_user(
         normalized_roles = []
         for role in raw_roles:
             normalized = normalize_role(str(role))
-            if normalized is None or normalized not in ALLOWED_ROLES:
-                raise _unauthorized()
-            normalized_roles.append(normalized)
+            if normalized is not None and normalized in ALLOWED_ROLES:
+                normalized_roles.append(normalized)
 
         roles = normalized_roles or ["Citizen"]
+        username = payload.get("cognito:username") or payload.get("username") or payload.get("phone_number") or payload.get("email") or subject
+        name = payload.get("name") or username
 
         return AuthUser(
             user_id=subject,
             email=payload.get("email"),
-            username=payload.get("username"),
+            username=username,
             roles=roles,
             municipality_id=payload.get("custom:municipality_id"),
             ward_id=payload.get("custom:ward_id"),
@@ -203,6 +206,7 @@ async def get_current_user(
                 "municipality": payload.get("custom:municipality_id"),
                 "ward": payload.get("custom:ward_id"),
                 "state": payload.get("custom:state_id"),
+                "name": name,
             },
         )
 
@@ -211,6 +215,18 @@ async def get_current_user(
     except Exception as exc:
         logger.warning("Authentication failed: %s", type(exc).__name__)
         raise _unauthorized() from None
+
+
+def get_current_user_optional(
+    credentials: HTTPAuthorizationCredentials | None = Depends(security_scheme),
+) -> AuthUser | None:
+    if credentials is None:
+        return None
+    try:
+        return get_current_user(credentials)
+    except Exception:
+        return None
+
 
 
 def require_roles(*required_roles: str):

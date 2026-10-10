@@ -1,18 +1,22 @@
 import 'dart:convert';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import '../models/post_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 import 'package:amazon_cognito_identity_dart_2/cognito.dart';
 import '../config.dart';
 
 class ApiService {
-  static String get baseUrl {
-    if (const bool.fromEnvironment('dart.library.html')) {
-      return 'http://127.0.0.1:5000/api/v1'; // Web
+  static String get serverHost {
+    if (kIsWeb) {
+      return 'http://127.0.0.1:5000';
     }
-    return 'http://10.0.2.2:5000/api/v1'; // Android
+    return 'http://10.0.2.2:5000';
   }
+
+  static String get baseUrl => '$serverHost/api/v1';
 
   CognitoUserPool get userPool => CognitoUserPool(
     AppConfig.cognitoUserPoolId,
@@ -20,145 +24,250 @@ class ApiService {
     clientSecret: AppConfig.cognitoClientSecret.isNotEmpty ? AppConfig.cognitoClientSecret : null,
   );
 
-  Future<String> getToken() async {
+  String _normalizeMobile(String mobile) {
+    String digits = mobile.replaceAll(RegExp(r'\D'), '');
+    if (digits.length == 10 && (digits.startsWith('6') || digits.startsWith('7') || digits.startsWith('8') || digits.startsWith('9'))) {
+      digits = '91$digits';
+    }
+    return '+$digits';
+  }
+
+  Future<String?> getToken() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('auth_token');
     if (token != null && token.trim().isNotEmpty) {
       return token.trim();
     }
-    return 'citizen-9876543210';
+    return null;
   }
 
-  Future<void> setToken(String token) async {
-    final trimmed = token.trim();
-    if (trimmed.isEmpty) return;
+  Future<void> setSession({
+    required String token,
+    String? idToken,
+    String? userId,
+    String? mobile,
+    String? name,
+  }) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('auth_token', trimmed);
+    await prefs.setString('auth_token', token.trim());
+    if (idToken != null) await prefs.setString('id_token', idToken.trim());
+    if (userId != null) await prefs.setString('user_id', userId.trim());
+    if (mobile != null) await prefs.setString('mobile', mobile.trim());
+    if (name != null) await prefs.setString('user_name', name.trim());
+  }
+
+  Future<Map<String, String>> getCurrentUser() async {
+    final prefs = await SharedPreferences.getInstance();
+    return {
+      'user_id': prefs.getString('user_id') ?? '',
+      'mobile': prefs.getString('mobile') ?? '',
+      'name': prefs.getString('user_name') ?? '',
+    };
   }
 
   Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('auth_token');
+    await prefs.remove('id_token');
+    await prefs.remove('user_id');
+    await prefs.remove('mobile');
+    await prefs.remove('user_name');
   }
 
-  Future<bool> login(String mobile, String password) async {
-    final cleanNumber = mobile.replaceAll(RegExp(r'[^0-9]'), '');
-    final fallbackUser = cleanNumber.isNotEmpty ? cleanNumber : '9876543210';
+  Future<Map<String, dynamic>> login(String mobile, String password) async {
+    final formattedMobile = _normalizeMobile(mobile);
 
+    // 1. Try Backend Cognito Authentication Endpoint
     try {
-      final pool = userPool;
-      final cognitoUser = CognitoUser(
-        mobile,
-        pool,
-        clientSecret: AppConfig.cognitoClientSecret.isNotEmpty ? AppConfig.cognitoClientSecret : null,
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/login'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'mobile': formattedMobile,
+          'password': password,
+        }),
       );
-      final authDetails = AuthenticationDetails(username: mobile, password: password);
-      final session = await cognitoUser.authenticateUser(authDetails);
-      if (session != null) {
-        final token = session.getIdToken().getJwtToken() ?? session.getAccessToken().getJwtToken() ?? '';
-        await setToken(token.isNotEmpty ? token : 'citizen-$fallbackUser');
-        return true;
-      }
-    } catch (e) {
-      print('Cognito login notice ($e) - activating local session');
-      // Fallback for local development & demo mode supported by backend
-      await setToken('citizen-$fallbackUser');
-      return true;
-    }
 
-    await setToken('citizen-$fallbackUser');
-    return true;
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final accessToken = data['access_token'] ?? '';
+        final idToken = data['id_token'] ?? '';
+
+        // Fetch User Info
+        String userId = '';
+        String name = '';
+        try {
+          final meRes = await http.get(
+            Uri.parse('$baseUrl/auth/me'),
+            headers: {'Authorization': 'Bearer $accessToken'},
+          );
+          if (meRes.statusCode == 200) {
+            final meData = jsonDecode(meRes.body);
+            userId = meData['user_id'] ?? '';
+            name = meData['name'] ?? meData['username'] ?? '';
+          }
+        } catch (_) {}
+
+        await setSession(
+          token: accessToken,
+          idToken: idToken,
+          userId: userId.isNotEmpty ? userId : formattedMobile,
+          mobile: formattedMobile,
+          name: name.isNotEmpty ? name : 'Citizen',
+        );
+
+        return {'success': true, 'message': 'Logged in successfully'};
+      } else {
+        final err = jsonDecode(response.body);
+        final detail = err['detail'] ?? 'Login failed. Please check credentials.';
+        return {'success': false, 'message': detail};
+      }
+    } catch (backendErr) {
+      // 2. Direct AWS Cognito SDK Fallback
+      try {
+        final pool = userPool;
+        final cognitoUser = CognitoUser(
+          formattedMobile,
+          pool,
+          clientSecret: AppConfig.cognitoClientSecret.isNotEmpty ? AppConfig.cognitoClientSecret : null,
+        );
+        final authDetails = AuthenticationDetails(username: formattedMobile, password: password);
+        final session = await cognitoUser.authenticateUser(authDetails);
+        if (session != null) {
+          final accessToken = session.getAccessToken().getJwtToken() ?? '';
+          final idToken = session.getIdToken().getJwtToken() ?? '';
+          await setSession(
+            token: accessToken,
+            idToken: idToken,
+            userId: formattedMobile,
+            mobile: formattedMobile,
+            name: 'Citizen',
+          );
+          return {'success': true, 'message': 'Logged in successfully'};
+        }
+      } catch (cognitoErr) {
+        return {'success': false, 'message': cognitoErr.toString()};
+      }
+      return {'success': false, 'message': 'Could not connect to authentication service'};
+    }
   }
 
   Future<Map<String, dynamic>> signUp(String mobile, String password, String name) async {
-    if (password.length < 8) {
-      return {'success': false, 'message': 'Password must be at least 8 characters long.'};
-    }
-    if (!password.contains(RegExp(r'[a-z]'))) {
-      return {'success': false, 'message': 'Password must contain at least one lowercase letter (a-z).'};
-    }
-    if (!password.contains(RegExp(r'[A-Z]'))) {
-      return {'success': false, 'message': 'Password must contain at least one uppercase letter (A-Z).'};
-    }
-    if (!password.contains(RegExp(r'[0-9]'))) {
-      return {'success': false, 'message': 'Password must contain at least one number (0-9).'};
-    }
-    if (!password.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>_\-+=~`[\]\\;/]'))) {
-      return {'success': false, 'message': 'Password must contain at least one special character (e.g. !@#\$%^&*).'};
-    }
+    final formattedMobile = _normalizeMobile(mobile);
 
     try {
-      final pool = userPool;
-      final userAttributes = [
-        AttributeArg(name: 'name', value: name),
-        AttributeArg(name: 'phone_number', value: mobile),
-      ];
-      await pool.signUp(mobile, password, userAttributes: userAttributes);
-      return {'success': true, 'message': 'OTP sent for verification'};
-    } catch (e) {
-      print('Cognito signup notice ($e)');
-      final errStr = e.toString();
-      if (errStr.contains('UsernameExistsException')) {
-        return {'success': false, 'message': 'Account already exists for this number. Please log in.'};
-      }
-      if (errStr.contains('InvalidPasswordException')) {
-        return {'success': false, 'message': 'Password must contain uppercase, lowercase, number, and special character (min 8 chars).'};
-      }
-      // Fallback for demo/offline environment
-      return {'success': true, 'message': 'OTP sent for verification'};
-    }
-  }
-
-  Future<bool> verifyOtp(String mobile, String otp) async {
-    try {
-      final pool = userPool;
-      final cognitoUser = CognitoUser(
-        mobile,
-        pool,
-        clientSecret: AppConfig.cognitoClientSecret.isNotEmpty ? AppConfig.cognitoClientSecret : null,
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/signup'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'mobile': formattedMobile,
+          'password': password,
+          'name': name.trim(),
+        }),
       );
-      final confirmed = await cognitoUser.confirmRegistration(otp);
-      if (confirmed == true) return true;
-    } catch (e) {
-      print('Cognito OTP notice ($e)');
-    }
-
-    // Accept valid 6-digit OTP or default in demo environment
-    if (otp.length == 6 || otp.isNotEmpty) {
-      final cleanNumber = mobile.replaceAll(RegExp(r'[^0-9]'), '');
-      final fallbackUser = cleanNumber.isNotEmpty ? cleanNumber : '9876543210';
-      await setToken('citizen-$fallbackUser');
-      return true;
-    }
-    return false;
-  }
-
-  Future<List<Post>> getFeed() async {
-    final token = await getToken();
-    try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/reports'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      ).timeout(const Duration(seconds: 5));
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        return data.map((json) => Post.fromJson(json)).toList();
+        return {'success': true, 'message': 'Verification code sent via SMS.'};
       } else {
-        print('Feed response status: ${response.statusCode} - ${response.body}');
-        return [];
+        final err = jsonDecode(response.body);
+        return {'success': false, 'message': err['detail'] ?? 'Sign up failed.'};
       }
     } catch (e) {
-      print('Get feed error: $e');
-      return [];
+      // Direct Cognito fallback
+      try {
+        final pool = userPool;
+        final userAttributes = [
+          AttributeArg(name: 'name', value: name.trim()),
+          AttributeArg(name: 'phone_number', value: formattedMobile),
+        ];
+        await pool.signUp(formattedMobile, password, userAttributes: userAttributes);
+        return {'success': true, 'message': 'Verification code sent via SMS.'};
+      } catch (cogErr) {
+        return {'success': false, 'message': cogErr.toString()};
+      }
+    }
+  }
+
+  Future<Map<String, dynamic>> verifyOtp(String mobile, String otp) async {
+    final formattedMobile = _normalizeMobile(mobile);
+
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/confirm'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'mobile': formattedMobile,
+          'code': otp.trim(),
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        return {'success': true, 'message': 'Account confirmed successfully!'};
+      } else {
+        final err = jsonDecode(response.body);
+        return {'success': false, 'message': err['detail'] ?? 'Confirmation failed.'};
+      }
+    } catch (e) {
+      try {
+        final pool = userPool;
+        final cognitoUser = CognitoUser(
+          formattedMobile,
+          pool,
+          clientSecret: AppConfig.cognitoClientSecret.isNotEmpty ? AppConfig.cognitoClientSecret : null,
+        );
+        final confirmed = await cognitoUser.confirmRegistration(otp.trim());
+        if (confirmed == true) {
+          return {'success': true, 'message': 'Account confirmed successfully!'};
+        }
+      } catch (cogErr) {
+        return {'success': false, 'message': cogErr.toString()};
+      }
+      return {'success': false, 'message': 'Verification failed.'};
+    }
+  }
+
+  Future<String?> uploadEvidenceBytes(Uint8List bytes, String filename) async {
+    final token = await getToken();
+    if (token == null) return null;
+
+    try {
+      final uri = Uri.parse('$baseUrl/uploads');
+      final request = http.MultipartRequest('POST', uri);
+      request.headers['Authorization'] = 'Bearer $token';
+
+      String extension = filename.split('.').last.toLowerCase();
+      if (extension == 'jpg') extension = 'jpeg';
+      final mediaType = MediaType('image', extension == 'png' ? 'png' : extension == 'webp' ? 'webp' : 'jpeg');
+
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'file',
+          bytes,
+          filename: filename,
+          contentType: mediaType,
+        ),
+      );
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 201) {
+        final data = jsonDecode(response.body);
+        return data['photo_url'];
+      } else {
+        print('Upload failed: ${response.statusCode} - ${response.body}');
+        return null;
+      }
+    } catch (e) {
+      print('Error uploading evidence: $e');
+      return null;
     }
   }
 
   Future<bool> createPost(Map<String, dynamic> postData) async {
     final token = await getToken();
+    if (token == null) return false;
+
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/reports'),
@@ -168,11 +277,86 @@ class ApiService {
         },
         body: jsonEncode(postData),
       );
-      
+
       return response.statusCode == 201;
     } catch (e) {
-      print('Create post notice: $e');
-      return true; // Graceful offline/demo completion
+      print('Create post error: $e');
+      return false;
+    }
+  }
+
+  Future<List<Post>> getFeed() async {
+    final token = await getToken();
+    final user = await getCurrentUser();
+    final currentUserId = user['user_id'] ?? '';
+
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/reports'),
+        headers: {
+          'Content-Type': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+      ).timeout(const Duration(seconds: 8));
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        return data.map((json) => Post.fromJson(json, currentUserId: currentUserId)).toList();
+      } else {
+        return [];
+      }
+    } catch (e) {
+      print('Get feed error: $e');
+      return [];
+    }
+  }
+
+  Future<List<Post>> getMyPosts() async {
+    final token = await getToken();
+    final user = await getCurrentUser();
+    final currentUserId = user['user_id'] ?? '';
+
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/reports?mine=true'),
+        headers: {
+          'Content-Type': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+      ).timeout(const Duration(seconds: 8));
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        return data.map((json) => Post.fromJson(json, currentUserId: currentUserId)).toList();
+      } else {
+        return [];
+      }
+    } catch (e) {
+      print('Get my posts error: $e');
+      return [];
+    }
+  }
+
+  Future<Map<String, dynamic>?> upvotePost(String postId) async {
+    final token = await getToken();
+    if (token == null) return null;
+
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/reports/$postId/upvote'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return null;
+    } catch (e) {
+      print('Upvote error: $e');
+      return null;
     }
   }
 }

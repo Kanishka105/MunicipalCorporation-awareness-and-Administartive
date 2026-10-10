@@ -1,8 +1,43 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
+import '../services/api_service.dart';
+import '../models/post_model.dart';
 
-class RewardsScreen extends StatelessWidget {
+class RewardsScreen extends StatefulWidget {
   const RewardsScreen({super.key});
+
+  @override
+  State<RewardsScreen> createState() => _RewardsScreenState();
+}
+
+class _RewardsScreenState extends State<RewardsScreen> {
+  final ApiService _apiService = ApiService();
+  List<Post> _myPosts = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRewards();
+  }
+
+  Future<void> _loadRewards() async {
+    setState(() => _isLoading = true);
+    try {
+      final posts = await _apiService.getMyPosts();
+      if (mounted) {
+        setState(() {
+          _myPosts = posts;
+          _isLoading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  int get _totalUpvotes => _myPosts.fold(0, (sum, p) => sum + p.upvotes);
+  int get _points => (_myPosts.length * 100) + (_totalUpvotes * 25);
 
   @override
   Widget build(BuildContext context) {
@@ -27,17 +62,10 @@ class RewardsScreen extends StatelessWidget {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications_none),
-            onPressed: () {},
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadRewards,
           ),
-          const Padding(
-            padding: EdgeInsets.only(right: 16),
-            child: CircleAvatar(
-              backgroundColor: AppTheme.primaryColor,
-              child: Icon(Icons.person, color: Colors.white, size: 20),
-              radius: 16,
-            ),
-          ),
+          const SizedBox(width: 8),
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(30),
@@ -47,122 +75,70 @@ class RewardsScreen extends StatelessWidget {
               children: [
                 const Icon(Icons.near_me_outlined, size: 14, color: AppTheme.primaryColor),
                 const SizedBox(width: 4),
-                Text('GPS LIVE', style: TextStyle(color: AppTheme.textSecondary, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1)),
+                Text('GPS LIVE & S3 SYNCED', style: TextStyle(color: AppTheme.textSecondary, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1)),
               ],
             ),
           ),
         ),
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Telemetry Wallet Section
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Stack(
-                children: [
-                  Positioned(
-                    right: -50,
-                    top: -50,
-                    child: Icon(
-                      Icons.radar,
-                      size: 200,
-                      color: AppTheme.primaryColor.withOpacity(0.03),
-                    ),
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text('TELEMETRY WALLET', style: TextStyle(color: AppTheme.textSecondary, fontSize: 12, letterSpacing: 1.5, fontWeight: FontWeight.bold)),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: AppTheme.accentBlue.withOpacity(0.5),
-                              borderRadius: BorderRadius.circular(12),
+      body: RefreshIndicator(
+        onRefresh: _loadRewards,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Telemetry Wallet Section
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Stack(
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('CIVIC IMPACT WALLET', style: TextStyle(color: AppTheme.textSecondary, fontSize: 12, letterSpacing: 1.5, fontWeight: FontWeight.bold)),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: AppTheme.accentBlue.withOpacity(0.5),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.emoji_events_outlined, size: 14, color: AppTheme.primaryColor),
+                                  const SizedBox(width: 4),
+                                  Text(_myPosts.isNotEmpty ? 'Active Contributor' : 'Novice Scout', style: const TextStyle(color: AppTheme.primaryColor, fontSize: 11, fontWeight: FontWeight.bold)),
+                                ],
+                              ),
                             ),
-                            child: Row(
-                              children: const [
-                                Icon(Icons.emoji_events_outlined, size: 14, color: AppTheme.primaryColor),
-                                SizedBox(width: 4),
-                                Text('Pioneer Tier IV', style: TextStyle(color: AppTheme.primaryColor, fontSize: 11, fontWeight: FontWeight.bold)),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.baseline,
-                        textBaseline: TextBaseline.alphabetic,
-                        children: [
-                          const Text('2,450', style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold)),
-                          const SizedBox(width: 8),
-                          Text('CleanPoints', style: TextStyle(color: AppTheme.primaryColor, fontSize: 16, fontWeight: FontWeight.bold)),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text('Next: Master Cartographer', style: TextStyle(color: AppTheme.textSecondary, fontSize: 13)),
-                          const Text('78% (3,000 pts)', style: TextStyle(color: AppTheme.primaryColor, fontSize: 12, fontWeight: FontWeight.bold)),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: LinearProgressIndicator(
-                          value: 0.78,
-                          minHeight: 8,
-                          backgroundColor: AppTheme.accentBlue.withOpacity(0.5),
-                          valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
+                          ],
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text('CURRENT: 2,450', style: TextStyle(color: AppTheme.textSecondary, fontSize: 10, letterSpacing: 1)),
-                          Text('550 PTS REMAINING', style: TextStyle(color: AppTheme.textSecondary, fontSize: 10, letterSpacing: 1)),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed: () {},
-                              icon: const Icon(Icons.card_giftcard),
-                              label: const Text('Redeem Perks'),
-                              style: ElevatedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed: () {},
-                              icon: const Icon(Icons.receipt_long, color: AppTheme.textPrimary),
-                              label: const Text('Ledger History', style: TextStyle(color: AppTheme.textPrimary)),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppTheme.accentBlue.withOpacity(0.5),
-                                elevation: 0,
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ],
+                        const SizedBox(height: 8),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.baseline,
+                          textBaseline: TextBaseline.alphabetic,
+                          children: [
+                            Text('$_points', style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold)),
+                            const SizedBox(width: 8),
+                            const Text('CleanPoints', style: TextStyle(color: AppTheme.primaryColor, fontSize: 16, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('Based on ${_myPosts.length} S3 Posts & $_totalUpvotes Upvotes', style: TextStyle(color: AppTheme.textSecondary, fontSize: 13)),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
             
             // Active Field Quests
             Padding(

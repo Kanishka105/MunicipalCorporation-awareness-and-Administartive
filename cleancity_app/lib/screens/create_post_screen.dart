@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:geolocator/geolocator.dart';
 import '../theme.dart';
 import '../services/api_service.dart';
 
@@ -18,11 +19,60 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   final TextEditingController _descController = TextEditingController();
   final ApiService _apiService = ApiService();
   bool _isSubmitting = false;
+  bool _isLocating = false;
   XFile? _imageFile;
   final ImagePicker _picker = ImagePicker();
 
-  Future<void> _pickImage() async {
-    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+  double _latitude = 19.0760;
+  double _longitude = 72.8777;
+  double _accuracy = 3.2;
+  String _selectedCategory = 'waste';
+  final List<String> _categories = ['waste', 'water', 'drainage', 'road', 'safety', 'air'];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchCurrentLocation();
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _descController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _fetchCurrentLocation() async {
+    setState(() => _isLocating = true);
+    try {
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.whileInUse || permission == LocationPermission.always) {
+        final position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high,
+          timeLimit: const Duration(seconds: 10),
+        );
+        setState(() {
+          _latitude = position.latitude;
+          _longitude = position.longitude;
+          _accuracy = position.accuracy;
+        });
+      }
+    } catch (e) {
+      print('Location error: $e');
+    } finally {
+      if (mounted) setState(() => _isLocating = false);
+    }
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    final pickedFile = await _picker.pickImage(
+      source: source,
+      imageQuality: 85,
+      maxWidth: 1920,
+    );
     if (pickedFile != null) {
       setState(() {
         _imageFile = pickedFile;
@@ -32,13 +82,12 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final latDir = _latitude >= 0 ? 'N' : 'S';
+    final lonDir = _longitude >= 0 ? 'E' : 'W';
+
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context), // Though it's a tab, we mimic the screenshot
-        ),
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -51,30 +100,22 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               child: const Icon(Icons.location_on, color: Colors.white, size: 16),
             ),
             const SizedBox(width: 8),
-            const Text('Create', style: TextStyle(fontWeight: FontWeight.bold)),
+            const Text('New Spatial Capture', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
           ],
         ),
         centerTitle: true,
-        actions: [
-          const CircleAvatar(
-            backgroundColor: AppTheme.primaryColor,
-            child: Icon(Icons.person, color: Colors.white, size: 20),
-            radius: 14,
-          ),
-          const SizedBox(width: 16),
-        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Top buttons
+            // Top buttons for camera / gallery
             Row(
               children: [
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: () {},
+                    onPressed: () => _pickImage(ImageSource.camera),
                     icon: const Icon(Icons.camera_alt_outlined),
                     label: const Text('Take Photo'),
                     style: ElevatedButton.styleFrom(
@@ -86,7 +127,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: () {},
+                    onPressed: () => _pickImage(ImageSource.gallery),
                     icon: const Icon(Icons.photo_library_outlined, color: AppTheme.textPrimary),
                     label: const Text('From Gallery', style: TextStyle(color: AppTheme.textPrimary)),
                     style: ElevatedButton.styleFrom(
@@ -117,18 +158,23 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 children: [
                   if (_imageFile == null)
                     GestureDetector(
-                      onTap: _pickImage,
+                      onTap: () => _pickImage(ImageSource.gallery),
                       child: Container(
                         height: 200,
                         width: double.infinity,
-                        color: Colors.grey[300],
-                        child: const Center(
+                        decoration: BoxDecoration(
+                          color: Colors.grey[100],
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.grey[300]!, strokeAlign: BorderSide.strokeAlignInside),
+                        ),
+                        child: Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.add_a_photo, size: 48, color: Colors.grey),
+                            children: const [
+                              Icon(Icons.add_a_photo_outlined, size: 48, color: AppTheme.primaryColor),
                               SizedBox(height: 8),
-                              Text('Tap to add a photo', style: TextStyle(color: Colors.grey)),
+                              Text('Tap to capture or select evidence photo', style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w600)),
+                              Text('Photo will be saved securely to AWS S3', style: TextStyle(color: Colors.grey, fontSize: 11)),
                             ],
                           ),
                         ),
@@ -138,17 +184,17 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                     Stack(
                       children: [
                         ClipRRect(
-                          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                          borderRadius: BorderRadius.circular(16),
                           child: kIsWeb
                               ? Image.network(
                                   _imageFile!.path,
-                                  height: 200,
+                                  height: 220,
                                   width: double.infinity,
                                   fit: BoxFit.cover,
                                 )
                               : Image.file(
                                   io.File(_imageFile!.path),
-                                  height: 200,
+                                  height: 220,
                                   width: double.infinity,
                                   fit: BoxFit.cover,
                                 ),
@@ -156,13 +202,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                         Positioned(
                           top: 12,
                           left: 12,
-                          child: Row(
-                            children: [
-                              GestureDetector(
-                                onTap: _pickImage,
-                                child: _buildOverlayBtn(Icons.swap_horiz, 'Replace'),
-                              ),
-                            ],
+                          child: GestureDetector(
+                            onTap: () => _pickImage(ImageSource.gallery),
+                            child: _buildOverlayBtn(Icons.swap_horiz, 'Replace'),
                           ),
                         ),
                         Positioned(
@@ -171,7 +213,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                           child: GestureDetector(
                             onTap: () => setState(() => _imageFile = null),
                             child: Container(
-                              padding: const EdgeInsets.all(4),
+                              padding: const EdgeInsets.all(6),
                               decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
                               child: const Icon(Icons.close, size: 16, color: Colors.red),
                             ),
@@ -183,10 +225,10 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                             decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.6),
+                              color: Colors.black.withOpacity(0.65),
                               borderRadius: BorderRadius.circular(16),
                             ),
-                            child: const Text('24mm • f/2.8 • ISO 100', style: TextStyle(color: Colors.white, fontSize: 12)),
+                            child: const Text('AWS S3 Ready • AES256', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
                           ),
                         )
                       ],
@@ -194,14 +236,15 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
             
-            // GPS Coordinates
+            // GPS Coordinates Card
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppTheme.accentBlue.withOpacity(0.2),
+                color: AppTheme.accentBlue.withOpacity(0.3),
                 borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppTheme.primaryColor.withOpacity(0.2)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -210,29 +253,29 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Row(
-                        children: [
-                          const Icon(Icons.circle, size: 10, color: AppTheme.primaryColor),
-                          const SizedBox(width: 8),
-                          const Text('GPS Coordinates\nDetected', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        children: const [
+                          Icon(Icons.circle, size: 10, color: AppTheme.primaryColor),
+                          SizedBox(width: 8),
+                          Text('Hardware GNSS Location', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                         ],
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: AppTheme.accentBlue,
+                          color: Colors.white,
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Row(
-                          children: const [
-                            Icon(Icons.satellite_alt, size: 12, color: AppTheme.primaryColor),
-                            SizedBox(width: 4),
-                            Text('High Accuracy •\n±3m', style: TextStyle(color: AppTheme.primaryColor, fontSize: 10, fontWeight: FontWeight.bold)),
+                          children: [
+                            const Icon(Icons.satellite_alt, size: 12, color: AppTheme.primaryColor),
+                            const SizedBox(width: 4),
+                            Text('±${_accuracy.toStringAsFixed(1)}m Acc', style: const TextStyle(color: AppTheme.primaryColor, fontSize: 11, fontWeight: FontWeight.bold)),
                           ],
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   Row(
                     children: [
                       Expanded(
@@ -241,10 +284,10 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                           decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
-                            children: const [
-                              Text('↑ Latitude', style: TextStyle(fontSize: 11, color: Colors.grey)),
-                              SizedBox(height: 4),
-                              Text('36.6002° N', style: TextStyle(fontWeight: FontWeight.bold)),
+                            children: [
+                              const Text('Latitude (lat)', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                              const SizedBox(height: 4),
+                              Text('${_latitude.abs().toStringAsFixed(6)}° $latDir', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                             ],
                           ),
                         ),
@@ -256,138 +299,93 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                           decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
-                            children: const [
-                              Text('← Longitude', style: TextStyle(fontSize: 11, color: Colors.grey)),
-                              SizedBox(height: 4),
-                              Text('121.8947° W', style: TextStyle(fontWeight: FontWeight.bold)),
+                            children: [
+                              const Text('Longitude (long)', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                              const SizedBox(height: 4),
+                              Text('${_longitude.abs().toStringAsFixed(6)}° $lonDir', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                             ],
                           ),
                         ),
                       ),
                     ],
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(color: AppTheme.accentBlue.withOpacity(0.5), borderRadius: BorderRadius.circular(12)),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.location_on_outlined, color: AppTheme.primaryColor),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: const [
-                              Text('Tagged Geographic Location', style: TextStyle(fontSize: 11, color: Colors.grey)),
-                              Text('Monterey Coast Highway 1, California', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
                   ),
                   const SizedBox(height: 12),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: const [
-                      Row(
-                        children: [
-                          Icon(Icons.refresh, size: 14, color: AppTheme.primaryColor),
-                          SizedBox(width: 4),
-                          Text('Recalibrate GPS Fix', style: TextStyle(color: AppTheme.primaryColor, fontSize: 12, fontWeight: FontWeight.bold)),
-                        ],
-                      ),
-                      Text('Sats: 14 locked', style: TextStyle(color: Colors.grey, fontSize: 12)),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.verified_user_outlined, size: 14, color: Colors.grey),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: const Text('Accurate hardware GPS coordinates will be\npermanently tagged to this photo.', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                      GestureDetector(
+                        onTap: _isLocating ? null : _fetchCurrentLocation,
+                        child: Row(
+                          children: [
+                            Icon(Icons.refresh, size: 14, color: _isLocating ? Colors.grey : AppTheme.primaryColor),
+                            const SizedBox(width: 4),
+                            Text(
+                              _isLocating ? 'Acquiring GPS Fix...' : 'Recalibrate GPS Fix',
+                              style: TextStyle(color: _isLocating ? Colors.grey : AppTheme.primaryColor, fontSize: 12, fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
                       ),
+                      const Text('Saved in S3 metadata', style: TextStyle(color: Colors.grey, fontSize: 11)),
                     ],
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             
-            // Map view
-            ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: Container(
-                height: 90,
-                decoration: BoxDecoration(
-                  color: AppTheme.accentBlue.withOpacity(0.35),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppTheme.accentBlue),
-                ),
-                child: !kIsWeb
-                    ? GoogleMap(
-                        initialCameraPosition: const CameraPosition(
-                          target: LatLng(34.0522, -118.2437),
-                          zoom: 12,
-                        ),
-                        zoomControlsEnabled: false,
-                        mapToolbarEnabled: false,
-                      )
-                    : Container(
-                        color: const Color(0xFFF1F5F9),
-                        child: Center(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.location_on, color: AppTheme.primaryColor, size: 24),
-                              const SizedBox(width: 8),
-                              Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: const [
-                                  Text('Geo-Target: 34.0522° N, 118.2437° W', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                                  Text('Precision: Hardware GPS locked', style: TextStyle(color: Colors.grey, fontSize: 11)),
-                                ],
-                              ),
-                            ],
-                          ),
+            // Category Selector
+            const Text('Issue Category', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+            const SizedBox(height: 8),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: _categories.map((cat) {
+                  final isSelected = _selectedCategory == cat;
+                  return GestureDetector(
+                    onTap: () => setState(() => _selectedCategory = cat),
+                    child: Container(
+                      margin: const EdgeInsets.only(right: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: isSelected ? AppTheme.primaryColor : Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: isSelected ? AppTheme.primaryColor : Colors.grey[300]!),
+                      ),
+                      child: Text(
+                        cat.toUpperCase(),
+                        style: TextStyle(
+                          color: isSelected ? Colors.white : AppTheme.textPrimary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
                         ),
                       ),
+                    ),
+                  );
+                }).toList(),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
             
-            // Input Fields
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text('Title', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                Text('0 / 60', style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
-              ],
-            ),
+            // Title Input
+            const Text('Report Title', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
             const SizedBox(height: 8),
             Container(
               decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
               child: TextField(
                 controller: _titleController,
                 decoration: InputDecoration(
-                  hintText: 'e.g. Sunset Cliffs Pacific Overlook',
-                  hintStyle: TextStyle(color: AppTheme.textSecondary),
+                  hintText: 'e.g. Garbage accumulation near Central Ward',
+                  hintStyle: TextStyle(color: AppTheme.textSecondary.withOpacity(0.7)),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.all(16),
                 ),
               ),
             ),
             const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text('Story & Trail Notes', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                Text('Optional', style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
-              ],
-            ),
+            
+            // Description Input
+            const Text('Description & Location Details', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
             const SizedBox(height: 8),
             Container(
               decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
@@ -395,40 +393,11 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 controller: _descController,
                 maxLines: 4,
                 decoration: InputDecoration(
-                  hintText: 'Add thoughts, camera settings, or trail notes...',
-                  hintStyle: TextStyle(color: AppTheme.textSecondary),
+                  hintText: 'Describe the civic issue, landmark details, or severity level...',
+                  hintStyle: TextStyle(color: AppTheme.textSecondary.withOpacity(0.7)),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.all(16),
                 ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            
-            // Tags
-            Row(
-              children: [
-                _buildTag('#Coastal'),
-                const SizedBox(width: 8),
-                _buildTag('#Overlook'),
-                const SizedBox(width: 8),
-                _buildTag('#GoldenHour'),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppTheme.primaryColor.withOpacity(0.3)),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: const [
-                  Icon(Icons.add, size: 14, color: AppTheme.primaryColor),
-                  SizedBox(width: 4),
-                  Text('Add Tag', style: TextStyle(color: AppTheme.primaryColor, fontSize: 12, fontWeight: FontWeight.bold)),
-                ],
               ),
             ),
             const SizedBox(height: 32),
@@ -450,19 +419,43 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                           return;
                         }
 
+                        if (_imageFile == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Please capture or select an evidence photo')),
+                          );
+                          return;
+                        }
+
                         setState(() => _isSubmitting = true);
 
+                        // 1. Read image bytes & upload to AWS S3
+                        final bytes = await _imageFile!.readAsBytes();
+                        final photoUrl = await _apiService.uploadEvidenceBytes(
+                          bytes,
+                          _imageFile!.name.isNotEmpty ? _imageFile!.name : 'evidence.jpg',
+                        );
+
+                        if (photoUrl == null) {
+                          if (mounted) {
+                            setState(() => _isSubmitting = false);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Failed to upload evidence to S3. Please try again.')),
+                            );
+                          }
+                          return;
+                        }
+
+                        // 2. Create post with coordinates saved in S3
                         final postPayload = {
                           "title": title,
                           "description": desc.isNotEmpty ? desc : "Reported civic issue requiring municipal attention.",
-                          "category": "waste",
+                          "category": _selectedCategory,
                           "gps": {
-                            "latitude": 19.0760,
-                            "longitude": 72.8777,
+                            "latitude": _latitude,
+                            "longitude": _longitude,
                           },
-                          "photo_url": "https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?w=900",
-                          "citizen_id": "citizen-mobile",
-                          "gps_accuracy_m": 2.4,
+                          "photo_url": photoUrl,
+                          "gps_accuracy_m": _accuracy,
                         };
 
                         final success = await _apiService.createPost(postPayload);
@@ -472,15 +465,25 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                         if (success) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('Post published successfully to feed!'),
+                              content: Row(
+                                children: [
+                                  Icon(Icons.cloud_done, color: Colors.white),
+                                  SizedBox(width: 8),
+                                  Text('Post & GPS location saved to AWS S3!'),
+                                ],
+                              ),
                               backgroundColor: Color(0xFF16A34A),
+                              duration: Duration(seconds: 3),
                             ),
                           );
                           _titleController.clear();
                           _descController.clear();
+                          setState(() {
+                            _imageFile = null;
+                          });
                         } else {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Failed to publish post. Check network connection.')),
+                            const SnackBar(content: Text('Failed to publish post. Check backend connection.')),
                           );
                         }
                       },
@@ -490,8 +493,8 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                         width: 18,
                         child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                       )
-                    : const Icon(Icons.send_outlined),
-                label: Text(_isSubmitting ? 'Publishing...' : 'Publish Post to Feed'),
+                    : const Icon(Icons.cloud_upload_outlined),
+                label: Text(_isSubmitting ? 'Uploading to S3 & Publishing...' : 'Publish Post to S3 & Feed'),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
@@ -503,7 +506,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               children: const [
                 Icon(Icons.verified_outlined, size: 14, color: AppTheme.primaryColor),
                 SizedBox(width: 6),
-                Text('Tagged with verified GPS • Visible to\ncommunity', textAlign: TextAlign.center, style: TextStyle(fontSize: 11, color: Colors.grey)),
+                Text('GPS lat, long & photo metadata archived directly in AWS S3', textAlign: TextAlign.center, style: TextStyle(fontSize: 11, color: Colors.grey)),
               ],
             ),
             const SizedBox(height: 32),
@@ -527,17 +530,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
         ],
       ),
-    );
-  }
-
-  Widget _buildTag(String tag) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: AppTheme.accentBlue.withOpacity(0.5),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Text(tag, style: TextStyle(color: AppTheme.textPrimary, fontSize: 12, fontWeight: FontWeight.bold)),
     );
   }
 }

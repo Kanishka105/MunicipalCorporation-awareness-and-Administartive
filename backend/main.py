@@ -28,6 +28,7 @@ if get_settings().environment != "production":
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
+    allow_origin_regex=r"^https?://.*" if get_settings().environment != "production" else None,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

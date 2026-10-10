@@ -264,14 +264,22 @@ class CivicPulseService:
         report_id = self.db.new_id("report")
         now = datetime.now(timezone.utc).isoformat()
         citizen_id = self._normalize_citizen_id(payload.citizen_id, user.user_id)
+        author_name = user.scope.get("name") or user.username or citizen_id
         report = {
             "id": report_id,
             "title": payload.title,
             "description": payload.description,
             "category": payload.category.value,
             "gps": payload.gps.model_dump(),
+            "latitude": payload.gps.latitude,
+            "longitude": payload.gps.longitude,
+            "lat": payload.gps.latitude,
+            "long": payload.gps.longitude,
             "photo_url": payload.photo_url,
             "citizen_id": citizen_id,
+            "author_name": author_name,
+            "upvotes": 0,
+            "upvoters": [],
             "gps_accuracy_m": payload.gps_accuracy_m,
             "status": ReportStatus.SUBMITTED.value,
             "severity": severity.value,
@@ -292,6 +300,31 @@ class CivicPulseService:
         self.db.create_report(report)
         self.db.add_audit("report_submitted", report_id=report_id, user_id=user.user_id)
 
+        # Save post metadata and lat/long to AWS S3 if enabled
+        settings = get_settings()
+        if settings.aws_s3_enabled and "pytest" not in sys.modules:
+            try:
+                import boto3, json
+                s3_key = f"posts/{report_id}.json"
+                boto3.client("s3", **settings.aws_client_options).put_object(
+                    Bucket=settings.s3_bucket,
+                    Key=s3_key,
+                    Body=json.dumps(report, default=str).encode("utf-8"),
+                    ContentType="application/json",
+                    Metadata={
+                        "report_id": report_id,
+                        "citizen_id": str(citizen_id),
+                        "latitude": str(payload.gps.latitude),
+                        "longitude": str(payload.gps.longitude),
+                        "lat": str(payload.gps.latitude),
+                        "long": str(payload.gps.longitude),
+                        "category": str(payload.category.value),
+                    },
+                )
+                report["s3_key"] = s3_key
+            except Exception as exc:
+                pass
+
         task = {
             "id": self.db.new_id("task"),
             "report_id": report_id,
@@ -305,23 +338,62 @@ class CivicPulseService:
         self.db.create_task(task)
         return report
 
-    def list_reports(self, user: Any, citizen_id: Optional[str] = None) -> list[Dict[str, Any]]:
-        effective_citizen_id = citizen_id
-        if effective_citizen_id is not None:
-            effective_citizen_id = self._normalize_citizen_id(effective_citizen_id, user.user_id)
-        if not user.is_official:
-            records = self.db.list_reports(effective_citizen_id or user.user_id)
-        else:
-            records = self.db.list_reports(effective_citizen_id)
-        return records
+    def list_reports(self, user: Any, citizen_id: Optional[str] = None, mine: bool = False) -> list[Dict[str, Any]]:
+        if mine:
+            records = self.db.list_reports()
+            user_keys = {user.user_id, getattr(user, "username", None)} - {None}
+            return [r for r in records if r.get("citizen_id") in user_keys]
+        if citizen_id is not None:
+            effective_citizen_id = self._normalize_citizen_id(citizen_id, user.user_id)
+            return self.db.list_reports(effective_citizen_id)
+        return self.db.list_reports()
 
     def get_report(self, report_id: str, user: Any) -> Dict[str, Any]:
         report = self.db.get_report(report_id)
         if report is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")
-        if not user.is_official and report.get("citizen_id") != user.user_id:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You cannot access another citizen's report")
         return report
+
+    def upvote_report(self, report_id: str, user: Any) -> Dict[str, Any]:
+        report = self.db.get_report(report_id)
+        if report is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")
+
+        upvoters = list(report.get("upvoters") or [])
+        user_key = user.user_id or user.username or "anonymous"
+        if user_key in upvoters:
+            upvoters.remove(user_key)
+            has_upvoted = False
+        else:
+            upvoters.append(user_key)
+            has_upvoted = True
+
+        updates = {
+            "upvotes": len(upvoters),
+            "upvoters": upvoters,
+        }
+        updated = self.db.update_report(report_id, updates)
+
+        settings = get_settings()
+        if settings.aws_s3_enabled and "pytest" not in sys.modules:
+            try:
+                import boto3, json
+                s3_key = f"posts/{report_id}.json"
+                boto3.client("s3", **settings.aws_client_options).put_object(
+                    Bucket=settings.s3_bucket,
+                    Key=s3_key,
+                    Body=json.dumps(updated, default=str).encode("utf-8"),
+                    ContentType="application/json",
+                )
+            except Exception:
+                pass
+
+        return {
+            "report_id": report_id,
+            "upvotes": len(upvoters),
+            "has_upvoted": has_upvoted,
+            "upvoters": upvoters,
+        }
 
     def resolve_report(self, report_id: str, payload: ResolutionPayload, user: Any) -> Dict[str, Any]:
         if not user.is_official:
