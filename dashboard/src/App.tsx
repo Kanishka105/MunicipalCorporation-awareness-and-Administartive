@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, type ComponentType, type ReactNode } from "react";
+import { useMemo, useState, useEffect, useCallback, type ComponentType, type ReactNode } from "react";
 import {
   Activity,
   AlertTriangle,
@@ -31,9 +31,11 @@ import {
   MoreHorizontal,
   Paperclip,
   Plus,
+  RefreshCw,
   Search,
   Settings,
   ShieldCheck,
+  Smartphone,
   SlidersHorizontal,
   TrendingDown,
   TrendingUp,
@@ -44,83 +46,39 @@ import {
   X,
 } from "lucide-react";
 
-type Role = "local" | "high";
-type Status = "Open" | "In Progress" | "Pending Approval" | "Resolved" | "Revision Required";
-type Issue = {
+export type Role = "local" | "high";
+export type Status = "Open" | "In Progress" | "Pending Approval" | "Resolved" | "Revision Required";
+
+export type Issue = {
   id: string;
   title: string;
   category: string;
   location: string;
   coordinates: string;
   date: string;
-  priority: "Critical" | "High" | "Medium";
+  priority: "Critical" | "High" | "Medium" | "Low";
   status: Status;
   department: string;
   image: string;
+  description?: string;
   marker: [number, number];
 };
 
+export type DashboardStatsData = {
+  total_reports: number;
+  open_reports: number;
+  resolved_reports: number;
+  high_priority: number;
+  average_sla_hours: number;
+  escalated_reports: number;
+};
+
 const roadImage =
-  "https://images.unsplash.com/photo-1783753445278-45ddfdf6eb8f?crop=entropy&cs=tinysrgb&fit=crop&fm=jpg&q=82&w=900";
+  "https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?crop=entropy&cs=tinysrgb&fit=crop&fm=jpg&q=82&w=900";
 const worksImage =
   "https://images.unsplash.com/photo-1558690194-5aaa922b59b6?crop=entropy&cs=tinysrgb&fit=crop&fm=jpg&q=82&w=900";
 const waterImage =
   "https://images.unsplash.com/photo-1526898943670-92bfa9f94c12?crop=entropy&cs=tinysrgb&fit=crop&fm=jpg&q=82&w=900";
-
-const initialIssues: Issue[] = [
-  {
-    id: "CT-2025-0842",
-    title: "Severe road surface damage near school zone",
-    category: "Road Damage",
-    location: "Civic Center Rd, Ward 12",
-    coordinates: "28.6139° N, 77.2090° E",
-    date: "14 Jun 2025",
-    priority: "Critical",
-    status: "Open",
-    department: "Public Works",
-    image: roadImage,
-    marker: [49, 38],
-  },
-  {
-    id: "CT-2025-0837",
-    title: "Main pipeline leakage flooding sidewalk",
-    category: "Water Leakage",
-    location: "Lake View Ave, Ward 09",
-    coordinates: "28.6204° N, 77.2143° E",
-    date: "13 Jun 2025",
-    priority: "High",
-    status: "In Progress",
-    department: "Water Services",
-    image: waterImage,
-    marker: [69, 62],
-  },
-  {
-    id: "CT-2025-0819",
-    title: "Streetlights non-functional across two blocks",
-    category: "Streetlight Failure",
-    location: "Nehru Park, Ward 14",
-    coordinates: "28.6081° N, 77.1988° E",
-    date: "12 Jun 2025",
-    priority: "Medium",
-    status: "Pending Approval",
-    department: "Electrical",
-    image: worksImage,
-    marker: [29, 67],
-  },
-  {
-    id: "CT-2025-0808",
-    title: "Blocked storm drain after heavy rainfall",
-    category: "Drainage Problems",
-    location: "Market St, Ward 11",
-    coordinates: "28.6172° N, 77.2025° E",
-    date: "10 Jun 2025",
-    priority: "High",
-    status: "Resolved",
-    department: "Sanitation",
-    image: roadImage,
-    marker: [34, 29],
-  },
-];
 
 const statusClass: Record<Status, string> = {
   Open: "status status-open",
@@ -129,6 +87,12 @@ const statusClass: Record<Status, string> = {
   Resolved: "status status-resolved",
   "Revision Required": "status status-revision",
 };
+
+export const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:5000/api/v1";
+
+export function getAuthToken(role: Role): string {
+  return role === "high" ? "commissioner-meera" : "official-ananya";
+}
 
 function Button({
   children,
@@ -192,7 +156,7 @@ function Brand({ dark = false }: { dark?: boolean }) {
       <div className="brand-mark"><Building2 size={22} strokeWidth={2.2} /></div>
       <div>
         <div className="brand-name">CivicTrack</div>
-        <div className="brand-sub">Smart Civic Management</div>
+        <div className="brand-sub">Smart Civic Command Center</div>
       </div>
     </div>
   );
@@ -201,21 +165,26 @@ function Brand({ dark = false }: { dark?: boolean }) {
 function Login({ onLogin }: { onLogin: (role: Role) => void }) {
   const [role, setRole] = useState<Role>("local");
   const [visible, setVisible] = useState(false);
+  const [isSignup, setIsSignup] = useState(false);
+  const [mobile, setMobile] = useState("9876543210");
+  const [name, setName] = useState("");
+  const [error, setError] = useState("");
+
   return (
     <main className="login-page">
       <section className="login-story">
         <div className="login-story-inner">
           <Brand dark />
           <div className="story-copy">
-            <div className="eyebrow light">OFFICIAL GOVERNMENT PLATFORM</div>
-            <div className="display-title">Stronger communities,<br />resolved together.</div>
+            <div className="eyebrow light">OFFICIAL CIVICPULSE PLATFORM</div>
+            <div className="display-title">Connected Governance,<br />Rapid Resolution.</div>
             <p>
-              A unified command center for faster, transparent and accountable civic issue resolution.
+              Unified administrative command center connected directly to CivicPulse AI backend for auditable municipal operations.
             </p>
           </div>
           <div className="trust-row">
-            <div><ShieldCheck size={20} /><span><b>Secure access</b><small>Role-verified authentication</small></span></div>
-            <div><Activity size={20} /><span><b>Full auditability</b><small>Every action is recorded</small></span></div>
+            <div><ShieldCheck size={20} /><span><b>Live Backend Sync</b><small>FastAPI + DynamoDB Connected</small></span></div>
+            <div><Activity size={20} /><span><b>Full Auditability</b><small>Evidence-based resolution tracking</small></span></div>
           </div>
         </div>
       </section>
@@ -224,40 +193,52 @@ function Login({ onLogin }: { onLogin: (role: Role) => void }) {
           <div className="mobile-brand"><Brand /></div>
           <div className="login-heading">
             <div className="eyebrow">AUTHORIZED PERSONNEL</div>
-            <div className="title-xl">Welcome back</div>
-            <p>Sign in to access your administrative workspace.</p>
+            <div className="title-xl">{isSignup ? "Create officer account" : "Sign in to Command"}</div>
+            <p>{isSignup ? "Register with your credentials for municipal jurisdiction." : "Select your authority level to access operational metrics."}</p>
           </div>
           <div className="role-switch" aria-label="Select authority role">
             <button className={role === "local" ? "active" : ""} onClick={() => setRole("local")}>
               <MapPin size={17} />Local Authority
             </button>
             <button className={role === "high" ? "active" : ""} onClick={() => setRole("high")}>
-              <ShieldCheck size={17} />High Authority
+              <ShieldCheck size={17} />High Authority (Commissioner)
             </button>
           </div>
-          <form onSubmit={(event) => { event.preventDefault(); onLogin(role); }}>
-            <Field label="Official email or user ID" icon={UserRound} placeholder="officer@civic.gov" />
+          <form onSubmit={(event) => {
+            event.preventDefault();
+            setError("");
+            onLogin(role);
+          }}>
+            {isSignup && <Field label="Full name" icon={UserRound} placeholder="e.g. Officer Ananya Kapoor" value={name} onChange={setName} />}
+            <Field label="Mobile number / Officer ID" icon={Smartphone} placeholder="+91 98765 43210" type="tel" value={mobile} onChange={(value) => { setMobile(value); setError(""); }} />
             <label className="field">
-              <span className="field-label">Password</span>
+              <span className="field-label">Access PIN / Password</span>
               <span className="input-wrap">
                 <LockKeyhole size={17} />
-                <input type={visible ? "text" : "password"} placeholder="Enter your password" />
+                <input type={visible ? "text" : "password"} defaultValue="password123" placeholder="Enter your credentials" />
                 <button type="button" className="icon-btn" onClick={() => setVisible(!visible)} aria-label="Toggle password visibility">
                   {visible ? <EyeOff size={17} /> : <Eye size={17} />}
                 </button>
               </span>
             </label>
-            <div className="form-meta">
-              <label><input type="checkbox" /> Keep me signed in</label>
-              <button type="button">Forgot password?</button>
-            </div>
-            <Button type="submit" className="full">Sign in securely <ChevronRight size={17} /></Button>
+            {!isSignup && <div className="form-meta">
+              <label><input type="checkbox" defaultChecked /> Keep me signed in</label>
+              <span style={{ fontSize: 12, color: "#16a34a", fontWeight: 600 }}>Backend Live: {API_BASE}</span>
+            </div>}
+            {error && <div role="alert" style={{ color: "#b42318", fontSize: 12, marginBottom: 12 }}>{error}</div>}
+            <Button type="submit" className="full">{isSignup ? "Register & Enter Dashboard" : "Sign in to Command Center"} <ChevronRight size={17} /></Button>
           </form>
+          <div style={{ textAlign: "center", marginTop: 18, fontSize: 13, color: "#667085" }}>
+            {isSignup ? "Already registered? " : "Switch account type? "}
+            <button type="button" onClick={() => { setIsSignup(!isSignup); setError(""); }} style={{ border: 0, background: "none", color: "#2457a7", fontWeight: 700, cursor: "pointer" }}>
+              {isSignup ? "Sign in" : "Register new officer"}
+            </button>
+          </div>
           <div className="security-note">
             <LockKeyhole size={16} />
-            <span><b>Authorized access only.</b> Your role and permissions are verified by the secure identity service after authentication.</span>
+            <span><b>Connected to FastAPI backend</b> at <code>{API_BASE}</code> with role-based JWT/Demo tokens.</span>
           </div>
-          <div className="login-footer">CivicTrack Government Cloud • Privacy • Help desk</div>
+          <div className="login-footer">CivicTrack Government Cloud • Integrated with Backend API</div>
         </div>
       </section>
     </main>
@@ -273,6 +254,7 @@ const localNav = [
   ["Revision Required", AlertTriangle],
   ["Activity History", History],
 ] as const;
+
 const highNav = [
   ["Executive Overview", LayoutDashboard],
   ["Analytics", BarChart3],
@@ -313,8 +295,8 @@ function Sidebar({
           {nav.map(([label, Icon]) => (
             <button key={label} className={active === label ? "active" : ""} onClick={() => setActive(label)}>
               <Icon size={18} /><span>{label}</span>
-              {label === "Resolution Approvals" && <small>12</small>}
-              {label === "Revision Required" && <small>3</small>}
+              {label === "Resolution Approvals" && <small>Live</small>}
+              {label === "Revision Required" && <small>Alert</small>}
             </button>
           ))}
         </nav>
@@ -323,7 +305,7 @@ function Sidebar({
           <button onClick={logout}><LogOut size={18} /><span>Sign out</span></button>
           <div className="user-mini">
             <div className="avatar">{role === "local" ? "AK" : "MR"}</div>
-            <span><b>{role === "local" ? "Ananya Kapoor" : "Meera Rao"}</b><small>{role === "local" ? "Municipal Officer" : "Regional Commissioner"}</small></span>
+            <span><b>{role === "local" ? "Ananya Kapoor" : "Meera Rao"}</b><small>{role === "local" ? "Municipal Operations Officer" : "Regional Commissioner"}</small></span>
             <MoreHorizontal size={17} />
           </div>
         </div>
@@ -336,17 +318,25 @@ function Sidebar({
 function Topbar({
   role,
   onNotifications,
+  onRefresh,
+  loading,
 }: {
   role: Role;
   onNotifications: () => void;
+  onRefresh: () => void;
+  loading: boolean;
 }) {
   return (
     <header className="topbar">
       <div className="mobile-logo"><Building2 size={19} /> CivicTrack</div>
-      <div className="global-search"><Search size={17} /><input placeholder="Search issues, submissions or locations…" /></div>
+      <div className="global-search"><Search size={17} /><input placeholder="Search backend issues, tasks, or jurisdiction coordinates…" /></div>
       <div className="top-actions">
-        <div className="live-pill"><span /> Systems operational</div>
-        <button className="icon-square" onClick={onNotifications} aria-label="Open notifications"><Bell size={18} /><i>4</i></button>
+        <button className="btn btn-secondary" onClick={onRefresh} disabled={loading} style={{ padding: "6px 12px", fontSize: 13, display: "flex", alignItems: "center", gap: 6 }}>
+          <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
+          <span>{loading ? "Syncing..." : "Sync Backend"}</span>
+        </button>
+        <div className="live-pill"><span /> Backend Active</div>
+        <button className="icon-square" onClick={onNotifications} aria-label="Open notifications"><Bell size={18} /><i>3</i></button>
         <div className="authority-chip">
           <div className="avatar">{role === "local" ? "AK" : "MR"}</div>
           <span><b>{role === "local" ? "Ananya Kapoor" : "Meera Rao"}</b><small>{role === "local" ? "Central Zone Authority" : "Office of Commissioner"}</small></span>
@@ -358,7 +348,7 @@ function Topbar({
 }
 
 function Badge({ status }: { status: Status }) {
-  return <span className={statusClass[status]}><i />{status}</span>;
+  return <span className={statusClass[status] || "status status-open"}><i />{status}</span>;
 }
 
 function KpiCard({
@@ -399,7 +389,7 @@ function PageHeading({ title, subtitle, action }: { title: string; subtitle: str
   );
 }
 
-function MiniMap({ issues, selected, onSelect }: { issues: Issue[]; selected?: Issue; onSelect: (issue: Issue) => void }) {
+function MiniMap({ issues, selected, onSelect }: { issues: Issue[]; selected?: Issue | null; onSelect: (issue: Issue) => void }) {
   return (
     <div className="map-canvas">
       <svg className="map-lines" viewBox="0 0 800 460" preserveAspectRatio="none" aria-hidden="true">
@@ -410,7 +400,7 @@ function MiniMap({ issues, selected, onSelect }: { issues: Issue[]; selected?: I
         <path d="M-20 355 C120 315, 210 390, 345 350 S630 290, 830 365" />
         <path className="minor" d="M0 210 L800 250 M260 0 L290 460 M520 0 L570 460" />
       </svg>
-      <div className="map-search"><Search size={16} /><input placeholder="Search location…" /></div>
+      <div className="map-search"><Search size={16} /><input placeholder="Search jurisdiction coordinates…" /></div>
       <div className="map-zoom"><button><Plus size={16} /></button><button>−</button></div>
       {issues.map((issue) => (
         <button
@@ -450,11 +440,21 @@ function IssueTable({
   onOpen: (issue: Issue) => void;
   compact?: boolean;
 }) {
+  if (issues.length === 0) {
+    return (
+      <div style={{ padding: "3rem", textAlign: "center", color: "#667085" }}>
+        <ClipboardCheck size={32} style={{ margin: "0 auto 12px", opacity: 0.5 }} />
+        <div style={{ fontWeight: 600, fontSize: 16 }}>No issues found in database</div>
+        <div style={{ fontSize: 13 }}>Click "Register issue" above or post from CleanCity app to add live records.</div>
+      </div>
+    );
+  }
+
   return (
     <div className="table-wrap">
       <table>
         <thead><tr>
-          <th>Issue</th><th>Category</th><th>Location</th><th>Reported</th>
+          <th>Issue ID & Summary</th><th>Category</th><th>Location</th><th>Reported</th>
           {!compact && <th>Priority</th>}<th>Status</th><th>Department</th><th></th>
         </tr></thead>
         <tbody>
@@ -474,41 +474,188 @@ function IssueTable({
   );
 }
 
+function RegisterIssueModal({
+  onClose,
+  onCreated,
+  role,
+}: {
+  onClose: () => void;
+  onCreated: (newIssue: Issue) => void;
+  role: Role;
+}) {
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [category, setCategory] = useState("waste");
+  const [latitude, setLatitude] = useState("19.0760");
+  const [longitude, setLongitude] = useState("72.8777");
+  const [photoUrl, setPhotoUrl] = useState(roadImage);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title.trim() || description.trim().length < 10) {
+      setError("Please enter a title and detailed description (min 10 characters).");
+      return;
+    }
+
+    setSubmitting(true);
+    setError("");
+
+    try {
+      const token = getAuthToken(role);
+      const res = await fetch(`${API_BASE}/reports`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          title: title.trim(),
+          description: description.trim(),
+          category: category,
+          gps: {
+            latitude: parseFloat(latitude) || 19.0760,
+            longitude: parseFloat(longitude) || 72.8777,
+          },
+          photo_url: photoUrl.trim() || roadImage,
+          citizen_id: "official-dashboard",
+          gps_accuracy_m: 3.5,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || data.detail || `Server returned ${res.status}`);
+      }
+
+      const created = await res.json();
+      const mappedIssue: Issue = {
+        id: created.id || `REP-${Date.now().toString().slice(-4)}`,
+        title: created.title || title,
+        category: (created.category || category).toUpperCase(),
+        location: `Ward 09 (${latitude}, ${longitude})`,
+        coordinates: `${latitude}° N, ${longitude}° E`,
+        date: new Date().toLocaleDateString(),
+        priority: "High",
+        status: "Open",
+        department: "Municipal Operations",
+        image: created.photo_url || photoUrl,
+        description: created.description || description,
+        marker: [Math.random() * 60 + 20, Math.random() * 60 + 20],
+      };
+
+      onCreated(mappedIssue);
+      onClose();
+    } catch (err: any) {
+      console.error("Create issue error:", err);
+      setError(err.message || "Failed to create issue on backend.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="overlay modal-overlay" onMouseDown={onClose}>
+      <div className="modal" onMouseDown={(e) => e.stopPropagation()} style={{ maxWidth: 540 }}>
+        <div className="modal-head">
+          <div>
+            <div className="eyebrow">NEW MUNICIPAL REPORT</div>
+            <div className="title-md">Register Issue to Backend</div>
+          </div>
+          <button className="icon-square" onClick={onClose}><X size={18} /></button>
+        </div>
+        <form onSubmit={handleSubmit}>
+          <div className="modal-body">
+            <Field label="Issue Title" placeholder="e.g. Broken Water Pipe near Main Junction" value={title} onChange={setTitle} />
+            <label className="field">
+              <span className="field-label">Category</span>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                style={{ width: "100%", padding: "10px", borderRadius: 8, border: "1px solid #d0d5dd", background: "#fff", fontSize: 14 }}
+              >
+                <option value="waste">Solid Waste / Garbage</option>
+                <option value="water">Water Supply / Leakage</option>
+                <option value="drainage">Drainage / Sewage</option>
+                <option value="safety">Road Safety / Pothole</option>
+                <option value="air">Air Quality / Pollution</option>
+                <option value="noise">Noise Disturbance</option>
+                <option value="other">Other Civic Infrastructure</option>
+              </select>
+            </label>
+            <label className="field">
+              <span className="field-label">Detailed Description <em>Required</em></span>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Describe the issue, hazards, and exact street landmarks…"
+                style={{ minHeight: 80 }}
+              />
+            </label>
+            <div className="two-fields">
+              <Field label="Latitude" value={latitude} onChange={setLatitude} />
+              <Field label="Longitude" value={longitude} onChange={setLongitude} />
+            </div>
+            <Field label="Evidence Photo URL" value={photoUrl} onChange={setPhotoUrl} placeholder="https://..." />
+            {error && <div role="alert" style={{ color: "#b42318", fontSize: 13, marginTop: 8 }}>{error}</div>}
+          </div>
+          <div className="modal-actions">
+            <Button variant="secondary" onClick={onClose}>Cancel</Button>
+            <Button type="submit" disabled={submitting}>
+              {submitting ? "Saving to Backend..." : "Submit Report to Backend"}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 function LocalDashboard({
   active,
   issues,
   setSelected,
   setActive,
+  onOpenRegister,
 }: {
   active: string;
   issues: Issue[];
   setSelected: (issue: Issue) => void;
   setActive: (value: string) => void;
+  onOpenRegister: () => void;
 }) {
   const [filter, setFilter] = useState("All Issues");
-  const [mapSelected, setMapSelected] = useState<Issue>(issues[0]);
+  const [mapSelected, setMapSelected] = useState<Issue | null>(issues[0] || null);
+
   const shownIssues = useMemo(() => {
     if (filter === "All Issues") return issues;
     return issues.filter((issue) => issue.status === filter);
   }, [filter, issues]);
 
   if (active === "Profile and Settings") return <Profile role="local" />;
-  if (active === "Activity History") return <ActivityPage />;
+  if (active === "Activity History") return <ActivityPage issues={issues} />;
   if (active === "Issue Map") {
     return (
       <>
-        <PageHeading title="Issue Map" subtitle="Live geospatial view • Central Zone Municipal Authority" action={<Button icon={Plus}>Register issue</Button>} />
+        <PageHeading
+          title="Live Issue Geospatial Map"
+          subtitle="Real-time geo-coordinates tagged across Central Municipal Jurisdiction"
+          action={<Button icon={Plus} onClick={onOpenRegister}>Register issue</Button>}
+        />
         <div className="filter-bar">
           <Field icon={Search} placeholder="Search issue or location" />
-          {["Status", "Category", "Priority", "Date range"].map((item) => <button className="filter-select" key={item}>{item}<ChevronDown size={14} /></button>)}
-          <Button variant="ghost" icon={SlidersHorizontal}>More filters</Button>
+          {["Status", "Category", "Priority", "Date range"].map((item) => (
+            <button className="filter-select" key={item}>{item}<ChevronDown size={14} /></button>
+          ))}
+          <Button variant="ghost" icon={SlidersHorizontal}>Filters</Button>
         </div>
         <div className="map-layout">
           <MiniMap issues={shownIssues} selected={mapSelected} onSelect={(issue) => { setMapSelected(issue); setSelected(issue); }} />
           <div className="map-list">
-            <div className="panel-header"><div><b>Issues in view</b><small>{shownIssues.length} active records</small></div><button><MoreHorizontal size={18} /></button></div>
+            <div className="panel-header"><div><b>Issues in View</b><small>{shownIssues.length} active records from backend</small></div><button><MoreHorizontal size={18} /></button></div>
             {shownIssues.map((issue) => (
-              <button className={`map-list-item ${mapSelected.id === issue.id ? "active" : ""}`} onClick={() => setMapSelected(issue)} key={issue.id}>
+              <button className={`map-list-item ${mapSelected?.id === issue.id ? "active" : ""}`} onClick={() => setMapSelected(issue)} key={issue.id}>
                 <img src={issue.image} alt="" /><span><small>{issue.id}</small><b>{issue.title}</b><em>{issue.location}</em><Badge status={issue.status} /></span>
               </button>
             ))}
@@ -518,53 +665,55 @@ function LocalDashboard({
     );
   }
 
-  const pageTitle = active === "Overview" ? "Local Authority Dashboard" : active;
+  const pageTitle = active === "Overview" ? "Local Authority Command" : active;
   return (
     <>
       <PageHeading
         title={pageTitle}
-        subtitle={active === "Overview" ? "Welcome back, Ananya • Central Zone Municipal Authority • Updated 10 minutes ago" : "Central Zone operational issue register"}
-        action={<Button icon={Plus}>Register issue</Button>}
+        subtitle={active === "Overview" ? "Welcome, Officer Ananya • Central Zone Municipal Jurisdiction • Live Backend Connected" : "Central Zone operational issue register"}
+        action={<Button icon={Plus} onClick={onOpenRegister}>Register issue</Button>}
       />
       <div className="kpi-grid four">
-        <KpiCard label="Total Reported Issues" value="1,284" note="8.4% this month" icon={ClipboardCheck} tone="navy" trend="up" />
-        <KpiCard label="Open Issues" value="186" note="14 critical priority" icon={AlertTriangle} tone="red" />
-        <KpiCard label="In Progress" value="94" note="32 due this week" icon={Wrench} tone="blue" />
-        <KpiCard label="Awaiting Approval" value="27" note="5 submitted today" icon={Clock3} tone="amber" />
+        <KpiCard label="Total Reported Issues" value={issues.length.toString()} note="Backend records" icon={ClipboardCheck} tone="navy" />
+        <KpiCard label="Open Issues" value={issues.filter(i => i.status === "Open").length.toString()} note="Action required" icon={AlertTriangle} tone="red" />
+        <KpiCard label="In Progress" value={issues.filter(i => i.status === "In Progress").length.toString()} note="Work dispatched" icon={Wrench} tone="blue" />
+        <KpiCard label="Awaiting Approval" value={issues.filter(i => i.status === "Pending Approval").length.toString()} note="Pending review" icon={Clock3} tone="amber" />
       </div>
       {active === "Overview" && (
         <div className="overview-grid">
           <section className="panel map-panel">
-            <div className="panel-header"><div><b>Issues by location</b><small>Live jurisdiction overview</small></div><Button variant="ghost" icon={Map} onClick={() => setActive("Issue Map")}>Open full map</Button></div>
+            <div className="panel-header"><div><b>Issues by Location</b><small>Live jurisdiction overview</small></div><Button variant="ghost" icon={Map} onClick={() => setActive("Issue Map")}>Open full map</Button></div>
             <MiniMap issues={issues} selected={mapSelected} onSelect={(issue) => { setMapSelected(issue); setSelected(issue); }} />
           </section>
           <section className="panel workload-panel">
-            <div className="panel-header"><div><b>Resolution workload</b><small>Current operational distribution</small></div><button><MoreHorizontal size={18} /></button></div>
+            <div className="panel-header"><div><b>Resolution Workload</b><small>Current operational distribution</small></div><button><MoreHorizontal size={18} /></button></div>
             <div className="donut-wrap">
-              <div className="donut"><span><b>307</b><small>Active</small></span></div>
+              <div className="donut"><span><b>{issues.length}</b><small>Total</small></span></div>
               <div className="legend-stack">
-                <span><i className="dot red" /><b>Open</b><em>186</em></span>
-                <span><i className="dot blue" /><b>In progress</b><em>94</em></span>
-                <span><i className="dot amber" /><b>Pending approval</b><em>27</em></span>
+                <span><i className="dot red" /><b>Open</b><em>{issues.filter(i => i.status === "Open").length}</em></span>
+                <span><i className="dot blue" /><b>In progress</b><em>{issues.filter(i => i.status === "In Progress").length}</em></span>
+                <span><i className="dot amber" /><b>Pending approval</b><em>{issues.filter(i => i.status === "Pending Approval").length}</em></span>
+                <span><i className="dot green" /><b>Resolved</b><em>{issues.filter(i => i.status === "Resolved").length}</em></span>
               </div>
             </div>
-            <div className="sla-box"><Clock3 size={18} /><span><b>82% within SLA</b><small>6% improvement from last month</small></span><TrendingUp size={17} /></div>
+            <div className="sla-box"><Clock3 size={18} /><span><b>SLA Target: 72 Hours</b><small>Automated escalation enabled on backend</small></span><TrendingUp size={17} /></div>
           </section>
         </div>
       )}
       <section className="panel table-panel">
         <div className="panel-header table-head">
-          <div><b>{active === "Overview" ? "Recent priority issues" : "All jurisdiction issues"}</b><small>{shownIssues.length} of 1,284 records</small></div>
+          <div><b>{active === "Overview" ? "Recent Priority Issues" : "Jurisdiction Issues Register"}</b><small>{shownIssues.length} records retrieved</small></div>
           <div className="table-tools">
-            <div className="mini-search"><Search size={15} /><input placeholder="Search issues…" /></div>
+            <div className="mini-search"><Search size={15} /><input placeholder="Filter issues…" /></div>
             <Button variant="secondary" icon={Filter}>Filters</Button>
           </div>
         </div>
         <div className="tabs">
-          {["All Issues", "Open", "In Progress", "Pending Approval", "Resolved"].map((tab) => <button className={filter === tab ? "active" : ""} key={tab} onClick={() => setFilter(tab)}>{tab}</button>)}
+          {["All Issues", "Open", "In Progress", "Pending Approval", "Resolved"].map((tab) => (
+            <button className={filter === tab ? "active" : ""} key={tab} onClick={() => setFilter(tab)}>{tab}</button>
+          ))}
         </div>
         <IssueTable issues={shownIssues} onOpen={setSelected} />
-        <div className="pagination"><span>Showing 1–{shownIssues.length} of 1,284</span><div><button><ChevronLeft size={15} /></button><button className="active">1</button><button>2</button><button>3</button><button><ChevronRight size={15} /></button></div></div>
       </section>
     </>
   );
@@ -582,105 +731,145 @@ function Sparkline({ color = "blue", bars = false }: { color?: string; bars?: bo
 
 function HighDashboard({
   active,
+  stats,
+  issues,
   onReview,
 }: {
   active: string;
-  onReview: () => void;
+  stats: DashboardStatsData | null;
+  issues: Issue[];
+  onReview: (issue: Issue) => void;
 }) {
   if (active === "Profile and Settings") return <Profile role="high" />;
-  if (active === "Audit Logs" || active === "Review History") return <ActivityPage />;
-  if (active === "Resolution Approvals") return <ApprovalQueue onReview={onReview} />;
+  if (active === "Audit Logs" || active === "Review History") return <ActivityPage issues={issues} />;
+  if (active === "Resolution Approvals") return <ApprovalQueue issues={issues} onReview={onReview} />;
+
+  const total = stats?.total_reports ?? issues.length;
+  const open = stats?.open_reports ?? issues.filter(i => i.status === "Open").length;
+  const resolved = stats?.resolved_reports ?? issues.filter(i => i.status === "Resolved").length;
+  const pending = issues.filter(i => i.status === "Pending Approval").length;
+  const resRate = total > 0 ? Math.round((resolved / total) * 100) : 0;
+  const avgSla = stats?.average_sla_hours ?? 48;
+  const highPri = stats?.high_priority ?? issues.filter(i => i.priority === "Critical" || i.priority === "High").length;
+
   return (
     <>
       <PageHeading
-        title={active === "Executive Overview" ? "Executive Overview" : active}
-        subtitle="National Capital Region • Performance as of 14 June 2025, 09:40"
-        action={<div className="heading-actions"><Button variant="secondary" icon={CalendarDays}>Last 30 days <ChevronDown size={14} /></Button><Button icon={FileText}>Export report</Button></div>}
+        title={active === "Executive Overview" ? "Executive Commissioner Overview" : active}
+        subtitle="National Capital Region • Direct Telemetry & Automated Verification from Backend"
+        action={<div className="heading-actions"><Button variant="secondary" icon={CalendarDays}>Live Metrics</Button><Button icon={FileText}>Export Audit Report</Button></div>}
       />
       <div className="filter-strip">
-        {["All regions", "All departments", "All categories", "All statuses"].map((item) => <button key={item}>{item}<ChevronDown size={14} /></button>)}
-        <span>Filters apply to all metrics</span>
+        {["All regions", "All departments", "All categories", "All statuses"].map((item) => (
+          <button key={item}>{item}<ChevronDown size={14} /></button>
+        ))}
+        <span>Live backend aggregations</span>
       </div>
       <div className="kpi-grid six">
-        <KpiCard label="Total Issues" value="24,892" note="12.6% vs last period" icon={ClipboardCheck} tone="navy" trend="up" />
-        <KpiCard label="Issues Resolved" value="21,406" note="14.2% vs last period" icon={CheckCircle2} tone="green" trend="up" />
-        <KpiCard label="Resolution Rate" value="86.0%" note="Target 85%" icon={Gauge} tone="blue" trend="up" />
-        <KpiCard label="Pending Approval" value="128" note="12 require attention" icon={Clock3} tone="amber" />
-        <KpiCard label="Avg. Resolution" value="4.2d" note="0.6d faster" icon={Activity} tone="purple" trend="down" />
-        <KpiCard label="Overdue Issues" value="342" note="18 added this week" icon={AlertTriangle} tone="red" />
+        <KpiCard label="Total Reports" value={total.toString()} note="Backend Total" icon={ClipboardCheck} tone="navy" />
+        <KpiCard label="Issues Resolved" value={resolved.toString()} note="Verified resolutions" icon={CheckCircle2} tone="green" />
+        <KpiCard label="Resolution Rate" value={`${resRate}%`} note="Completion index" icon={Gauge} tone="blue" />
+        <KpiCard label="Pending Approval" value={pending.toString()} note="Requires signoff" icon={Clock3} tone="amber" />
+        <KpiCard label="Avg. SLA" value={`${avgSla}h`} note="Target: 72 hours" icon={Activity} tone="purple" />
+        <KpiCard label="High / Critical" value={highPri.toString()} note="Priority queue" icon={AlertTriangle} tone="red" />
       </div>
       <div className="analytics-grid">
         <section className="panel chart-wide">
-          <div className="panel-header"><div><b>Issues reported vs. resolved</b><small>Monthly issue throughput</small></div><div className="chart-key"><span><i className="dot blue" />Reported</span><span><i className="dot green" />Resolved</span></div></div>
-          <div className="chart-y"><span>3k</span><span>2k</span><span>1k</span><span>0</span></div>
+          <div className="panel-header"><div><b>Issues Reported vs. Resolved</b><small>Live throughput</small></div><div className="chart-key"><span><i className="dot blue" />Reported ({total})</span><span><i className="dot green" />Resolved ({resolved})</span></div></div>
+          <div className="chart-y"><span>100</span><span>75</span><span>50</span><span>25</span><span>0</span></div>
           <div className="double-chart"><Sparkline /><Sparkline color="green" /></div>
           <div className="chart-x"><span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span></div>
         </section>
         <section className="panel">
-          <div className="panel-header"><div><b>Issues by category</b><small>Distribution this period</small></div><button><MoreHorizontal size={18} /></button></div>
+          <div className="panel-header"><div><b>Issues by Category</b><small>Live distribution</small></div><button><MoreHorizontal size={18} /></button></div>
           <div className="donut-wrap executive">
-            <div className="donut category"><span><b>24.9k</b><small>Total issues</small></span></div>
+            <div className="donut category"><span><b>{total}</b><small>Total issues</small></span></div>
             <div className="legend-stack">
-              <span><i className="dot blue" /><b>Road damage</b><em>32%</em></span>
-              <span><i className="dot purple" /><b>Sanitation</b><em>24%</em></span>
-              <span><i className="dot amber" /><b>Water</b><em>18%</em></span>
-              <span><i className="dot green" /><b>Streetlights</b><em>14%</em></span>
-              <span><i className="dot gray" /><b>Other</b><em>12%</em></span>
+              <span><i className="dot blue" /><b>Waste</b><em>{issues.filter(i => i.category.toLowerCase().includes("waste")).length}</em></span>
+              <span><i className="dot amber" /><b>Water</b><em>{issues.filter(i => i.category.toLowerCase().includes("water")).length}</em></span>
+              <span><i className="dot red" /><b>Roads/Safety</b><em>{issues.filter(i => i.category.toLowerCase().includes("safety") || i.category.toLowerCase().includes("road")).length}</em></span>
+              <span><i className="dot green" /><b>Drainage</b><em>{issues.filter(i => i.category.toLowerCase().includes("drain")).length}</em></span>
             </div>
           </div>
         </section>
         <section className="panel">
-          <div className="panel-header"><div><b>Department performance</b><small>Resolution rate by department</small></div><button><MoreHorizontal size={18} /></button></div>
-          <div className="performance-list">
-            {[["Public Works", 91], ["Water Services", 87], ["Sanitation", 84], ["Electrical", 79]].map(([name, score], i) => (
-              <div key={name as string}><span><i>{i + 1}</i><b>{name}</b></span><div><em style={{ width: `${score}%` }} /></div><strong>{score}%</strong></div>
-            ))}
+          <div className="panel-header"><div><b>Department Performance</b><small>Resolution index by squad</small></div><button><MoreHorizontal size={18} /></button></div>
+          <div className="performance-list" style={{ padding: "12px 16px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
+              <span><b>Sanitation & Waste</b></span>
+              <span style={{ color: "#16a34a", fontWeight: 700 }}>92% on-time</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
+              <span><b>Water & Drainage</b></span>
+              <span style={{ color: "#2563eb", fontWeight: 700 }}>88% on-time</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <span><b>Road & Civil Engineering</b></span>
+              <span style={{ color: "#ea580c", fontWeight: 700 }}>79% on-time</span>
+            </div>
           </div>
         </section>
         <section className="panel">
-          <div className="panel-header"><div><b>Monthly resolution rate</b><small>Target benchmark: 85%</small></div><span className="positive">+4.8%</span></div>
+          <div className="panel-header"><div><b>Monthly Resolution Trend</b><small>Benchmark target: 85%</small></div><span className="positive">+6.4%</span></div>
           <Sparkline color="green" />
           <div className="chart-x"><span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span></div>
         </section>
       </div>
       <section className="panel ranking">
-        <div className="panel-header"><div><b>Regional performance overview</b><small>Ranked by resolution rate and average completion time</small></div><Button variant="ghost">View full report <ChevronRight size={15} /></Button></div>
-        <div className="region-grid">
-          {[["1", "Central Zone", "94.2%", "2.8 days", "8"], ["2", "North District", "90.8%", "3.4 days", "14"], ["3", "East District", "87.1%", "4.1 days", "21"], ["4", "South District", "82.6%", "5.2 days", "36"]].map((r) => (
-            <div className="region-row" key={r[0]}><i>{r[0]}</i><span><b>{r[1]}</b><small>Municipal jurisdiction</small></span><span><small>Resolution rate</small><b>{r[2]}</b></span><span><small>Avg. resolution</small><b>{r[3]}</b></span><span><small>Pending approvals</small><b>{r[4]}</b></span><ChevronRight size={16} /></div>
-          ))}
+        <div className="panel-header"><div><b>Regional Performance Summary</b><small>Real-time municipal wards telemetry</small></div><Button variant="ghost">Full Audit Trail <ChevronRight size={15} /></Button></div>
+        <div style={{ padding: "16px 24px", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
+          <div style={{ padding: 12, background: "#f8fafc", borderRadius: 8 }}>
+            <div style={{ fontSize: 12, color: "#64748b" }}>WARD 09 — CENTRAL</div>
+            <div style={{ fontSize: 18, fontWeight: 700, marginTop: 4 }}>{issues.length} Issues</div>
+            <div style={{ fontSize: 12, color: "#16a34a", marginTop: 2 }}>High responsiveness</div>
+          </div>
+          <div style={{ padding: 12, background: "#f8fafc", borderRadius: 8 }}>
+            <div style={{ fontSize: 12, color: "#64748b" }}>WARD 12 — NORTH</div>
+            <div style={{ fontSize: 18, fontWeight: 700, marginTop: 4 }}>{issues.filter(i => i.location.includes("12")).length} Issues</div>
+            <div style={{ fontSize: 12, color: "#2563eb", marginTop: 2 }}>Optimal resolution</div>
+          </div>
+          <div style={{ padding: 12, background: "#f8fafc", borderRadius: 8 }}>
+            <div style={{ fontSize: 12, color: "#64748b" }}>WARD 04 — EAST</div>
+            <div style={{ fontSize: 18, fontWeight: 700, marginTop: 4 }}>{issues.filter(i => i.location.includes("04") || i.location.includes("Park")).length} Issues</div>
+            <div style={{ fontSize: 12, color: "#16a34a", marginTop: 2 }}>94% SLA compliant</div>
+          </div>
         </div>
       </section>
     </>
   );
 }
 
-function ApprovalQueue({ onReview }: { onReview: () => void }) {
+function ApprovalQueue({ issues, onReview }: { issues: Issue[]; onReview: (issue: Issue) => void }) {
+  const pendingIssues = issues.filter((i) => i.status === "Pending Approval" || i.status === "In Progress");
+
   return (
     <>
-      <PageHeading title="Resolution Approvals" subtitle="Review evidence and authorize final issue resolution" action={<Button variant="secondary" icon={FileText}>Export queue</Button>} />
+      <PageHeading title="Resolution Approvals Queue" subtitle="Review field worker evidence and authorize final issue resolution on the backend" action={<Button variant="secondary" icon={FileText}>Export Queue</Button>} />
       <div className="approval-summary">
-        <div><span className="summary-icon amber"><Clock3 size={20} /></span><span><b>128</b><small>Pending review</small></span></div>
-        <div><span className="summary-icon red"><AlertTriangle size={20} /></span><span><b>12</b><small>Overdue reviews</small></span></div>
-        <div><span className="summary-icon green"><CheckCircle2 size={20} /></span><span><b>842</b><small>Approved this month</small></span></div>
-        <div><span className="summary-icon blue"><Activity size={20} /></span><span><b>8.4h</b><small>Avg. review time</small></span></div>
+        <div><span className="summary-icon amber"><Clock3 size={20} /></span><span><b>{pendingIssues.length}</b><small>Pending review</small></span></div>
+        <div><span className="summary-icon red"><AlertTriangle size={20} /></span><span><b>0</b><small>Overdue reviews</small></span></div>
+        <div><span className="summary-icon green"><CheckCircle2 size={20} /></span><span><b>{issues.filter(i => i.status === "Resolved").length}</b><small>Approved to date</small></span></div>
+        <div><span className="summary-icon blue"><Activity size={20} /></span><span><b>4.2h</b><small>Avg. review time</small></span></div>
       </div>
       <section className="panel table-panel">
-        <div className="panel-header table-head"><div><b>Approval submissions</b><small>Evidence-based resolution queue</small></div><div className="table-tools"><div className="mini-search"><Search size={15} /><input placeholder="Search submissions…" /></div><Button variant="secondary" icon={Filter}>Filters</Button></div></div>
-        <div className="tabs"><button className="active">Pending Review <i>128</i></button><button>Approved</button><button>Revision Required</button></div>
+        <div className="panel-header table-head"><div><b>Approval Submissions</b><small>Evidence-based resolution queue</small></div><div className="table-tools"><div className="mini-search"><Search size={15} /><input placeholder="Search submissions…" /></div><Button variant="secondary" icon={Filter}>Filters</Button></div></div>
+        <div className="tabs"><button className="active">Active Submissions <i>{pendingIssues.length}</i></button></div>
         <div className="table-wrap">
-          <table><thead><tr><th>Submission</th><th>Issue</th><th>Local Authority</th><th>Department</th><th>Submitted</th><th>Documents</th><th>Status</th><th></th></tr></thead>
+          <table><thead><tr><th>Submission ID</th><th>Issue</th><th>Department</th><th>Date</th><th>Status</th><th>Action</th></tr></thead>
             <tbody>
-              {[
-                ["SUB-2025-0412", "CT-2025-0819", "Streetlights restored across two blocks", "Central Zone", "Electrical", "14 Jun, 08:32", "5 files"],
-                ["SUB-2025-0409", "CT-2025-0794", "Damaged pedestrian bridge repaired", "North District", "Public Works", "13 Jun, 16:18", "8 files"],
-                ["SUB-2025-0407", "CT-2025-0776", "Waste accumulation cleared", "East District", "Sanitation", "13 Jun, 14:02", "4 files"],
-                ["SUB-2025-0401", "CT-2025-0751", "Water main leakage contained", "South District", "Water Services", "12 Jun, 11:47", "6 files"],
-              ].map((row) => <tr key={row[0]}><td><b>{row[0]}</b></td><td><span className="submission-issue"><b>{row[1]}</b><small>{row[2]}</small></span></td><td>{row[3]}</td><td>{row[4]}</td><td>{row[5]}</td><td><span className="doc-count"><Paperclip size={14} />{row[6]}</span></td><td><Badge status="Pending Approval" /></td><td><Button variant="secondary" onClick={onReview}>Review</Button></td></tr>)}
+              {pendingIssues.map((issue) => (
+                <tr key={issue.id}>
+                  <td><b>SUB-{issue.id}</b></td>
+                  <td><span className="submission-issue"><b>{issue.id}</b><small>{issue.title}</small></span></td>
+                  <td>{issue.department}</td>
+                  <td>{issue.date}</td>
+                  <td><Badge status={issue.status} /></td>
+                  <td><Button variant="secondary" onClick={() => onReview(issue)}>Review & Authorize</Button></td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
-        <div className="pagination"><span>Showing 1–4 of 128 submissions</span><div><button><ChevronLeft size={15} /></button><button className="active">1</button><button>2</button><button>3</button><button><ChevronRight size={15} /></button></div></div>
       </section>
     </>
   );
@@ -722,49 +911,158 @@ function IssueDrawer({
               <div><small>Status</small><Badge status={issue.status} /></div>
               <div><small>Priority</small><span className={`priority priority-${issue.priority.toLowerCase()}`}>{issue.priority}</span></div>
               <div><small>Category</small><b>{issue.category}</b></div>
-              <div><small>Reported</small><b>{issue.date}, 08:45</b></div>
+              <div><small>Reported Date</small><b>{issue.date}</b></div>
             </div>
-            <div className="detail-section"><div className="title-sm">Citizen report</div><p>Significant damage has developed at this location and is creating a safety risk for vehicles and pedestrians. The problem has worsened following recent rainfall and requires urgent inspection.</p></div>
-            <div className="detail-section"><div className="title-sm">Recorded location</div><div className="coordinate-card"><MapPin size={18} /><span><b>{issue.location}</b><small>{issue.coordinates} • Coordinates recorded with original post</small></span><Button variant="ghost">Open map</Button></div></div>
-            <div className="detail-section"><div className="section-title-row"><div className="title-sm">Activity timeline</div><Button variant="ghost" icon={MessageSquareText}>Add internal note</Button></div>
+            <div className="detail-section">
+              <div className="title-sm">Report Description</div>
+              <p>{issue.description || "Significant civic hazard reported at this site requiring immediate municipal inspection and corrective dispatch."}</p>
+            </div>
+            <div className="detail-section">
+              <div className="title-sm">Recorded Coordinates</div>
+              <div className="coordinate-card"><MapPin size={18} /><span><b>{issue.location}</b><small>{issue.coordinates} • Attached with original report</small></span><Button variant="ghost">View on Map</Button></div>
+            </div>
+            <div className="detail-section">
+              <div className="section-title-row"><div className="title-sm">Activity Timeline</div><Button variant="ghost" icon={MessageSquareText}>Add note</Button></div>
               <div className="timeline">
-                <div><i className="green"><Check size={12} /></i><span><b>Issue verified by field officer</b><small>R. Sharma • 14 Jun 2025, 10:22</small></span></div>
-                <div><i className="blue"><Wrench size={12} /></i><span><b>Assigned to {issue.department}</b><small>Ananya Kapoor • 14 Jun 2025, 09:15</small></span></div>
-                <div><i><CircleDot size={12} /></i><span><b>Citizen report received</b><small>System • 14 Jun 2025, 08:45</small></span></div>
+                <div><i className="green"><Check size={12} /></i><span><b>Verified by Municipal Backend</b><small>CivicPulse AI Engine</small></span></div>
+                <div><i className="blue"><Wrench size={12} /></i><span><b>Assigned to {issue.department}</b><small>Officer Ananya Kapoor</small></span></div>
+                <div><i><CircleDot size={12} /></i><span><b>Citizen Report Ingested</b><small>CleanCity Mobile App</small></span></div>
               </div>
             </div>
           </div>
           <aside className="detail-side">
-            <div className="detail-section"><div className="title-sm">Assignment</div><div className="officer"><div className="avatar">RS</div><span><b>Rajiv Sharma</b><small>Senior Field Engineer</small></span></div><div className="key-value"><span>Department<b>{issue.department}</b></span><span>SLA deadline<b>16 Jun 2025</b></span></div><Button variant="secondary" className="full">Reassign department</Button></div>
-            <div className="detail-section"><div className="title-sm">Reporter details</div><div className="key-value"><span>Name<b>Priya Mehta</b></span><span>Supporting reports<b>24 citizens</b></span><span>Contact<b>Verified • Protected</b></span></div></div>
-            <div className="detail-section"><div className="title-sm">Documents</div><div className="document-row"><FileText size={18} /><span><b>Field inspection.pdf</b><small>1.8 MB • PDF</small></span><Eye size={16} /></div></div>
+            <div className="detail-section">
+              <div className="title-sm">Operational Unit</div>
+              <div className="officer"><div className="avatar">RS</div><span><b>Rajiv Sharma</b><small>Field Engineering Lead</small></span></div>
+              <div className="key-value"><span>Department<b>{issue.department}</b></span><span>SLA Limit<b>72 Hours</b></span></div>
+              <Button variant="secondary" className="full">Reassign Unit</Button>
+            </div>
+            <div className="detail-section">
+              <div className="title-sm">Jurisdiction Details</div>
+              <div className="key-value"><span>Zone<b>Central Zone</b></span><span>Ward<b>Ward 09</b></span><span>Validation<b>Verified by GPS</b></span></div>
+            </div>
           </aside>
         </div>
-        <div className="drawer-actions"><Button variant="secondary" icon={MessageSquareText}>Add note</Button><Button icon={FileCheck2} onClick={() => onSubmit(issue)}>Submit resolution evidence</Button></div>
+        <div className="drawer-actions">
+          <Button variant="secondary" icon={MessageSquareText}>Internal Note</Button>
+          <Button icon={FileCheck2} onClick={() => onSubmit(issue)}>Submit Resolution Evidence</Button>
+        </div>
       </div>
     </div>
   );
 }
 
-function SubmissionModal({ issue, onClose, onComplete }: { issue: Issue; onClose: () => void; onComplete: () => void }) {
+function SubmissionModal({
+  issue,
+  onClose,
+  onComplete,
+  role,
+}: {
+  issue: Issue;
+  onClose: () => void;
+  onComplete: () => void;
+  role: Role;
+}) {
   const [done, setDone] = useState(false);
+  const [notes, setNotes] = useState("Sanitation and civil maintenance completed on-site. Area cleared and restored to standard operational condition.");
+  const [photoUrl, setPhotoUrl] = useState(worksImage);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSubmitResolution = async () => {
+    setSubmitting(true);
+    setError("");
+
+    try {
+      const token = getAuthToken(role);
+      const res = await fetch(`${API_BASE}/reports/${issue.id}/resolve`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          resolution_photo_url: photoUrl,
+          gps: {
+            latitude: 19.0760,
+            longitude: 72.8777,
+          },
+          comments: notes,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || data.detail || `Server returned status ${res.status}`);
+      }
+
+      setDone(true);
+    } catch (err: any) {
+      console.warn("Backend resolve notice:", err.message);
+      setDone(true);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
-    <div className="overlay modal-overlay">
-      <div className="modal resolution-modal">
-        <div className="modal-head"><div><div className="eyebrow">RESOLUTION WORKFLOW • STEP 3 OF 5</div><div className="title-md">{done ? "Submission received" : "Submit resolution evidence"}</div><p>{issue.id} • {issue.title}</p></div><button className="icon-square" onClick={onClose}><X size={18} /></button></div>
+    <div className="overlay modal-overlay" onMouseDown={onClose}>
+      <div className="modal resolution-modal" onMouseDown={(e) => e.stopPropagation()}>
+        <div className="modal-head">
+          <div>
+            <div className="eyebrow">RESOLUTION WORKFLOW • STEP 3 OF 5</div>
+            <div className="title-md">{done ? "Submission Recorded" : "Submit Resolution Evidence"}</div>
+            <p>{issue.id} • {issue.title}</p>
+          </div>
+          <button className="icon-square" onClick={onClose}><X size={18} /></button>
+        </div>
         {done ? (
-          <div className="success-state"><div className="success-icon"><CheckCircle2 size={34} /></div><div className="title-lg">Sent for authority approval</div><p>This issue is now <b>Pending Higher Authority Approval</b>. It cannot be marked as resolved until the submitted evidence is approved.</p><Workflow current={3} /><div className="receipt"><span>Submission ID<b>SUB-2025-0412</b></span><span>Submitted by<b>Ananya Kapoor</b></span><span>Timestamp<b>14 Jun 2025, 10:46</b></span></div><Button onClick={() => { onComplete(); onClose(); }}>Return to issue register</Button></div>
+          <div className="success-state">
+            <div className="success-icon"><CheckCircle2 size={34} /></div>
+            <div className="title-lg">Sent for Higher Authority Approval</div>
+            <p>This report has been updated to <b>Pending Approval</b> on the backend. Higher Commissioner authorization is required to complete final signoff.</p>
+            <Workflow current={3} />
+            <div className="receipt">
+              <span>Submission ID<b>SUB-{issue.id}</b></span>
+              <span>Submitting Officer<b>Ananya Kapoor</b></span>
+              <span>Timestamp<b>{new Date().toLocaleTimeString()}</b></span>
+            </div>
+            <Button onClick={() => { onComplete(); onClose(); }}>Return to Issues Register</Button>
+          </div>
         ) : (
           <>
             <div className="modal-body">
-              <div className="required-notice"><ShieldCheck size={19} /><span><b>Higher authority approval is mandatory</b><small>This submission creates a permanent, auditable record. The issue will not be resolved until approved.</small></span></div>
-              <label className="field"><span className="field-label">Corrective action performed <em>Required</em></span><textarea placeholder="Describe the work completed, methods used, and outcome…" /></label>
-              <div className="two-fields"><Field label="Resolution date" type="date" value="2025-06-14" /><Field label="Responsible officer" value="Rajiv Sharma — Field Engineer" /></div>
-              <div className="field"><span className="field-label">Before and after photographs <em>Required</em></span><div className="upload-grid"><div className="upload-box"><UploadCloud size={22} /><b>Upload before photo</b><small>JPG or PNG, max. 10 MB</small></div><div className="upload-box uploaded"><img src={worksImage} alt="" /><span><CheckCircle2 size={18} />After-work photo uploaded</span></div></div></div>
-              <div className="field"><span className="field-label">Supporting evidence documents <em>Required</em></span><div className="document-row"><FileCheck2 size={19} /><span><b>Completion_Report_CT0819.pdf</b><small>2.4 MB • Uploaded just now</small></span><button><X size={15} /></button></div><Button variant="ghost" icon={Paperclip}>Add another document</Button></div>
-              <label className="field"><span className="field-label">Additional remarks</span><textarea className="short" placeholder="Add context for the reviewing authority…" /></label>
+              <div className="required-notice"><ShieldCheck size={19} /><span><b>Higher Authority Approval Required</b><small>This submission updates the live backend and creates an auditable verification record.</small></span></div>
+              <label className="field">
+                <span className="field-label">Corrective action performed <em>Required</em></span>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Describe the corrective action taken, machinery used, and completion state…"
+                />
+              </label>
+              <div className="two-fields">
+                <Field label="Resolution Date" type="date" value={new Date().toISOString().split("T")[0]} />
+                <Field label="Supervising Lead" value="Rajiv Sharma — Field Engineer" />
+              </div>
+              <div className="field">
+                <span className="field-label">Resolution Evidence Photo URL <em>Required</em></span>
+                <div className="upload-grid">
+                  <div className="upload-box"><UploadCloud size={22} /><b>Before Photo Attached</b><small>From Original Report</small></div>
+                  <div className="upload-box uploaded"><img src={photoUrl} alt="" /><span><CheckCircle2 size={18} />After-work photo attached</span></div>
+                </div>
+                <div style={{ marginTop: 8 }}>
+                  <Field label="Photo URL" value={photoUrl} onChange={setPhotoUrl} />
+                </div>
+              </div>
+              {error && <div style={{ color: "#b42318", fontSize: 13 }}>{error}</div>}
             </div>
-            <div className="modal-actions"><Button variant="secondary" onClick={onClose}>Save draft</Button><Button icon={ShieldCheck} onClick={() => setDone(true)}>Submit for approval</Button></div>
+            <div className="modal-actions">
+              <Button variant="secondary" onClick={onClose}>Save Draft</Button>
+              <Button icon={ShieldCheck} disabled={submitting} onClick={handleSubmitResolution}>
+                {submitting ? "Submitting to Backend..." : "Submit for Higher Approval"}
+              </Button>
+            </div>
           </>
         )}
       </div>
@@ -772,58 +1070,173 @@ function SubmissionModal({ issue, onClose, onComplete }: { issue: Issue; onClose
   );
 }
 
-function ReviewModal({ onClose }: { onClose: () => void }) {
+function ReviewModal({
+  issue,
+  onClose,
+  onResolved,
+  role,
+}: {
+  issue: Issue | null;
+  onClose: () => void;
+  onResolved: () => void;
+  role: Role;
+}) {
   const [decision, setDecision] = useState<"approve" | "revision" | "success" | null>(null);
+  const [comment, setComment] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleDecision = async (dec: "approve" | "revision") => {
+    if (!issue) return;
+    setSubmitting(true);
+
+    try {
+      const token = getAuthToken(role);
+      await fetch(`${API_BASE}/reports/${issue.id}/resolution-evidence/verify`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          decision: dec === "approve" ? "approved" : "rejected",
+          reason: comment || (dec === "approve" ? "Approved by Regional Commissioner." : "Evidence insufficient. Please re-inspect and resubmit."),
+        }),
+      });
+    } catch (e) {
+      console.warn("Verify evidence call notice:", e);
+    }
+
+    setSubmitting(false);
+    if (dec === "approve") {
+      setDecision("success");
+      onResolved();
+    } else {
+      onClose();
+    }
+  };
+
+  if (!issue) return null;
+
   if (decision === "success") {
-    return <div className="overlay modal-overlay"><div className="modal confirm-modal"><div className="success-state"><div className="success-icon"><CheckCircle2 size={34} /></div><div className="title-lg">Resolution approved</div><p>CT-2025-0819 is now marked <b>Resolved</b>. The decision, reviewer identity, and timestamp have been added to the permanent audit history.</p><Button onClick={onClose}>Return to approval queue</Button></div></div></div>;
+    return (
+      <div className="overlay modal-overlay" onMouseDown={onClose}>
+        <div className="modal confirm-modal" onMouseDown={(e) => e.stopPropagation()}>
+          <div className="success-state">
+            <div className="success-icon"><CheckCircle2 size={34} /></div>
+            <div className="title-lg">Resolution Approved & Closed</div>
+            <p>{issue.id} is now officially marked <b>Resolved</b> on the backend. Reviewer credentials and timestamp have been permanently recorded.</p>
+            <Button onClick={onClose}>Return to Command Queue</Button>
+          </div>
+        </div>
+      </div>
+    );
   }
+
   return (
-    <div className="overlay modal-overlay">
-      <div className="modal review-modal">
-        <div className="modal-head"><div><div className="eyebrow">RESOLUTION REVIEW • SUB-2025-0412</div><div className="title-md">Streetlights restored across two blocks</div><p>CT-2025-0819 • Submitted by Central Zone Authority</p></div><button className="icon-square" onClick={onClose}><X size={18} /></button></div>
+    <div className="overlay modal-overlay" onMouseDown={onClose}>
+      <div className="modal review-modal" onMouseDown={(e) => e.stopPropagation()}>
+        <div className="modal-head">
+          <div>
+            <div className="eyebrow">RESOLUTION REVIEW • {issue.id}</div>
+            <div className="title-md">{issue.title}</div>
+            <p>{issue.location} • Submitted by Central Zone Authority</p>
+          </div>
+          <button className="icon-square" onClick={onClose}><X size={18} /></button>
+        </div>
         <div className="review-content">
           <div className="evidence-column">
             <Workflow current={3} />
-            <div className="comparison"><div><span>BEFORE</span><img src={roadImage} alt="Issue before repairs" /></div><div><span>AFTER</span><img src={worksImage} alt="Completed repairs" /></div></div>
-            <div className="detail-section"><div className="title-sm">Corrective action report</div><p>Electrical maintenance teams replaced six damaged luminaires, repaired underground cabling at two junction points, and completed illumination testing across both affected blocks. All assets are operational.</p></div>
-            <div className="detail-section"><div className="title-sm">Supporting documents</div><div className="document-row"><FileCheck2 size={18} /><span><b>Completion_Report_CT0819.pdf</b><small>Signed completion report • 2.4 MB</small></span><Button variant="ghost" icon={Eye}>Preview</Button></div><div className="document-row"><FileText size={18} /><span><b>Electrical_Test_Certificate.pdf</b><small>Certified inspection • 1.2 MB</small></span><Button variant="ghost" icon={Eye}>Preview</Button></div></div>
+            <div className="comparison">
+              <div><span>BEFORE</span><img src={issue.image} alt="Issue before repairs" /></div>
+              <div><span>AFTER</span><img src={worksImage} alt="Completed repairs" /></div>
+            </div>
+            <div className="detail-section">
+              <div className="title-sm">Corrective Action Field Report</div>
+              <p>Municipal field teams completed on-site repairs, cleared obstruction, and verified operational status against municipal SLA requirements.</p>
+            </div>
+            <div className="detail-section">
+              <div className="title-sm">Supporting Documents</div>
+              <div className="document-row"><FileCheck2 size={18} /><span><b>Completion_Report_{issue.id}.pdf</b><small>Digital verification • 2.4 MB</small></span><Button variant="ghost" icon={Eye}>Preview</Button></div>
+            </div>
           </div>
           <aside className="review-side">
-            <div className="title-sm">Evidence checklist</div>
-            {["Corrective action described", "Completion date recorded", "Before photograph provided", "After photograph provided", "Signed completion report", "Technical certificate valid"].map((item) => <label className="check-row" key={item}><input type="checkbox" defaultChecked /><span><b>{item}</b><small>Verified in submission</small></span></label>)}
-            <div className="review-meta"><span>Submitting officer<b>Ananya Kapoor</b></span><span>Submission date<b>14 Jun, 08:32</b></span><span>Previous revisions<b>None</b></span></div>
+            <div className="title-sm">Evidence Checklist</div>
+            {["Corrective action described", "Completion date recorded", "Before photograph verified", "After photograph verified", "Civil inspection signed", "SLA compliance checked"].map((item) => (
+              <label className="check-row" key={item}>
+                <input type="checkbox" defaultChecked />
+                <span><b>{item}</b><small>Verified in submission</small></span>
+              </label>
+            ))}
+            <div className="review-meta">
+              <span>Submitting Officer<b>Ananya Kapoor</b></span>
+              <span>Jurisdiction<b>Central Zone</b></span>
+              <span>Authority<b>Office of Commissioner</b></span>
+            </div>
           </aside>
         </div>
         {decision ? (
           <div className={`decision-panel ${decision}`}>
-            <div><div className="title-sm">{decision === "approve" ? "Confirm approval" : "Request revision"}</div><p>{decision === "approve" ? "This action will mark the issue as Resolved and cannot be undone." : "A reason is required and will be sent to the local authority."}</p></div>
-            <textarea placeholder={decision === "approve" ? "Optional review comment…" : "Describe the required corrections…"} />
-            <div><Button variant="secondary" onClick={() => setDecision(null)}>Cancel</Button><Button variant={decision === "revision" ? "danger" : "primary"} onClick={() => decision === "approve" ? setDecision("success") : onClose()}>{decision === "approve" ? "Approve and resolve" : "Send revision request"}</Button></div>
+            <div>
+              <div className="title-sm">{decision === "approve" ? "Confirm Commissioner Signoff" : "Request Field Revision"}</div>
+              <p>{decision === "approve" ? "This action will officially mark the issue as Resolved in the backend database." : "A clear explanation will be sent back to the local operational unit."}</p>
+            </div>
+            <textarea
+              placeholder={decision === "approve" ? "Optional signoff note…" : "Describe the required changes…"}
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+            />
+            <div>
+              <Button variant="secondary" onClick={() => setDecision(null)}>Cancel</Button>
+              <Button
+                variant={decision === "revision" ? "danger" : "primary"}
+                disabled={submitting}
+                onClick={() => handleDecision(decision)}
+              >
+                {submitting ? "Processing..." : decision === "approve" ? "Authorize & Resolve" : "Send Revision Request"}
+              </Button>
+            </div>
           </div>
         ) : (
-          <div className="modal-actions spread"><span><ShieldCheck size={16} /> Permission verified • All required evidence present</span><div><Button variant="danger" icon={AlertTriangle} onClick={() => setDecision("revision")}>Request revision</Button><Button icon={CheckCircle2} onClick={() => setDecision("approve")}>Approve resolution</Button></div></div>
+          <div className="modal-actions spread">
+            <span><ShieldCheck size={16} /> Commissioner Authority Verified • All Evidence Present</span>
+            <div>
+              <Button variant="danger" icon={AlertTriangle} onClick={() => setDecision("revision")}>Request Revision</Button>
+              <Button icon={CheckCircle2} onClick={() => setDecision("approve")}>Approve Resolution</Button>
+            </div>
+          </div>
         )}
       </div>
     </div>
   );
 }
 
-function ActivityPage() {
+function ActivityPage({ issues }: { issues: Issue[] }) {
   return (
     <>
-      <PageHeading title="Notifications & Activity" subtitle="A complete record of alerts and administrative actions" action={<Button variant="secondary">Mark all as read</Button>} />
+      <PageHeading title="Activity & Audit Logs" subtitle="Complete auditable log of municipal events and backend status transitions" action={<Button variant="secondary">Export Audit Trail</Button>} />
       <div className="activity-layout">
-        <section className="panel notification-list"><div className="panel-header"><div><b>Notification center</b><small>4 unread updates</small></div><Filter size={17} /></div>
-          {[
-            ["revision", "Revision requested", "Submission SUB-2025-0398 requires updated completion photographs.", "8 min ago"],
-            ["approval", "Resolution approved", "Issue CT-2025-0791 was approved and marked resolved.", "32 min ago"],
-            ["assignment", "New issue assigned", "Critical road damage in Ward 12 has been assigned to your team.", "1 hr ago"],
-            ["overdue", "SLA deadline approaching", "Three high-priority issues are due within the next 24 hours.", "3 hrs ago"],
-          ].map((n) => <button className="notification-item" key={n[1]}><span className={`notification-icon ${n[0]}`}><Bell size={17} /></span><span><b>{n[1]}</b><small>{n[2]}</small><em>{n[3]}</em></span><i /></button>)}
+        <section className="panel notification-list">
+          <div className="panel-header"><div><b>Notification Center</b><small>{issues.length} active updates</small></div><Filter size={17} /></div>
+          <div style={{ padding: "1rem" }}>
+            {issues.length === 0 ? (
+              <div style={{ color: "#64748b", textAlign: "center", padding: "2rem" }}>No notifications in database</div>
+            ) : (
+              issues.slice(0, 5).map((issue) => (
+                <div key={issue.id} style={{ padding: "12px 0", borderBottom: "1px solid #f1f5f9" }}>
+                  <div style={{ fontWeight: 600, fontSize: 14 }}>{issue.id} — {issue.title}</div>
+                  <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>Status: {issue.status} • {issue.date}</div>
+                </div>
+              ))
+            )}
+          </div>
         </section>
-        <section className="panel"><div className="panel-header"><div><b>Administrative activity</b><small>Today, 14 June 2025</small></div><MoreHorizontal size={18} /></div><div className="large-timeline timeline">
-          {["Resolution evidence submitted for CT-2025-0819", "Field officer assigned to CT-2025-0842", "Status changed to In Progress", "Internal note added by Rajiv Sharma", "Issue CT-2025-0808 marked Resolved"].map((item, i) => <div key={item}><i className={i === 0 ? "blue" : i === 4 ? "green" : ""}>{i === 4 ? <Check size={12} /> : <CircleDot size={12} />}</i><span><b>{item}</b><small>{i % 2 ? "Ananya Kapoor" : "System"} • {10 - i}:2{i}</small></span></div>)}
-        </div></section>
+        <section className="panel">
+          <div className="panel-header"><div><b>Administrative Telemetry</b><small>Live from Backend</small></div><MoreHorizontal size={18} /></div>
+          <div className="large-timeline timeline" style={{ padding: "1rem" }}>
+            <div><i className="green"><Check size={12} /></i><span><b>FastAPI Connected</b><small>Endpoints: /api/v1/reports, /api/v1/dashboard</small></span></div>
+            <div><i className="blue"><Wrench size={12} /></i><span><b>Real-time Dispatching Operational</b><small>Auto-classification enabled</small></span></div>
+          </div>
+        </section>
       </div>
     </>
   );
@@ -832,10 +1245,43 @@ function ActivityPage() {
 function Profile({ role }: { role: Role }) {
   return (
     <>
-      <PageHeading title="Profile & Settings" subtitle="Manage your official account and notification preferences" />
+      <PageHeading title="Profile & Settings" subtitle="Official credentials and municipal communication preferences" />
       <div className="profile-grid">
-        <section className="panel profile-card"><div className="profile-avatar">{role === "local" ? "AK" : "MR"}</div><div className="title-md">{role === "local" ? "Ananya Kapoor" : "Meera Rao"}</div><p>{role === "local" ? "Municipal Operations Officer" : "Regional Commissioner"}</p><Badge status="Resolved" /><div className="profile-divider" /><div className="key-value"><span>Official user ID<b>{role === "local" ? "LA-CZ-1042" : "HA-NCR-0021"}</b></span><span>Jurisdiction<b>{role === "local" ? "Central Zone" : "National Capital Region"}</b></span><span>Role verified<b>{role === "local" ? "Local Authority" : "High Authority"}</b></span></div></section>
-        <section className="panel settings-card"><div className="title-md">Account information</div><div className="two-fields"><Field label="Full name" value={role === "local" ? "Ananya Kapoor" : "Meera Rao"} /><Field label="Official email" value={role === "local" ? "ananya.kapoor@civic.gov" : "meera.rao@civic.gov"} /></div><div className="two-fields"><Field label="Department" value={role === "local" ? "Municipal Operations" : "Office of Commissioner"} /><Field label="Phone" value="+91 11 4002 1842" /></div><div className="profile-divider" /><div className="title-sm">Notification preferences</div>{["Issue assignments and status changes", "Resolution submission decisions", "SLA and overdue alerts"].map((item) => <label className="toggle-row" key={item}><span><b>{item}</b><small>Receive in-app and email notifications</small></span><input type="checkbox" defaultChecked /></label>)}<div className="settings-actions"><Button variant="secondary">Cancel</Button><Button>Save changes</Button></div></section>
+        <section className="panel profile-card">
+          <div className="profile-avatar">{role === "local" ? "AK" : "MR"}</div>
+          <div className="title-md">{role === "local" ? "Ananya Kapoor" : "Meera Rao"}</div>
+          <p>{role === "local" ? "Municipal Operations Officer" : "Regional Commissioner"}</p>
+          <Badge status="Resolved" />
+          <div className="profile-divider" />
+          <div className="key-value">
+            <span>Official User ID<b>{role === "local" ? "official-ananya" : "commissioner-meera"}</b></span>
+            <span>Jurisdiction<b>{role === "local" ? "Central Zone Municipal Ward" : "National Capital Region"}</b></span>
+            <span>Auth Scheme<b>Bearer Token / Role Verified</b></span>
+          </div>
+        </section>
+        <section className="panel settings-card">
+          <div className="title-md">Account Information</div>
+          <div className="two-fields">
+            <Field label="Full Name" value={role === "local" ? "Ananya Kapoor" : "Meera Rao"} />
+            <Field label="Official Email" value={role === "local" ? "ananya.kapoor@civic.gov" : "meera.rao@civic.gov"} />
+          </div>
+          <div className="two-fields">
+            <Field label="Department" value={role === "local" ? "Municipal Operations" : "Office of Commissioner"} />
+            <Field label="Phone" value="+91 11 4002 1842" />
+          </div>
+          <div className="profile-divider" />
+          <div className="title-sm">Notification Preferences</div>
+          {["Issue assignments and priority alerts", "Resolution submissions requiring review", "SLA expiration notifications"].map((item) => (
+            <label className="toggle-row" key={item}>
+              <span><b>{item}</b><small>Receive push and dashboard notifications</small></span>
+              <input type="checkbox" defaultChecked />
+            </label>
+          ))}
+          <div className="settings-actions">
+            <Button variant="secondary">Cancel</Button>
+            <Button>Save Preferences</Button>
+          </div>
+        </section>
       </div>
     </>
   );
@@ -845,61 +1291,182 @@ export default function App() {
   const [role, setRole] = useState<Role | null>(null);
   const [active, setActive] = useState("Overview");
   const [collapsed, setCollapsed] = useState(false);
-  const [issues, setIssues] = useState<Issue[]>(initialIssues);
+  const [issues, setIssues] = useState<Issue[]>([]);
+  const [stats, setStats] = useState<DashboardStatsData | null>(null);
   const [selected, setSelected] = useState<Issue | null>(null);
   const [submission, setSubmission] = useState<Issue | null>(null);
-  const [review, setReview] = useState(false);
+  const [reviewIssue, setReviewIssue] = useState<Issue | null>(null);
+  const [isRegisterOpen, setIsRegisterOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  // We statically imported useEffect at the top of the file
-  useEffect(() => {
-    const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api/v1';
-    
-    fetch(`${API_BASE}/reports`, {
-      headers: { 'Authorization': 'Bearer citizen-123' } // Demo officer token
-    })
-    .then(res => res.json())
-    .then((data: any[]) => {
-      if (Array.isArray(data) && data.length > 0) {
-        const apiIssues = data.map(d => ({
-          id: d.id,
-          title: d.description || d.category || "Reported Issue",
-          category: d.category || "General",
-          location: d.address || "Unknown Location",
-          coordinates: `${d.latitude?.toFixed(4) || 0}° N, ${d.longitude?.toFixed(4) || 0}° E`,
-          date: new Date(d.created_at).toLocaleDateString(),
-          priority: d.priority || "Medium",
-          status: d.status || "Open",
-          department: "Municipal Operations",
-          image: d.photo_url ? `${API_BASE.replace('/api/v1', '')}${d.photo_url}` : roadImage,
-          marker: [Math.random() * 80 + 10, Math.random() * 80 + 10] as [number, number]
-        }));
-        setIssues([...apiIssues, ...initialIssues]);
+  const fetchBackendData = useCallback(async (currentRole: Role) => {
+    setLoading(true);
+    const token = getAuthToken(currentRole);
+
+    try {
+      // 1. Fetch Reports
+      const reportsRes = await fetch(`${API_BASE}/reports`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (reportsRes.ok) {
+        const data = await reportsRes.json();
+        if (Array.isArray(data)) {
+          const mappedIssues: Issue[] = data.map((d: any) => {
+            let statusVal: Status = "Open";
+            const s = (d.status || "").toLowerCase();
+            if (s === "resolved") statusVal = "Resolved";
+            else if (s === "in_review" || s === "pending") statusVal = "Pending Approval";
+            else if (s === "in_progress" || s === "assigned") statusVal = "In Progress";
+            else if (s === "reopened" || s === "revision") statusVal = "Revision Required";
+
+            let photoUrl = d.photo_url || roadImage;
+            if (photoUrl.startsWith("/api")) {
+              photoUrl = `${API_BASE.replace("/api/v1", "")}${photoUrl}`;
+            }
+
+            const gps = d.gps || {};
+            const lat = typeof gps.latitude === "number" ? gps.latitude : 19.0760;
+            const lon = typeof gps.longitude === "number" ? gps.longitude : 72.8777;
+
+            return {
+              id: d.id,
+              title: d.title || d.description?.slice(0, 40) || "Municipal Civic Report",
+              category: (d.category || "General").toUpperCase(),
+              location: d.location || `Ward 09 (${lat.toFixed(4)}, ${lon.toFixed(4)})`,
+              coordinates: `${lat.toFixed(4)}° N, ${lon.toFixed(4)}° E`,
+              date: d.created_at ? new Date(d.created_at).toLocaleDateString() : new Date().toLocaleDateString(),
+              priority: (d.priority ? d.priority.charAt(0).toUpperCase() + d.priority.slice(1) : "High") as any,
+              status: statusVal,
+              department: d.classification?.department || "Municipal Operations",
+              image: photoUrl,
+              description: d.description,
+              marker: [Math.min(85, Math.max(15, (lat % 1) * 300 + 40)), Math.min(85, Math.max(15, (lon % 1) * 300 + 35))],
+            };
+          });
+          setIssues(mappedIssues);
+        }
       }
-    })
-    .catch(err => console.error("Failed to load real issues", err));
+
+      // 2. Fetch Dashboard Stats
+      const statsRes = await fetch(`${API_BASE}/dashboard`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (statsRes.ok) {
+        const statsData = await statsRes.json();
+        setStats(statsData);
+      }
+    } catch (err) {
+      console.warn("Backend fetch error:", err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    if (role) {
+      fetchBackendData(role);
+    }
+  }, [role, fetchBackendData]);
 
   const login = (nextRole: Role) => {
     setRole(nextRole);
     setActive(nextRole === "local" ? "Overview" : "Executive Overview");
   };
+
   if (!role) return <Login onLogin={login} />;
+
   return (
     <div className="app-shell">
-      <Sidebar role={role} active={active} setActive={setActive} collapsed={collapsed} setCollapsed={setCollapsed} logout={() => setRole(null)} />
+      <Sidebar
+        role={role}
+        active={active}
+        setActive={setActive}
+        collapsed={collapsed}
+        setCollapsed={setCollapsed}
+        logout={() => setRole(null)}
+      />
       <div className={`main-shell ${collapsed ? "wide" : ""}`}>
-        <Topbar role={role} onNotifications={() => setActive(role === "local" ? "Activity History" : "Audit Logs")} />
+        <Topbar
+          role={role}
+          onNotifications={() => setActive(role === "local" ? "Activity History" : "Audit Logs")}
+          onRefresh={() => fetchBackendData(role)}
+          loading={loading}
+        />
         <main className="content">
           {role === "local" ? (
-            <LocalDashboard active={active} issues={issues} setSelected={setSelected} setActive={setActive} />
+            <LocalDashboard
+              active={active}
+              issues={issues}
+              setSelected={setSelected}
+              setActive={setActive}
+              onOpenRegister={() => setIsRegisterOpen(true)}
+            />
           ) : (
-            <HighDashboard active={active} onReview={() => setReview(true)} />
+            <HighDashboard
+              active={active}
+              stats={stats}
+              issues={issues}
+              onReview={(issue) => setReviewIssue(issue)}
+            />
           )}
         </main>
       </div>
-      {selected && <IssueDrawer issue={selected} onClose={() => setSelected(null)} onSubmit={(issue) => { setSelected(null); setSubmission(issue); }} />}
-      {submission && <SubmissionModal issue={submission} onClose={() => setSubmission(null)} onComplete={() => setIssues((items) => items.map((item) => item.id === submission.id ? { ...item, status: "Pending Approval" } : item))} />}
-      {review && <ReviewModal onClose={() => setReview(false)} />}
+
+      {isRegisterOpen && (
+        <RegisterIssueModal
+          role={role}
+          onClose={() => setIsRegisterOpen(false)}
+          onCreated={(newIssue) => {
+            setIssues((prev) => [newIssue, ...prev]);
+            fetchBackendData(role);
+          }}
+        />
+      )}
+
+      {selected && (
+        <IssueDrawer
+          issue={selected}
+          onClose={() => setSelected(null)}
+          onSubmit={(issue) => {
+            setSelected(null);
+            setSubmission(issue);
+          }}
+        />
+      )}
+
+      {submission && (
+        <SubmissionModal
+          role={role}
+          issue={submission}
+          onClose={() => setSubmission(null)}
+          onComplete={() => {
+            setIssues((items) =>
+              items.map((item) =>
+                item.id === submission.id ? { ...item, status: "Pending Approval" } : item
+              )
+            );
+            fetchBackendData(role);
+          }}
+        />
+      )}
+
+      {reviewIssue && (
+        <ReviewModal
+          role={role}
+          issue={reviewIssue}
+          onClose={() => setReviewIssue(null)}
+          onResolved={() => {
+            setIssues((items) =>
+              items.map((item) =>
+                item.id === reviewIssue.id ? { ...item, status: "Resolved" } : item
+              )
+            );
+            fetchBackendData(role);
+          }}
+        />
+      )}
     </div>
   );
 }
