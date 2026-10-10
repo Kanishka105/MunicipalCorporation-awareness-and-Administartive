@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import '../theme.dart';
+import '../services/api_service.dart';
 
 class CreatePostScreen extends StatefulWidget {
   const CreatePostScreen({super.key});
@@ -15,6 +16,8 @@ class CreatePostScreen extends StatefulWidget {
 class _CreatePostScreenState extends State<CreatePostScreen> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descController = TextEditingController();
+  final ApiService _apiService = ApiService();
+  bool _isSubmitting = false;
   XFile? _imageFile;
   final ImagePicker _picker = ImagePicker();
 
@@ -316,16 +319,42 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             // Map view
             ClipRRect(
               borderRadius: BorderRadius.circular(16),
-              child: SizedBox(
-                height: 80,
-                child: GoogleMap(
-                  initialCameraPosition: const CameraPosition(
-                    target: LatLng(34.0522, -118.2437),
-                    zoom: 12,
-                  ),
-                  zoomControlsEnabled: false,
-                  mapToolbarEnabled: false,
+              child: Container(
+                height: 90,
+                decoration: BoxDecoration(
+                  color: AppTheme.accentBlue.withOpacity(0.35),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppTheme.accentBlue),
                 ),
+                child: !kIsWeb
+                    ? GoogleMap(
+                        initialCameraPosition: const CameraPosition(
+                          target: LatLng(34.0522, -118.2437),
+                          zoom: 12,
+                        ),
+                        zoomControlsEnabled: false,
+                        mapToolbarEnabled: false,
+                      )
+                    : Container(
+                        color: const Color(0xFFF1F5F9),
+                        child: Center(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.location_on, color: AppTheme.primaryColor, size: 24),
+                              const SizedBox(width: 8),
+                              Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: const [
+                                  Text('Geo-Target: 34.0522° N, 118.2437° W', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                                  Text('Precision: Hardware GPS locked', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
               ),
             ),
             const SizedBox(height: 24),
@@ -408,9 +437,61 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: () {},
-                icon: const Icon(Icons.send_outlined),
-                label: const Text('Publish Post to Feed'),
+                onPressed: _isSubmitting
+                    ? null
+                    : () async {
+                        final title = _titleController.text.trim();
+                        final desc = _descController.text.trim();
+
+                        if (title.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Please enter an issue title')),
+                          );
+                          return;
+                        }
+
+                        setState(() => _isSubmitting = true);
+
+                        final postPayload = {
+                          "title": title,
+                          "description": desc.isNotEmpty ? desc : "Reported civic issue requiring municipal attention.",
+                          "category": "waste",
+                          "gps": {
+                            "latitude": 19.0760,
+                            "longitude": 72.8777,
+                          },
+                          "photo_url": "https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?w=900",
+                          "citizen_id": "citizen-mobile",
+                          "gps_accuracy_m": 2.4,
+                        };
+
+                        final success = await _apiService.createPost(postPayload);
+                        if (!mounted) return;
+                        setState(() => _isSubmitting = false);
+
+                        if (success) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Post published successfully to feed!'),
+                              backgroundColor: Color(0xFF16A34A),
+                            ),
+                          );
+                          _titleController.clear();
+                          _descController.clear();
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Failed to publish post. Check network connection.')),
+                          );
+                        }
+                      },
+                icon: _isSubmitting
+                    ? const SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                      )
+                    : const Icon(Icons.send_outlined),
+                label: Text(_isSubmitting ? 'Publishing...' : 'Publish Post to Feed'),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),

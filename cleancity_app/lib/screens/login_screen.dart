@@ -240,6 +240,13 @@ class _LoginScreenState extends State<LoginScreen> {
                     const Text('Password', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
                     const SizedBox(height: 8),
                     _buildTextField(icon: Icons.lock_outline, hint: '••••••••••••', isPassword: true, controller: passwordController),
+                    if (!isLogin) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        'Must be 8+ characters with uppercase, lowercase, number & special char (e.g. Clean@123)',
+                        style: TextStyle(fontSize: 11, color: AppTheme.textSecondary),
+                      ),
+                    ],
                     const SizedBox(height: 16),
                     
                     if (!isLogin) ...[
@@ -297,17 +304,17 @@ class _LoginScreenState extends State<LoginScreen> {
                                 
                                 if (!isLogin) {
                                   // Sign Up Flow
-                                  final success = await _apiService.signUp(targetMobile, password, "Citizen");
+                                  final result = await _apiService.signUp(targetMobile, password, "Citizen");
                                   if (!mounted) return;
                                   setState(() => isLoading = false);
                                   
-                                  if (success) {
+                                  if (result['success'] == true) {
                                     // Show OTP Dialog
                                     final otpController = TextEditingController();
                                     showDialog(
                                       context: context,
                                       barrierDismissible: false,
-                                      builder: (context) => AlertDialog(
+                                      builder: (dialogCtx) => AlertDialog(
                                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                                         title: const Text('Verify Phone Number', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
                                         content: Column(
@@ -340,7 +347,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                         ),
                                         actions: [
                                           TextButton(
-                                            onPressed: () => Navigator.pop(context),
+                                            onPressed: () => Navigator.of(dialogCtx).pop(),
                                             child: const Text('Cancel'),
                                           ),
                                           ElevatedButton(
@@ -354,7 +361,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                               }
                                               final verified = await _apiService.verifyOtp(targetMobile, otp);
                                               if (verified) {
-                                                Navigator.pop(context);
+                                                Navigator.of(dialogCtx).pop();
                                                 if (mounted) {
                                                   ScaffoldMessenger.of(context).showSnackBar(
                                                     const SnackBar(
@@ -373,8 +380,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                                 // Auto login after verification
                                                 final loginSuccess = await _apiService.login(targetMobile, password);
                                                 if (loginSuccess && mounted) {
-                                                  Navigator.pushReplacement(
-                                                    context,
+                                                  Navigator.of(context).pushReplacement(
                                                     MaterialPageRoute(builder: (_) => const HomeScreen()),
                                                   );
                                                 }
@@ -391,7 +397,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     );
                                   } else {
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('Sign up failed or user already exists')),
+                                      SnackBar(content: Text(result['message'] ?? 'Sign up failed')),
                                     );
                                   }
                                 } else {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../theme.dart';
 import '../models/post_model.dart';
 import '../services/api_service.dart';
+import 'login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -180,8 +181,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         Expanded(
                           flex: 1,
                           child: ElevatedButton.icon(
-                            onPressed: () {
-                              Navigator.pop(context); // Go back to login for demo
+                            onPressed: () async {
+                              await _apiService.logout();
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Logged out successfully'),
+                                    duration: Duration(seconds: 2),
+                                  ),
+                                );
+                                Navigator.pushAndRemoveUntil(
+                                  context,
+                                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                                  (route) => false,
+                                );
+                              }
                             },
                             icon: const Icon(Icons.logout, color: Colors.red),
                             label: const Text('Log Out', style: TextStyle(color: Colors.red)),

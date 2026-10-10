@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from functools import lru_cache
+from pathlib import Path
 from typing import List
 
 from pydantic import Field, field_validator
@@ -8,7 +9,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore", case_sensitive=False)
+    model_config = SettingsConfigDict(env_file=str(Path(__file__).resolve().parent / ".env"), extra="ignore", case_sensitive=False)
 
     app_name: str = "CivicPulse AI"
     environment: str = "development"
@@ -20,6 +21,9 @@ class Settings(BaseSettings):
     cognito_region: str = "ap-south-1"
     cognito_user_pool_id: str = "ap-south-1_example_pool"
     cognito_client_id: str = "dev-client-id"
+    dashboard_cognito_client_id: str | None = None
+    aws_dynamodb_enabled: bool = False
+    aws_s3_enabled: bool = False
     dynamodb_reports_table: str = "civicpulse-reports"
     dynamodb_tasks_table: str = "civicpulse-tasks"
     dynamodb_users_table: str = "civicpulse-users"
@@ -34,6 +38,14 @@ class Settings(BaseSettings):
     @property
     def allowed_origin_list(self) -> List[str]:
         return [origin.strip() for origin in self.allowed_origins.split(",") if origin.strip()]
+
+    @property
+    def aws_client_options(self) -> dict[str, str]:
+        options = {"region_name": self.aws_region}
+        if self.aws_access_key_id and self.aws_secret_access_key:
+            options["aws_access_key_id"] = self.aws_access_key_id
+            options["aws_secret_access_key"] = self.aws_secret_access_key
+        return options
 
     @field_validator("environment")
     @classmethod

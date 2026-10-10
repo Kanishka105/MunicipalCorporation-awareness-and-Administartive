@@ -4,6 +4,7 @@ import hashlib
 import math
 import os
 import re
+import sys
 import warnings
 from io import BytesIO
 from datetime import datetime, timezone
@@ -15,6 +16,7 @@ import uuid
 from fastapi import HTTPException, status
 from PIL import Image, UnidentifiedImageError
 
+from backend.config import get_settings
 from backend.db import Database, database
 from backend.schemas import DashboardStats, IssueCategory, ReportCreate, ReportStatus, ResolutionPayload, ResolutionVerificationPayload, Severity, TaskStatus
 
@@ -106,33 +108,52 @@ class CivicPulseService:
 
         evidence_id = uuid.uuid4().hex
         filename = f"{evidence_id}.{extension}"
-        directory = Path(self.db.storage_path).parent / "evidence"
-        directory.mkdir(mode=0o700, parents=True, exist_ok=True)
-        os.chmod(directory, 0o700)
-        destination = directory / filename
-        file_descriptor = os.open(destination, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-        try:
-            with os.fdopen(file_descriptor, "wb") as image_file:
-                image_file.write(content)
-            record = {
-                "evidence_id": evidence_id,
-                "filename": filename,
-                "content_type": detected_type,
-                "size_bytes": len(content),
-                "content_sha256": self._hash_photo_bytes(content),
-                "uploaded_by": user.user_id,
-                "created_at": datetime.now(timezone.utc).isoformat(),
-            }
-            self.db.create_evidence(record)
-        except OSError:
-            destination.unlink(missing_ok=True)
-            raise
+        record = {
+            "evidence_id": evidence_id,
+            "filename": filename,
+            "content_type": detected_type,
+            "size_bytes": len(content),
+            "content_sha256": self._hash_photo_bytes(content),
+            "uploaded_by": user.user_id,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        }
+        settings = get_settings()
+        if settings.aws_s3_enabled and "pytest" not in sys.modules:
+            if not settings.s3_bucket:
+                raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="S3 bucket is not configured")
+            import boto3
+
+            object_key = f"evidence/{filename}"
+            boto3.client("s3", **settings.aws_client_options).put_object(
+                Bucket=settings.s3_bucket,
+                Key=object_key,
+                Body=content,
+                ContentType=detected_type,
+                ServerSideEncryption="AES256",
+                Metadata={"sha256": record["content_sha256"]},
+            )
+            record["object_key"] = object_key
+        else:
+            directory = Path(self.db.storage_path).parent / "evidence"
+            directory.mkdir(mode=0o700, parents=True, exist_ok=True)
+            os.chmod(directory, 0o700)
+            destination = directory / filename
+            file_descriptor = os.open(destination, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+            try:
+                with os.fdopen(file_descriptor, "wb") as image_file:
+                    image_file.write(content)
+            except OSError:
+                destination.unlink(missing_ok=True)
+                raise
+        self.db.create_evidence(record)
         return record
 
     def get_uploaded_evidence(self, evidence_id: str) -> Optional[Dict[str, Any]]:
         return self.db.get_evidence(evidence_id)
 
     def uploaded_evidence_path(self, evidence: Dict[str, Any]) -> Path:
+        if evidence.get("object_key"):
+            raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="S3 evidence is returned directly by the evidence endpoint")
         path = Path(self.db.storage_path).parent / "evidence" / evidence["filename"]
         if not path.is_file():
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Evidence file is unavailable")

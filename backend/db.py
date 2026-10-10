@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 import os
+import sys
+from decimal import Decimal
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -233,4 +235,161 @@ class Database:
             }
 
 
-database = Database()
+class DynamoDBDatabase(Database):
+    """DynamoDB-backed implementation using the configured CivicPulse tables."""
+
+    def __init__(self, aws_client_options: Dict[str, str], reports_table: str, tasks_table: str, users_table: str):
+        import boto3
+
+        self._resource = boto3.resource("dynamodb", **aws_client_options)
+        self._tables = {
+            "reports": self._resource.Table(reports_table),
+            "tasks": self._resource.Table(tasks_table),
+            "users": self._resource.Table(users_table),
+        }
+        self._ready = False
+        super().__init__(storage_path=Path(os.getenv("CIVICPULSE_LOCAL_CACHE", Path(__file__).resolve().parent / "data" / "db.json")))
+
+    @staticmethod
+    def _from_dynamo(value: Any) -> Any:
+        if isinstance(value, Decimal):
+            return int(value) if value % 1 == 0 else float(value)
+        if isinstance(value, dict):
+            return {key: DynamoDBDatabase._from_dynamo(item) for key, item in value.items()}
+        if isinstance(value, list):
+            return [DynamoDBDatabase._from_dynamo(item) for item in value]
+        return value
+
+    @staticmethod
+    def _to_dynamo(value: Any) -> Any:
+        if isinstance(value, float):
+            return Decimal(str(value))
+        if isinstance(value, dict):
+            return {key: DynamoDBDatabase._to_dynamo(item) for key, item in value.items()}
+        if isinstance(value, list):
+            return [DynamoDBDatabase._to_dynamo(item) for item in value]
+        return value
+
+    @staticmethod
+    def _scan(table: Any) -> list[dict[str, Any]]:
+        items: list[dict[str, Any]] = []
+        response = table.scan()
+        items.extend(response.get("Items", []))
+        while response.get("LastEvaluatedKey"):
+            response = table.scan(ExclusiveStartKey=response["LastEvaluatedKey"])
+            items.extend(response.get("Items", []))
+        return [DynamoDBDatabase._from_dynamo(item) for item in items]
+
+    @classmethod
+    def _write_many(cls, table: Any, items: list[dict[str, Any]], aliases: tuple[str, ...]) -> None:
+        table.load()
+        key_names = [key["AttributeName"] for key in table.key_schema]
+        if not key_names:
+            raise RuntimeError(f"DynamoDB table {table.name} has no configured key schema")
+        with table.batch_writer(overwrite_by_pkeys=key_names) as batch:
+            for original in items:
+                item = dict(original)
+                nested = item.get("record") if isinstance(item.get("record"), dict) else {}
+                for key_name in key_names:
+                    if key_name not in item:
+                        value = next((item[name] for name in aliases if name in item), None)
+                        if value is None:
+                            value = next((nested[name] for name in (key_name, *aliases, "created_at", "timestamp") if name in nested), None)
+                        if value is None:
+                            raise RuntimeError(f"DynamoDB table {table.name} requires key attribute {key_name}; no matching record field exists")
+                        item[key_name] = value
+                batch.put_item(Item=cls._to_dynamo(item))
+
+    def _persist(self) -> None:
+        if not self._ready:
+            return
+        records = (
+            ("reports", list(self.reports.values()), ("id", "report_id")),
+            ("tasks", list(self.tasks.values()), ("id", "task_id")),
+            ("users", list(self.users.values()), ("user_id", "id")),
+            ("users", [{"user_id": f"audit#{item['id']}", "record_type": "audit", "record": item} for item in self.audit_log], ("user_id", "id")),
+        )
+        for table_name, items, aliases in records:
+            self._write_many(self._tables[table_name], items, aliases)
+        # Evidence metadata lives with report records in the configured users table
+        # until a dedicated evidence table is configured.
+        evidence_records = [{"user_id": f"evidence#{item['evidence_id']}", "record_type": "evidence", "record": item} for item in self.evidence.values()]
+        self._write_many(self._tables["users"], evidence_records, ("user_id", "evidence_id"))
+
+    def create_evidence(self, record: Dict[str, Any]) -> Dict[str, Any]:
+        with self._lock:
+            self.evidence[record["evidence_id"]] = record
+            self._persist()
+            return record
+
+    def get_evidence(self, evidence_id: str) -> Optional[Dict[str, Any]]:
+        with self._lock:
+            return self.evidence.get(evidence_id)
+
+    def list_evidence(self) -> List[Dict[str, Any]]:
+        with self._lock:
+            return list(self.evidence.values())
+
+    def _load(self) -> None:
+        # Override below to load app records plus audit/evidence envelopes.
+        report_items = self._scan(self._tables["reports"])
+        task_items = self._scan(self._tables["tasks"])
+        for item in report_items:
+            item.setdefault("id", item.get("report_id"))
+        for item in task_items:
+            item.setdefault("id", item.get("task_id"))
+        self.reports = {item["id"]: item for item in report_items if item.get("id")}
+        self.tasks = {item["id"]: item for item in task_items if item.get("id")}
+        user_items = self._scan(self._tables["users"])
+        self.users = {item["user_id"]: item for item in user_items if item.get("user_id") and not item.get("record_type")}
+        self.audit_log = [item["record"] for item in user_items if item.get("record_type") == "audit" and isinstance(item.get("record"), dict)]
+        self.evidence = {item["record"]["evidence_id"]: item["record"] for item in user_items if item.get("record_type") == "evidence" and isinstance(item.get("record"), dict)}
+        self._ready = True
+
+    def _refresh_live_records(self) -> None:
+        report_items = self._scan(self._tables["reports"])
+        task_items = self._scan(self._tables["tasks"])
+        for item in report_items:
+            item.setdefault("id", item.get("report_id"))
+        for item in task_items:
+            item.setdefault("id", item.get("task_id"))
+        with self._lock:
+            self.reports = {item["id"]: item for item in report_items if item.get("id")}
+            self.tasks = {item["id"]: item for item in task_items if item.get("id")}
+
+    def list_reports(self, citizen_id: Optional[str] = None) -> List[Dict[str, Any]]:
+        self._refresh_live_records()
+        return super().list_reports(citizen_id)
+
+    def get_report(self, report_id: str) -> Optional[Dict[str, Any]]:
+        self._refresh_live_records()
+        return super().get_report(report_id)
+
+    def list_tasks(self, assignee_id: Optional[str] = None) -> List[Dict[str, Any]]:
+        self._refresh_live_records()
+        return super().list_tasks(assignee_id)
+
+    def get_task_by_report(self, report_id: str) -> Optional[Dict[str, Any]]:
+        self._refresh_live_records()
+        return super().get_task_by_report(report_id)
+
+    def get_dashboard(self) -> Dict[str, Any]:
+        self._refresh_live_records()
+        return super().get_dashboard()
+
+
+def create_database() -> Database:
+    from backend.config import get_settings
+
+    settings = get_settings()
+    if settings.aws_dynamodb_enabled and settings.environment != "test" and "pytest" not in sys.modules:
+        return DynamoDBDatabase(
+            aws_client_options=settings.aws_client_options,
+            reports_table=settings.dynamodb_reports_table,
+            tasks_table=settings.dynamodb_tasks_table,
+            users_table=settings.dynamodb_users_table,
+        )
+    return Database()
+
+
+database = create_database()

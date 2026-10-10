@@ -146,9 +146,11 @@ async def get_current_user(
 
         region = settings.cognito_region
         pool_id = settings.cognito_user_pool_id
-        client_id = settings.cognito_client_id
+        client_ids = {settings.cognito_client_id}
+        if settings.dashboard_cognito_client_id:
+            client_ids.add(settings.dashboard_cognito_client_id)
 
-        if not region or not pool_id or not client_id:
+        if not region or not pool_id or not any(client_ids):
             raise RuntimeError("Cognito configuration is incomplete")
 
         issuer = f"https://cognito-idp.{region}.amazonaws.com/{pool_id}"
@@ -169,7 +171,7 @@ async def get_current_user(
         if payload.get("token_use") != "access":
             raise _unauthorized()
 
-        if payload.get("client_id") != client_id:
+        if payload.get("client_id") not in client_ids:
             raise _unauthorized()
 
         subject = payload.get("sub")

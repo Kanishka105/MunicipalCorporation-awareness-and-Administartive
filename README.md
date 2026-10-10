@@ -9,7 +9,7 @@
 
 The target design calls for hardware-level GPS locking, EXIF timestamp signatures, and perceptual hashing to reduce fabricated reports.
 
-> **Prototype status:** The backend uses local JSON persistence and configured Cognito JWT validation. The Flutter report form supports camera/gallery evidence selection, local authenticated upload, and device GPS. The backend validates image type/content and computes a SHA-256 content hash for exact-byte reuse signals; this does not prove authenticity. Evidence authenticity remains `not_verified`, including after human approval. Officials submit resolution evidence for pending review and must separately approve or reject it. Approval records human review; no automated before/after visual comparison or AI image analysis is implemented. AWS object storage, real identity-provider configuration, deployment, dispatch, and production infrastructure remain external integrations.
+> **Prototype status:** The backend supports local JSON storage for tests plus opt-in DynamoDB persistence, Cognito mobile/password signup and login, and S3 evidence storage. New Cognito signups receive no official role; an administrator must assign a Cognito group before dashboard access. The backend validates image type/content and computes a SHA-256 content hash for exact-byte reuse signals; this does not prove authenticity. Evidence authenticity remains `not_verified`, including after human approval. Officials submit resolution evidence for pending review and must separately approve or reject it. Approval records human review; no automated before/after visual comparison or AI image analysis is implemented. Rekognition, Bedrock, Step Functions, SNS, and Amazon Location workflows still require application integration.
 
 ---
 
@@ -133,7 +133,7 @@ MunicipalCorporation-awareness-and-Administartive/
    flutter run -d chrome --web-port 3000 --dart-define=CIVICPULSE_API_BASE_URL=http://localhost:8000
    ```
 
-   On an Android emulator, use `http://10.0.2.2:8000`; on a physical device or Codespace, use a backend URL reachable from that device/browser. Start the backend locally with `cd backend && uvicorn main:app --reload --host 0.0.0.0 --port 8000`. Cloud presigning is intentionally unavailable without the teammate's AWS integration.
+   On an Android emulator, use `http://10.0.2.2:8000`; on a physical device or Codespace, use a backend URL reachable from that device/browser. Start the backend locally with `cd backend && uvicorn main:app --reload --host 0.0.0.0 --port 8000`. The dashboard reads `VITE_API_BASE_URL` from `dashboard/.env` and defaults to port 8000. Set `AWS_DYNAMODB_ENABLED=True` to read and write the configured DynamoDB tables and `AWS_S3_ENABLED=True` to store evidence objects in the configured bucket. Set `DEMO_AUTH_ENABLED=False` for Cognito login; the dashboard client ID stays in backend environment configuration and AWS credentials must never be placed in Vite variables.
 
 4. **Test the Workflow**
    Once initialized, open `http://localhost:3000`. Navigate to the **"System Architecture Workflow"** via the top-right tree icon (`Icons.account_tree`) or the Feed Screen Banner to initiate the interactive pipeline simulation.

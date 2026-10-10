@@ -1,4 +1,6 @@
-import { useMemo, useState, useEffect, useCallback, type ComponentType, type ReactNode } from "react";
+import { useMemo, useState, useEffect, useCallback, useRef, type ComponentType, type ReactNode } from "react";
+import { Map as MapLibreMap, Marker, NavigationControl, LngLatBounds } from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
 import {
   Activity,
   AlertTriangle,
@@ -61,7 +63,8 @@ export type Issue = {
   department: string;
   image: string;
   description?: string;
-  marker: [number, number];
+  latitude: number;
+  longitude: number;
 };
 
 export type DashboardStatsData = {
@@ -88,11 +91,7 @@ const statusClass: Record<Status, string> = {
   "Revision Required": "status status-revision",
 };
 
-export const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:5000/api/v1";
-
-export function getAuthToken(role: Role): string {
-  return role === "high" ? "commissioner-meera" : "official-ananya";
-}
+export const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000/api/v1";
 
 function Button({
   children,
@@ -162,13 +161,86 @@ function Brand({ dark = false }: { dark?: boolean }) {
   );
 }
 
-function Login({ onLogin }: { onLogin: (role: Role) => void }) {
+function Login({ onLogin }: { onLogin: (role: Role, token: string) => void }) {
   const [role, setRole] = useState<Role>("local");
   const [visible, setVisible] = useState(false);
   const [isSignup, setIsSignup] = useState(false);
-  const [mobile, setMobile] = useState("9876543210");
+  const [mobile, setMobile] = useState("");
   const [name, setName] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmationCode, setConfirmationCode] = useState("");
+  const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
+  const [authChallenge, setAuthChallenge] = useState<{ name: string; session: string } | null>(null);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+
+  const submitAuth = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      const endpoint = awaitingConfirmation ? "/auth/confirm" : authChallenge ? "/auth/challenge" : isSignup ? "/auth/signup" : "/auth/login";
+      const body = awaitingConfirmation
+        ? { mobile, code: confirmationCode }
+        : authChallenge
+          ? { mobile, code: confirmationCode, challenge_name: authChallenge.name, session: authChallenge.session }
+        : isSignup
+          ? { mobile, password, name }
+          : { mobile, password };
+      const response = await fetch(`${API_BASE}${endpoint}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.detail || data.error || `Authentication failed (${response.status})`);
+
+      if (awaitingConfirmation) {
+        setAwaitingConfirmation(false);
+        setIsSignup(false);
+        setNotice("Mobile verified. An administrator must assign your dashboard role before you can sign in.");
+        return;
+      }
+      if (authChallenge) setAuthChallenge(null);
+      if (isSignup) {
+        if (data.user_confirmed) {
+          setIsSignup(false);
+          setNotice("Account created. An administrator must assign your dashboard role before you can sign in.");
+        } else {
+          setAwaitingConfirmation(true);
+          setNotice("Enter the verification code sent to your mobile number.");
+        }
+        return;
+      }
+      if (data.challenge_name) {
+        if (!data.session || !["SMS_MFA", "SOFTWARE_TOKEN_MFA"].includes(data.challenge_name)) {
+          throw new Error(`Unsupported Cognito challenge: ${data.challenge_name}`);
+        }
+        setAuthChallenge({ name: data.challenge_name, session: data.session });
+        setNotice("Enter the verification code from your SMS or authenticator app.");
+        return;
+      }
+
+      const token = data.access_token as string | undefined;
+      if (!token) throw new Error("The identity service did not return an access token.");
+      const profileResponse = await fetch(`${API_BASE}/auth/me`, { headers: { Authorization: `Bearer ${token}` } });
+      const profile = await profileResponse.json().catch(() => ({}));
+      if (!profileResponse.ok) throw new Error(profile.detail || "Could not verify this account.");
+      const roles: string[] = Array.isArray(profile.roles) ? profile.roles : [];
+      const highRoles = ["Commissioner", "StateAdmin", "SystemAdmin"];
+      const localRoles = ["FieldWorker", "Inspector", "DepartmentOfficer", "Zonal"];
+      if (role === "high" ? !roles.some((item) => highRoles.includes(item)) : !roles.some((item) => localRoles.includes(item))) {
+        throw new Error("This account does not have the selected dashboard role. Ask an administrator to grant access.");
+      }
+      onLogin(role, token);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Unable to reach the authentication service.");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <main className="login-page">
@@ -194,49 +266,46 @@ function Login({ onLogin }: { onLogin: (role: Role) => void }) {
           <div className="login-heading">
             <div className="eyebrow">AUTHORIZED PERSONNEL</div>
             <div className="title-xl">{isSignup ? "Create officer account" : "Sign in to Command"}</div>
-            <p>{isSignup ? "Register with your credentials for municipal jurisdiction." : "Select your authority level to access operational metrics."}</p>
+            <p>{awaitingConfirmation ? "Verify your mobile number to finish account setup." : authChallenge ? "Complete the Cognito sign-in challenge." : isSignup ? "Create an account with your mobile number." : "Sign in with your verified mobile number."}</p>
           </div>
-          <div className="role-switch" aria-label="Select authority role">
+          {!isSignup && !awaitingConfirmation && !authChallenge && <div className="role-switch" aria-label="Select authority role">
             <button className={role === "local" ? "active" : ""} onClick={() => setRole("local")}>
               <MapPin size={17} />Local Authority
             </button>
             <button className={role === "high" ? "active" : ""} onClick={() => setRole("high")}>
               <ShieldCheck size={17} />High Authority (Commissioner)
             </button>
-          </div>
-          <form onSubmit={(event) => {
-            event.preventDefault();
-            setError("");
-            onLogin(role);
-          }}>
-            {isSignup && <Field label="Full name" icon={UserRound} placeholder="e.g. Officer Ananya Kapoor" value={name} onChange={setName} />}
-            <Field label="Mobile number / Officer ID" icon={Smartphone} placeholder="+91 98765 43210" type="tel" value={mobile} onChange={(value) => { setMobile(value); setError(""); }} />
-            <label className="field">
+          </div>}
+          <form onSubmit={submitAuth}>
+            {isSignup && !awaitingConfirmation && <Field label="Full name" icon={UserRound} placeholder="Your full name" value={name} onChange={setName} />}
+            <Field label="Mobile number" icon={Smartphone} placeholder="+91 98765 43210" type="tel" value={mobile} onChange={(value) => { setMobile(value); setError(""); }} />
+            {(awaitingConfirmation || authChallenge) ? <Field label="Verification code" icon={ShieldCheck} placeholder="Enter the code" value={confirmationCode} onChange={setConfirmationCode} /> : <label className="field">
               <span className="field-label">Access PIN / Password</span>
               <span className="input-wrap">
                 <LockKeyhole size={17} />
-                <input type={visible ? "text" : "password"} defaultValue="password123" placeholder="Enter your credentials" />
+                <input type={visible ? "text" : "password"} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Enter your password" autoComplete={isSignup ? "new-password" : "current-password"} />
                 <button type="button" className="icon-btn" onClick={() => setVisible(!visible)} aria-label="Toggle password visibility">
                   {visible ? <EyeOff size={17} /> : <Eye size={17} />}
                 </button>
               </span>
-            </label>
+            </label>}
             {!isSignup && <div className="form-meta">
-              <label><input type="checkbox" defaultChecked /> Keep me signed in</label>
-              <span style={{ fontSize: 12, color: "#16a34a", fontWeight: 600 }}>Backend Live: {API_BASE}</span>
+              <span style={{ fontSize: 12, color: "#475467" }}>Cognito verified login</span>
+              <span style={{ fontSize: 12, color: "#475467" }}>API: {API_BASE}</span>
             </div>}
             {error && <div role="alert" style={{ color: "#b42318", fontSize: 12, marginBottom: 12 }}>{error}</div>}
-            <Button type="submit" className="full">{isSignup ? "Register & Enter Dashboard" : "Sign in to Command Center"} <ChevronRight size={17} /></Button>
+            {notice && <div role="status" style={{ color: "#067647", fontSize: 12, marginBottom: 12 }}>{notice}</div>}
+            <Button type="submit" className="full" disabled={busy}>{busy ? "Connecting..." : awaitingConfirmation ? "Verify mobile" : authChallenge ? "Complete sign in" : isSignup ? "Create account" : "Sign in securely"} <ChevronRight size={17} /></Button>
           </form>
           <div style={{ textAlign: "center", marginTop: 18, fontSize: 13, color: "#667085" }}>
-            {isSignup ? "Already registered? " : "Switch account type? "}
-            <button type="button" onClick={() => { setIsSignup(!isSignup); setError(""); }} style={{ border: 0, background: "none", color: "#2457a7", fontWeight: 700, cursor: "pointer" }}>
-              {isSignup ? "Sign in" : "Register new officer"}
+            {awaitingConfirmation || authChallenge ? "Need to sign in with a different number? " : isSignup ? "Already registered? " : "Need an account? "}
+            <button type="button" onClick={() => { const resetting = awaitingConfirmation || Boolean(authChallenge); setAwaitingConfirmation(false); setAuthChallenge(null); setIsSignup(resetting ? false : !isSignup); setError(""); setNotice(""); setConfirmationCode(""); }} style={{ border: 0, background: "none", color: "#2457a7", fontWeight: 700, cursor: "pointer" }}>
+              {isSignup || awaitingConfirmation || authChallenge ? "Reset sign in" : "Create account"}
             </button>
           </div>
           <div className="security-note">
             <LockKeyhole size={16} />
-            <span><b>Connected to FastAPI backend</b> at <code>{API_BASE}</code> with role-based JWT/Demo tokens.</span>
+            <span><b>Secure account access.</b> The backend validates Cognito tokens and grants dashboard access only to accounts assigned an official role.</span>
           </div>
           <div className="login-footer">CivicTrack Government Cloud • Integrated with Backend API</div>
         </div>
@@ -304,8 +373,8 @@ function Sidebar({
           <button onClick={() => setActive("Profile and Settings")}><Settings size={18} /><span>Profile & Settings</span></button>
           <button onClick={logout}><LogOut size={18} /><span>Sign out</span></button>
           <div className="user-mini">
-            <div className="avatar">{role === "local" ? "AK" : "MR"}</div>
-            <span><b>{role === "local" ? "Ananya Kapoor" : "Meera Rao"}</b><small>{role === "local" ? "Municipal Operations Officer" : "Regional Commissioner"}</small></span>
+            <div className="avatar">{role === "local" ? "LA" : "HA"}</div>
+            <span><b>Official account</b><small>Authenticated with Cognito</small></span>
             <MoreHorizontal size={17} />
           </div>
         </div>
@@ -338,8 +407,8 @@ function Topbar({
         <div className="live-pill"><span /> Backend Active</div>
         <button className="icon-square" onClick={onNotifications} aria-label="Open notifications"><Bell size={18} /><i>3</i></button>
         <div className="authority-chip">
-          <div className="avatar">{role === "local" ? "AK" : "MR"}</div>
-          <span><b>{role === "local" ? "Ananya Kapoor" : "Meera Rao"}</b><small>{role === "local" ? "Central Zone Authority" : "Office of Commissioner"}</small></span>
+          <div className="avatar">{role === "local" ? "LA" : "HA"}</div>
+          <span><b>Official account</b><small>Authenticated with Cognito</small></span>
           <ChevronDown size={15} />
         </div>
       </div>
@@ -390,32 +459,60 @@ function PageHeading({ title, subtitle, action }: { title: string; subtitle: str
 }
 
 function MiniMap({ issues, selected, onSelect }: { issues: Issue[]; selected?: Issue | null; onSelect: (issue: Issue) => void }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<MapLibreMap | null>(null);
+  const locationKey = import.meta.env.VITE_LOCATION_API_KEY as string | undefined;
+  const region = (import.meta.env.VITE_LOCATION_REGION as string | undefined) || "us-east-1";
+
+  useEffect(() => {
+    if (!containerRef.current || !locationKey) return;
+    const map = new MapLibreMap({
+      container: containerRef.current,
+      style: `https://maps.geo.${region}.amazonaws.com/v2/styles/Standard/descriptor?key=${encodeURIComponent(locationKey)}`,
+      center: [72.8777, 19.076],
+      zoom: 11,
+      attributionControl: true,
+    });
+    map.addControl(new NavigationControl({ showCompass: true }), "top-right");
+    mapRef.current = map;
+    return () => {
+      map.remove();
+      mapRef.current = null;
+    };
+  }, [locationKey, region]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const markers: Marker[] = [];
+    issues.forEach((issue) => {
+      if (!Number.isFinite(issue.latitude) || !Number.isFinite(issue.longitude)) return;
+      const pin = document.createElement("button");
+      pin.type = "button";
+      pin.className = `location-marker marker-${issue.status.toLowerCase().replaceAll(" ", "-")}${selected?.id === issue.id ? " selected" : ""}`;
+      pin.setAttribute("aria-label", `Open ${issue.title}`);
+      pin.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>`;
+      pin.addEventListener("click", () => onSelect(issue));
+      const marker = new Marker({ element: pin, anchor: "bottom" })
+        .setLngLat([issue.longitude, issue.latitude])
+        .addTo(map);
+      markers.push(marker);
+    });
+    if (markers.length > 1) {
+      const bounds = new LngLatBounds();
+      markers.forEach((marker) => bounds.extend(marker.getLngLat()));
+      map.fitBounds(bounds, { padding: 60, maxZoom: 14, duration: 500 });
+    } else if (markers.length === 1) {
+      map.flyTo({ center: markers[0].getLngLat(), zoom: 14, duration: 500 });
+    }
+    return () => markers.forEach((marker) => marker.remove());
+  }, [issues, selected?.id, onSelect]);
+
   return (
     <div className="map-canvas">
-      <svg className="map-lines" viewBox="0 0 800 460" preserveAspectRatio="none" aria-hidden="true">
-        <path d="M-20 110 C170 145, 250 68, 420 120 S650 180, 830 85" />
-        <path d="M80 -20 C120 95, 180 170, 130 265 S150 390, 220 490" />
-        <path d="M385 -20 C370 100, 430 155, 395 250 S410 370, 510 480" />
-        <path d="M620 -20 C560 105, 690 165, 650 255 S590 380, 680 480" />
-        <path d="M-20 355 C120 315, 210 390, 345 350 S630 290, 830 365" />
-        <path className="minor" d="M0 210 L800 250 M260 0 L290 460 M520 0 L570 460" />
-      </svg>
-      <div className="map-search"><Search size={16} /><input placeholder="Search jurisdiction coordinates…" /></div>
-      <div className="map-zoom"><button><Plus size={16} /></button><button>−</button></div>
-      {issues.map((issue) => (
-        <button
-          key={issue.id}
-          className={`map-marker marker-${issue.status.toLowerCase().replaceAll(" ", "-")} ${selected?.id === issue.id ? "selected" : ""}`}
-          style={{ left: `${issue.marker[0]}%`, top: `${issue.marker[1]}%` }}
-          onClick={() => onSelect(issue)}
-          aria-label={`Open ${issue.title}`}
-        >
-          <MapPin size={20} fill="currentColor" />
-        </button>
-      ))}
-      <div className="map-label label-a">CENTRAL CIVIC DISTRICT</div>
-      <div className="map-label label-b">WARD 09</div>
-      <div className="map-label label-c">NEHRU PARK</div>
+      {locationKey ? <div ref={containerRef} className="location-map" aria-label="Civic reports map" /> : (
+        <div className="map-unconfigured">Configure VITE_LOCATION_API_KEY in dashboard/.env to load Amazon Location.</div>
+      )}
       {selected && (
         <div className="map-popup">
           <img src={selected.image} alt="" />
@@ -477,11 +574,11 @@ function IssueTable({
 function RegisterIssueModal({
   onClose,
   onCreated,
-  role,
+  accessToken,
 }: {
   onClose: () => void;
   onCreated: (newIssue: Issue) => void;
-  role: Role;
+  accessToken: string;
 }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -503,12 +600,11 @@ function RegisterIssueModal({
     setError("");
 
     try {
-      const token = getAuthToken(role);
       const res = await fetch(`${API_BASE}/reports`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify({
           title: title.trim(),
@@ -542,7 +638,8 @@ function RegisterIssueModal({
         department: "Municipal Operations",
         image: created.photo_url || photoUrl,
         description: created.description || description,
-        marker: [Math.random() * 60 + 20, Math.random() * 60 + 20],
+        latitude: parseFloat(latitude) || 19.076,
+        longitude: parseFloat(longitude) || 72.8777,
       };
 
       onCreated(mappedIssue);
@@ -956,12 +1053,12 @@ function SubmissionModal({
   issue,
   onClose,
   onComplete,
-  role,
+  accessToken,
 }: {
   issue: Issue;
   onClose: () => void;
   onComplete: () => void;
-  role: Role;
+  accessToken: string;
 }) {
   const [done, setDone] = useState(false);
   const [notes, setNotes] = useState("Sanitation and civil maintenance completed on-site. Area cleared and restored to standard operational condition.");
@@ -974,12 +1071,11 @@ function SubmissionModal({
     setError("");
 
     try {
-      const token = getAuthToken(role);
       const res = await fetch(`${API_BASE}/reports/${issue.id}/resolve`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify({
           resolution_photo_url: photoUrl,
@@ -1074,12 +1170,12 @@ function ReviewModal({
   issue,
   onClose,
   onResolved,
-  role,
+  accessToken,
 }: {
   issue: Issue | null;
   onClose: () => void;
   onResolved: () => void;
-  role: Role;
+  accessToken: string;
 }) {
   const [decision, setDecision] = useState<"approve" | "revision" | "success" | null>(null);
   const [comment, setComment] = useState("");
@@ -1090,12 +1186,11 @@ function ReviewModal({
     setSubmitting(true);
 
     try {
-      const token = getAuthToken(role);
       await fetch(`${API_BASE}/reports/${issue.id}/resolution-evidence/verify`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify({
           decision: dec === "approve" ? "approved" : "rejected",
@@ -1248,13 +1343,13 @@ function Profile({ role }: { role: Role }) {
       <PageHeading title="Profile & Settings" subtitle="Official credentials and municipal communication preferences" />
       <div className="profile-grid">
         <section className="panel profile-card">
-          <div className="profile-avatar">{role === "local" ? "AK" : "MR"}</div>
-          <div className="title-md">{role === "local" ? "Ananya Kapoor" : "Meera Rao"}</div>
-          <p>{role === "local" ? "Municipal Operations Officer" : "Regional Commissioner"}</p>
+          <div className="profile-avatar">{role === "local" ? "LA" : "HA"}</div>
+          <div className="title-md">Official account</div>
+          <p>{role === "local" ? "Local Authority" : "High Authority"}</p>
           <Badge status="Resolved" />
           <div className="profile-divider" />
           <div className="key-value">
-            <span>Official User ID<b>{role === "local" ? "official-ananya" : "commissioner-meera"}</b></span>
+            <span>Account<b>Managed by Cognito</b></span>
             <span>Jurisdiction<b>{role === "local" ? "Central Zone Municipal Ward" : "National Capital Region"}</b></span>
             <span>Auth Scheme<b>Bearer Token / Role Verified</b></span>
           </div>
@@ -1262,12 +1357,12 @@ function Profile({ role }: { role: Role }) {
         <section className="panel settings-card">
           <div className="title-md">Account Information</div>
           <div className="two-fields">
-            <Field label="Full Name" value={role === "local" ? "Ananya Kapoor" : "Meera Rao"} />
-            <Field label="Official Email" value={role === "local" ? "ananya.kapoor@civic.gov" : "meera.rao@civic.gov"} />
+            <Field label="Full Name" value="Managed by Cognito" />
+            <Field label="Official Email" value="Managed by Cognito" />
           </div>
           <div className="two-fields">
             <Field label="Department" value={role === "local" ? "Municipal Operations" : "Office of Commissioner"} />
-            <Field label="Phone" value="+91 11 4002 1842" />
+            <Field label="Phone" value="Verified during sign-in" />
           </div>
           <div className="profile-divider" />
           <div className="title-sm">Notification Preferences</div>
@@ -1289,6 +1384,7 @@ function Profile({ role }: { role: Role }) {
 
 export default function App() {
   const [role, setRole] = useState<Role | null>(null);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
   const [active, setActive] = useState("Overview");
   const [collapsed, setCollapsed] = useState(false);
   const [issues, setIssues] = useState<Issue[]>([]);
@@ -1298,18 +1394,21 @@ export default function App() {
   const [reviewIssue, setReviewIssue] = useState<Issue | null>(null);
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [backendError, setBackendError] = useState("");
 
   const fetchBackendData = useCallback(async (currentRole: Role) => {
+    if (!accessToken) return;
     setLoading(true);
-    const token = getAuthToken(currentRole);
+    setBackendError("");
 
     try {
       // 1. Fetch Reports
       const reportsRes = await fetch(`${API_BASE}/reports`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${accessToken}` },
       });
 
-      if (reportsRes.ok) {
+      if (!reportsRes.ok) throw new Error(`Reports endpoint returned ${reportsRes.status}`);
+      {
         const data = await reportsRes.json();
         if (Array.isArray(data)) {
           const mappedIssues: Issue[] = data.map((d: any) => {
@@ -1341,7 +1440,8 @@ export default function App() {
               department: d.classification?.department || "Municipal Operations",
               image: photoUrl,
               description: d.description,
-              marker: [Math.min(85, Math.max(15, (lat % 1) * 300 + 40)), Math.min(85, Math.max(15, (lon % 1) * 300 + 35))],
+              latitude: lat,
+              longitude: lon,
             };
           });
           setIssues(mappedIssues);
@@ -1350,32 +1450,34 @@ export default function App() {
 
       // 2. Fetch Dashboard Stats
       const statsRes = await fetch(`${API_BASE}/dashboard`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${accessToken}` },
       });
 
-      if (statsRes.ok) {
-        const statsData = await statsRes.json();
-        setStats(statsData);
-      }
+      if (!statsRes.ok) throw new Error(`Dashboard endpoint returned ${statsRes.status}`);
+      const statsData = await statsRes.json();
+      setStats(statsData);
     } catch (err) {
+      const message = err instanceof Error ? err.message : "The backend could not be reached.";
+      setBackendError(`${message}. Check the backend server at ${API_BASE}.`);
       console.warn("Backend fetch error:", err);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [accessToken]);
 
   useEffect(() => {
-    if (role) {
+    if (role && accessToken) {
       fetchBackendData(role);
     }
-  }, [role, fetchBackendData]);
+  }, [role, accessToken, fetchBackendData]);
 
-  const login = (nextRole: Role) => {
+  const login = (nextRole: Role, token: string) => {
+    setAccessToken(token);
     setRole(nextRole);
     setActive(nextRole === "local" ? "Overview" : "Executive Overview");
   };
 
-  if (!role) return <Login onLogin={login} />;
+  if (!role || !accessToken) return <Login onLogin={login} />;
 
   return (
     <div className="app-shell">
@@ -1385,7 +1487,7 @@ export default function App() {
         setActive={setActive}
         collapsed={collapsed}
         setCollapsed={setCollapsed}
-        logout={() => setRole(null)}
+        logout={() => { setRole(null); setAccessToken(null); setIssues([]); setStats(null); }}
       />
       <div className={`main-shell ${collapsed ? "wide" : ""}`}>
         <Topbar
@@ -1394,6 +1496,10 @@ export default function App() {
           onRefresh={() => fetchBackendData(role)}
           loading={loading}
         />
+        {backendError && <div role="alert" style={{ background: "#fff4ed", color: "#b54708", padding: "10px 20px", fontSize: 13, display: "flex", justifyContent: "space-between", gap: 12 }}>
+          <span>Backend data is unavailable: {backendError}</span>
+          <button onClick={() => fetchBackendData(role)} style={{ border: 0, background: "none", color: "inherit", fontWeight: 700, cursor: "pointer" }}>Retry</button>
+        </div>}
         <main className="content">
           {role === "local" ? (
             <LocalDashboard
@@ -1416,7 +1522,7 @@ export default function App() {
 
       {isRegisterOpen && (
         <RegisterIssueModal
-          role={role}
+          accessToken={accessToken}
           onClose={() => setIsRegisterOpen(false)}
           onCreated={(newIssue) => {
             setIssues((prev) => [newIssue, ...prev]);
@@ -1438,7 +1544,7 @@ export default function App() {
 
       {submission && (
         <SubmissionModal
-          role={role}
+          accessToken={accessToken}
           issue={submission}
           onClose={() => setSubmission(null)}
           onComplete={() => {
@@ -1454,7 +1560,7 @@ export default function App() {
 
       {reviewIssue && (
         <ReviewModal
-          role={role}
+          accessToken={accessToken}
           issue={reviewIssue}
           onClose={() => setReviewIssue(null)}
           onResolved={() => {

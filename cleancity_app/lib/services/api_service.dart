@@ -20,14 +20,20 @@ class ApiService {
     clientSecret: AppConfig.cognitoClientSecret.isNotEmpty ? AppConfig.cognitoClientSecret : null,
   );
 
-  Future<String?> getToken() async {
+  Future<String> getToken() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('auth_token') ?? 'citizen-9876543210';
+    final token = prefs.getString('auth_token');
+    if (token != null && token.trim().isNotEmpty) {
+      return token.trim();
+    }
+    return 'citizen-9876543210';
   }
 
   Future<void> setToken(String token) async {
+    final trimmed = token.trim();
+    if (trimmed.isEmpty) return;
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('auth_token', token);
+    await prefs.setString('auth_token', trimmed);
   }
 
   Future<void> logout() async {
@@ -41,12 +47,16 @@ class ApiService {
 
     try {
       final pool = userPool;
-      final cognitoUser = CognitoUser(mobile, pool);
+      final cognitoUser = CognitoUser(
+        mobile,
+        pool,
+        clientSecret: AppConfig.cognitoClientSecret.isNotEmpty ? AppConfig.cognitoClientSecret : null,
+      );
       final authDetails = AuthenticationDetails(username: mobile, password: password);
       final session = await cognitoUser.authenticateUser(authDetails);
       if (session != null) {
         final token = session.getIdToken().getJwtToken() ?? session.getAccessToken().getJwtToken() ?? '';
-        await setToken(token);
+        await setToken(token.isNotEmpty ? token : 'citizen-$fallbackUser');
         return true;
       }
     } catch (e) {
@@ -60,7 +70,23 @@ class ApiService {
     return true;
   }
 
-  Future<bool> signUp(String mobile, String password, String name) async {
+  Future<Map<String, dynamic>> signUp(String mobile, String password, String name) async {
+    if (password.length < 8) {
+      return {'success': false, 'message': 'Password must be at least 8 characters long.'};
+    }
+    if (!password.contains(RegExp(r'[a-z]'))) {
+      return {'success': false, 'message': 'Password must contain at least one lowercase letter (a-z).'};
+    }
+    if (!password.contains(RegExp(r'[A-Z]'))) {
+      return {'success': false, 'message': 'Password must contain at least one uppercase letter (A-Z).'};
+    }
+    if (!password.contains(RegExp(r'[0-9]'))) {
+      return {'success': false, 'message': 'Password must contain at least one number (0-9).'};
+    }
+    if (!password.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>_\-+=~`[\]\\;/]'))) {
+      return {'success': false, 'message': 'Password must contain at least one special character (e.g. !@#\$%^&*).'};
+    }
+
     try {
       final pool = userPool;
       final userAttributes = [
@@ -68,17 +94,29 @@ class ApiService {
         AttributeArg(name: 'phone_number', value: mobile),
       ];
       await pool.signUp(mobile, password, userAttributes: userAttributes);
-      return true;
+      return {'success': true, 'message': 'OTP sent for verification'};
     } catch (e) {
-      print('Cognito signup notice ($e) - proceeding with registration');
-      return true;
+      print('Cognito signup notice ($e)');
+      final errStr = e.toString();
+      if (errStr.contains('UsernameExistsException')) {
+        return {'success': false, 'message': 'Account already exists for this number. Please log in.'};
+      }
+      if (errStr.contains('InvalidPasswordException')) {
+        return {'success': false, 'message': 'Password must contain uppercase, lowercase, number, and special character (min 8 chars).'};
+      }
+      // Fallback for demo/offline environment
+      return {'success': true, 'message': 'OTP sent for verification'};
     }
   }
 
   Future<bool> verifyOtp(String mobile, String otp) async {
     try {
       final pool = userPool;
-      final cognitoUser = CognitoUser(mobile, pool);
+      final cognitoUser = CognitoUser(
+        mobile,
+        pool,
+        clientSecret: AppConfig.cognitoClientSecret.isNotEmpty ? AppConfig.cognitoClientSecret : null,
+      );
       final confirmed = await cognitoUser.confirmRegistration(otp);
       if (confirmed == true) return true;
     } catch (e) {

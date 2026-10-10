@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../models/post_model.dart';
 import '../theme.dart';
@@ -258,22 +259,47 @@ class PostDetailScreen extends StatelessWidget {
                         const SizedBox(height: 16),
                         ClipRRect(
                           borderRadius: BorderRadius.circular(16),
-                          child: SizedBox(
+                          child: Container(
                             height: 150,
-                            child: GoogleMap(
-                              initialCameraPosition: CameraPosition(
-                                target: LatLng(post.latitude, post.longitude),
-                                zoom: 14,
-                              ),
-                              markers: {
-                                Marker(
-                                  markerId: const MarkerId('postLocation'),
-                                  position: LatLng(post.latitude, post.longitude),
-                                ),
-                              },
-                              zoomControlsEnabled: false,
-                              mapToolbarEnabled: false,
+                            decoration: BoxDecoration(
+                              color: AppTheme.accentBlue.withOpacity(0.3),
+                              borderRadius: BorderRadius.circular(16),
                             ),
+                            child: !kIsWeb
+                                ? GoogleMap(
+                                    initialCameraPosition: CameraPosition(
+                                      target: LatLng(post.latitude, post.longitude),
+                                      zoom: 14,
+                                    ),
+                                    markers: {
+                                      Marker(
+                                        markerId: const MarkerId('postLocation'),
+                                        position: LatLng(post.latitude, post.longitude),
+                                      ),
+                                    },
+                                    zoomControlsEnabled: false,
+                                    mapToolbarEnabled: false,
+                                  )
+                                : Container(
+                                    color: const Color(0xFFF1F5F9),
+                                    child: Center(
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          const Icon(Icons.location_on, color: AppTheme.primaryColor, size: 36),
+                                          const SizedBox(height: 6),
+                                          Text(
+                                            post.locationName,
+                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                          ),
+                                          Text(
+                                            '${post.latitude}° N, ${post.longitude}° W',
+                                            style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
                           ),
                         ),
                         const SizedBox(height: 16),

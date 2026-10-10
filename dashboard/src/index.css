@@ -141,7 +141,15 @@ p { color: var(--muted); line-height: 1.6; }
 .panel-header b { font-size: 12px; }
 .panel-header small { color: #8a94a4; font-size: 9px; }
 .panel-header > button:not(.btn) { border: 0; background: transparent; color: var(--muted); }
-.map-canvas { height: 310px; position: relative; overflow: hidden; background-color: #eef2f1; background-image: linear-gradient(30deg, rgba(255,255,255,.5) 12%, transparent 12.5%, transparent 87%, rgba(255,255,255,.5) 87.5%); background-size: 60px 60px; }
+.map-canvas { height: 310px; position: relative; overflow: hidden; background-color: #eef2f1; }
+.location-map { position: absolute; inset: 0; }
+.map-unconfigured { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; color: #667085; text-align: center; font-size: 12px; }
+.location-marker { width: 34px; height: 34px; padding: 5px; border: 3px solid white; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); color: var(--red); background: var(--red-soft); box-shadow: 0 3px 8px rgba(20,45,78,.25); cursor: pointer; }
+.location-marker svg { width: 100%; height: 100%; fill: currentColor; stroke: white; stroke-width: 1.4; transform: rotate(45deg); }
+.location-marker.selected { transform: rotate(-45deg) scale(1.18); }
+.location-marker.marker-in-progress { color: var(--blue); background: var(--blue-soft); }
+.location-marker.marker-pending-approval { color: var(--amber); background: var(--amber-soft); }
+.location-marker.marker-resolved { color: var(--green); background: var(--green-soft); }
 .map-lines { position: absolute; inset: 0; width: 100%; height: 100%; }
 .map-lines path { stroke: white; stroke-width: 16; fill: none; filter: drop-shadow(0 1px #d4dcda); }
 .map-lines path.minor { stroke-width: 7; opacity: .85; }
