@@ -16,6 +16,7 @@ class IssueCategory(str, Enum):
     DRAINAGE = "drainage"
     SAFETY = "safety"
     NOISE = "noise"
+    ROAD = "road"
     OTHER = "other"
 
 
@@ -79,7 +80,7 @@ class ReportCreate(BaseModel):
     def validate_photo_url(cls, value: str) -> str:
         cleaned = value.strip()
         parsed = urlsplit(cleaned)
-        if not parsed.scheme and not parsed.netloc and re.fullmatch(r"/api/v1/evidence/[0-9a-f]{32}\.(jpg|png|webp)", parsed.path):
+        if not parsed.scheme and not parsed.netloc and re.fullmatch(r"/api/v1/evidence/[0-9a-f]{32}\.(jpg|jpeg|png|webp)", parsed.path):
             return cleaned
         if parsed.scheme.lower() not in {"http", "https"} or not parsed.hostname:
             raise ValueError("photo_url must be a valid URL")

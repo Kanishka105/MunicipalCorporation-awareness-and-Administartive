@@ -286,8 +286,12 @@ class ApiService {
         body: jsonEncode(postData),
       );
 
+      if (response.statusCode != 201) {
+        print('createPost error: ${response.statusCode} - ${response.body}');
+      }
       return response.statusCode == 201;
-    } catch (_) {
+    } catch (e) {
+      print('createPost exception: $e');
       return false;
     }
   }

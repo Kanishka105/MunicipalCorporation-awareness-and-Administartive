@@ -4,7 +4,7 @@ import uuid
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
-from fastapi.exceptions import HTTPException
+from fastapi.exceptions import HTTPException, RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -41,6 +41,18 @@ async def request_id_middleware(request: Request, call_next):
     response = await call_next(request)
     response.headers["x-request-id"] = request_id
     return response
+
+
+from fastapi.encoders import jsonable_encoder
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    errors = jsonable_encoder(exc.errors())
+    print(f"\n[Validation Error 422] Path: {request.url.path} Errors: {errors}\n", flush=True)
+    return JSONResponse(
+        status_code=422,
+        content={"error": "validation_error", "detail": errors, "request_id": request.headers.get("x-request-id")},
+    )
 
 
 @app.exception_handler(StarletteHTTPException)

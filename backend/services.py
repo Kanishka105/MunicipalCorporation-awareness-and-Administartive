@@ -209,7 +209,7 @@ class CivicPulseService:
     @staticmethod
     def _calculate_severity(category: IssueCategory, description: str) -> Severity:
         score = 0
-        if category in {IssueCategory.WASTE, IssueCategory.DRAINAGE}:
+        if category in {IssueCategory.WASTE, IssueCategory.DRAINAGE, IssueCategory.ROAD}:
             score += 2
         if category in {IssueCategory.WATER, IssueCategory.AIR}:
             score += 2
@@ -243,6 +243,7 @@ class CivicPulseService:
             IssueCategory.DRAINAGE: "Drainage obstruction or flooding",
             IssueCategory.SAFETY: "Public safety concern",
             IssueCategory.NOISE: "Noise pollution concern",
+            IssueCategory.ROAD: "Road damage or pothole concern",
             IssueCategory.OTHER: "General civic issue",
         }
         return {

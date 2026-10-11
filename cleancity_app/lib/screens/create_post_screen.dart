@@ -438,9 +438,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                         final title = _titleController.text.trim();
                         final desc = _descController.text.trim();
 
-                        if (title.isEmpty) {
+                        if (title.length < 3) {
                           messenger.showSnackBar(
-                            const SnackBar(content: Text('Please enter an issue title')),
+                            const SnackBar(content: Text('Please enter an issue title (at least 3 characters)')),
                           );
                           return;
                         }
@@ -471,10 +471,17 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                           return;
                         }
 
+                        // Ensure description meets backend requirement (min 10 characters)
+                        final postDescription = desc.length >= 10
+                            ? desc
+                            : (desc.isNotEmpty
+                                ? '$desc - Civic report requiring municipal attention.'
+                                : 'Reported civic issue requiring municipal attention.');
+
                         // 2. Create post with coordinates saved in S3
                         final postPayload = {
                           "title": title,
-                          "description": desc.isNotEmpty ? desc : "Reported civic issue requiring municipal attention.",
+                          "description": postDescription,
                           "category": _selectedCategory,
                           "gps": {
                             "latitude": _latitude,
