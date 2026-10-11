@@ -4,5 +4,5 @@ class AppConfig {
   static const String cognitoClientId = '2ud19o87ptnc7bn00sm6uh3ksk';
   static const String cognitoClientSecret = 'udds2cedodknj9cm2v0irtv1ce3t3pf5tv5te7m7d371vn72tsc';
   static const String s3Bucket = 'civicpulse-uploads-wemakedevs';
-  static const String remoteApiUrl = String.fromEnvironment('API_URL', defaultValue: '');
+  static const String remoteApiUrl = String.fromEnvironment('API_URL', defaultValue: 'https://civicpulse-backend-l685.onrender.com');
 }
