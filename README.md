@@ -65,7 +65,7 @@ The architecture is explicitly segregated into four autonomous execution lanes:
 
 ## 📂 Project Folder Structure
 
-```text
+```text 
 MunicipalCorporation-awareness-and-Administartive/
 ├── app/                                 # Primary Flutter Application Root
 │   ├── pubspec.yaml                     # Dependencies & Asset configuration
@@ -99,7 +99,7 @@ MunicipalCorporation-awareness-and-Administartive/
 
 ---
 
-## 🚀 Installation & Operation
+### 🚀 Installation & Operation
 
 ### Current Citizen App / Backend Integration
 - The Flutter citizen app submits reports to `POST /api/v1/reports` and loads the authenticated user's reports from `GET /api/v1/reports`.
