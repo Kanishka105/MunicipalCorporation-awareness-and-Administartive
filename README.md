@@ -13,11 +13,15 @@
 
 ---
 
+<<<<<<< HEAD
 ## Executive Summary
 
 **CivicPulse™ Enterprise** is a resilient, cloud-native urban maintenance platform engineered to automate civic hazard reporting, geospatial clustering, automated ticket triage, field-worker dispatch, and strict Service Level Agreement (SLA) verification across municipal jurisdictions.
 
 Integrating high-concurrency mobile field telemetry with real-time GIS command consoles, the system transitions municipal authorities from reactive incident logging to predictive, verifiable, and fraud-resistant urban operations.
+=======
+> **Prototype status:** The backend supports local JSON storage for tests plus opt-in DynamoDB persistence, Cognito mobile/password signup and login, and S3 evidence storage. New Cognito signups receive no official role; an administrator must assign a Cognito group before dashboard access. The backend validates image type/content and computes a SHA-256 content hash for exact-byte reuse signals; this does not prove authenticity. Evidence authenticity remains `not_verified`, including after human approval. Officials submit resolution evidence for pending review and must separately approve or reject it. Approval records human review; no automated before/after visual comparison or AI image analysis is implemented. Rekognition, Bedrock, Step Functions, SNS, and Amazon Location Workflows still require application integration.
+>>>>>>> 17d0fdaff7aa220dce506038961ff882a1715daf
 
 ---
 
