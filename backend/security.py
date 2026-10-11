@@ -15,12 +15,14 @@ ROLE_ALIASES = {
     "citizen": "Citizen",
     "Citizen": "Citizen",
     "fieldworker": "FieldWorker",
+    "worker": "FieldWorker",
     "field worker": "FieldWorker",
     "field_worker": "FieldWorker",
     "FieldWorker": "FieldWorker",
     "inspector": "Inspector",
     "Inspector": "Inspector",
     "departmentofficer": "DepartmentOfficer",
+    "officer": "DepartmentOfficer",
     "department officer": "DepartmentOfficer",
     "department_officer": "DepartmentOfficer",
     "DepartmentOfficer": "DepartmentOfficer",
@@ -98,9 +100,51 @@ def normalize_role(raw_role: str | None) -> str | None:
 
 
 def _demo_user_for_token(token: str | None) -> AuthUser:
-    """Explicitly enabled local-only test authentication."""
+    """Explicitly enabled local-only test and temp authentication."""
     if not token:
         raise _unauthorized()
+
+    # Predefined 4 Temp Dashboard Users
+    temp_users = {
+        "department-rajesh-kumar": AuthUser(
+            user_id="temp-officer-rajesh",
+            username="+919876543210",
+            email="rajesh.kumar@civicpulse.gov.in",
+            roles=["DepartmentOfficer"],
+            ward_id="Ward 04",
+            municipality_id="MUNI-CENTRAL",
+            scope={"name": "Rajesh Kumar", "ward": "Ward 04"},
+        ),
+        "inspector-priya-sharma": AuthUser(
+            user_id="temp-inspector-priya",
+            username="+919876543211",
+            email="priya.sharma@civicpulse.gov.in",
+            roles=["Inspector"],
+            ward_id="Ward 09",
+            municipality_id="MUNI-CENTRAL",
+            scope={"name": "Priya Sharma", "ward": "Ward 09"},
+        ),
+        "commissioner-vikram-malhotra": AuthUser(
+            user_id="temp-comm-vikram",
+            username="+919876543212",
+            email="vikram.malhotra@civicpulse.gov.in",
+            roles=["Commissioner"],
+            ward_id="Central HQ",
+            municipality_id="MUNI-HQ",
+            scope={"name": "Vikram Malhotra", "ward": "Central HQ"},
+        ),
+        "state-sunita-verma": AuthUser(
+            user_id="temp-admin-sunita",
+            username="+919876543213",
+            email="sunita.verma@civicpulse.gov.in",
+            roles=["StateAdmin"],
+            ward_id="Statewide",
+            municipality_id="STATE-URBAN",
+            scope={"name": "Sunita Verma", "ward": "Statewide"},
+        ),
+    }
+    if token in temp_users:
+        return temp_users[token]
 
     prefixes = {
         "citizen-": "Citizen",
@@ -132,6 +176,10 @@ async def get_current_user(
 ) -> AuthUser:
     settings = get_settings()
     token = credentials.credentials if credentials else None
+
+    # Temp dashboard users or demo auth
+    if token and token.startswith(("department-", "inspector-", "commissioner-", "state-", "citizen-", "official-", "zonal-", "system-")):
+        return _demo_user_for_token(token)
 
     # Local demo authentication is controlled by application settings.
     if settings.environment != "production" and settings.demo_auth_enabled:

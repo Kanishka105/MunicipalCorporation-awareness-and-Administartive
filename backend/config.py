@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     dynamodb_tasks_table: str = "civicpulse-tasks"
     dynamodb_users_table: str = "civicpulse-users"
     s3_bucket: str = "civicpulse-uploads"
+    location_service_map_name: str = "civicpulse-map"
     max_upload_size_mb: int = 10
     ai_confidence_threshold: float = 0.75
     duplicate_similarity_threshold: float = 0.9

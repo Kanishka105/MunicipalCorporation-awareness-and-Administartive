@@ -159,12 +159,53 @@ def dashboard_confirm(payload: DashboardConfirm) -> dict[str, str]:
     return {"status": "confirmed"}
 
 
+TEMP_DASHBOARD_USERS = {
+    "+919876543210": {
+        "password": "Password@123",
+        "name": "Rajesh Kumar",
+        "roles": ["DepartmentOfficer"],
+        "token": "department-rajesh-kumar",
+    },
+    "+919876543211": {
+        "password": "Password@123",
+        "name": "Priya Sharma",
+        "roles": ["Inspector"],
+        "token": "inspector-priya-sharma",
+    },
+    "+919876543212": {
+        "password": "Password@123",
+        "name": "Vikram Malhotra",
+        "roles": ["Commissioner"],
+        "token": "commissioner-vikram-malhotra",
+    },
+    "+919876543213": {
+        "password": "Password@123",
+        "name": "Sunita Verma",
+        "roles": ["StateAdmin"],
+        "token": "state-sunita-verma",
+    },
+}
+
+
 @router.post("/auth/login")
 def dashboard_login(payload: DashboardLogin) -> dict[str, Any]:
     from botocore.exceptions import ClientError
 
-    client_id = _dashboard_client_id()
     normalized_mobile = _normalize_mobile(payload.mobile)
+
+    # 4 Temp Users for Dashboard Login
+    if normalized_mobile in TEMP_DASHBOARD_USERS:
+        temp_user = TEMP_DASHBOARD_USERS[normalized_mobile]
+        if payload.password == temp_user["password"]:
+            return {
+                "access_token": temp_user["token"],
+                "id_token": temp_user["token"],
+                "token_type": "Bearer",
+                "expires_in": 86400,
+            }
+        raise HTTPException(status_code=401, detail="Invalid mobile number or password")
+
+    client_id = _dashboard_client_id()
     auth_params = {"USERNAME": normalized_mobile, "PASSWORD": payload.password}
     sec_hash = _secret_hash(normalized_mobile, client_id)
     if sec_hash:
@@ -438,3 +479,99 @@ def get_task(task_id: str, user: AuthUser = Depends(get_current_user)) -> dict[s
                     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Citizen can only view their own tasks")
             return task
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
+
+
+@router.get("/map/config")
+def get_map_config() -> dict[str, Any]:
+    settings = get_settings()
+    map_name = settings.location_service_map_name or "civicpulse-map"
+    region = settings.aws_region or "us-east-1"
+    style_url = f"/api/v1/map/style"
+    return {
+        "map_name": map_name,
+        "region": region,
+        "style_url": style_url,
+        "access_key_id": settings.aws_access_key_id,
+    }
+
+
+@router.get("/map/style")
+def get_map_style() -> Response:
+    settings = get_settings()
+    import boto3
+    import json
+
+    loc = boto3.client("location", **settings.aws_client_options)
+    res = loc.get_map_style_descriptor(MapName=settings.location_service_map_name or "civicpulse-map")
+    data = json.loads(res["Blob"].read().decode())
+    
+    # Point tile, glyph, and sprite URLs through the backend endpoints
+    for _source_name, source_val in data.get("sources", {}).items():
+        if isinstance(source_val, dict) and "tiles" in source_val:
+            source_val["tiles"] = ["/api/v1/map/tiles/{z}/{x}/{y}"]
+    data["glyphs"] = "/api/v1/map/glyphs/{fontstack}/{range}.pbf"
+    data["sprite"] = "/api/v1/map/sprites/sprites"
+    
+    return Response(
+        content=json.dumps(data),
+        media_type="application/json",
+        headers={"Cache-Control": "public, max-age=3600"},
+    )
+
+
+@router.get("/map/tiles/{z}/{x}/{y}")
+def get_map_tile(z: str, x: str, y: str) -> Response:
+    settings = get_settings()
+    import boto3
+
+    loc = boto3.client("location", **settings.aws_client_options)
+    try:
+        res = loc.get_map_tile(MapName=settings.location_service_map_name or "civicpulse-map", Z=z, X=x, Y=y)
+        return Response(
+            content=res["Blob"].read(),
+            media_type=res.get("ContentType", "application/octet-stream"),
+            headers={"Cache-Control": "public, max-age=86400"},
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=404, detail="Tile not found") from exc
+
+
+@router.get("/map/glyphs/{fontstack}/{fontrange}")
+def get_map_glyphs(fontstack: str, fontrange: str) -> Response:
+    settings = get_settings()
+    import boto3
+
+    loc = boto3.client("location", **settings.aws_client_options)
+    try:
+        res = loc.get_map_glyphs(
+            MapName=settings.location_service_map_name or "civicpulse-map",
+            FontStack=fontstack,
+            FontUnicodeRange=fontrange,
+        )
+        return Response(
+            content=res["Blob"].read(),
+            media_type=res.get("ContentType", "application/octet-stream"),
+            headers={"Cache-Control": "public, max-age=86400"},
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=404, detail="Glyph not found") from exc
+
+
+@router.get("/map/sprites/{filename}")
+def get_map_sprites(filename: str) -> Response:
+    settings = get_settings()
+    import boto3
+
+    loc = boto3.client("location", **settings.aws_client_options)
+    try:
+        res = loc.get_map_sprites(
+            MapName=settings.location_service_map_name or "civicpulse-map",
+            FileName=filename,
+        )
+        return Response(
+            content=res["Blob"].read(),
+            media_type=res.get("ContentType", "application/octet-stream"),
+            headers={"Cache-Control": "public, max-age=86400"},
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=404, detail="Sprite not found") from exc

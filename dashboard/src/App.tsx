@@ -91,7 +91,7 @@ const statusClass: Record<Status, string> = {
   "Revision Required": "status status-revision",
 };
 
-export const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000/api/v1";
+export const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:5000/api/v1";
 
 function Button({
   children,
@@ -276,6 +276,48 @@ function Login({ onLogin }: { onLogin: (role: Role, token: string) => void }) {
               <ShieldCheck size={17} />High Authority (Commissioner)
             </button>
           </div>}
+          {!isSignup && !awaitingConfirmation && !authChallenge && (
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: "#475467", marginBottom: 8, display: "flex", justifyContent: "space-between" }}>
+                <span>Temp Test Accounts:</span>
+                <span style={{ color: "#16a34a", fontSize: 11 }}>Pass: Password@123</span>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                {[
+                  { name: "Rajesh Kumar", targetRole: "local" as Role, desc: "Dept Officer (Local)", tel: "9876543210" },
+                  { name: "Priya Sharma", targetRole: "local" as Role, desc: "Inspector (Local)", tel: "9876543211" },
+                  { name: "Vikram Malhotra", targetRole: "high" as Role, desc: "Commissioner (High)", tel: "9876543212" },
+                  { name: "Sunita Verma", targetRole: "high" as Role, desc: "State Admin (High)", tel: "9876543213" },
+                ].map((u) => (
+                  <button
+                    key={u.tel}
+                    type="button"
+                    onClick={() => {
+                      setRole(u.targetRole);
+                      setMobile(u.tel);
+                      setPassword("Password@123");
+                      setError("");
+                    }}
+                    style={{
+                      padding: "8px 10px",
+                      borderRadius: 8,
+                      border: mobile === u.tel ? "1.5px solid #2457a7" : "1px solid #d0d5dd",
+                      background: mobile === u.tel ? "#eff4fe" : "#ffffff",
+                      textAlign: "left",
+                      cursor: "pointer",
+                      fontSize: 12,
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 2,
+                    }}
+                  >
+                    <b style={{ color: mobile === u.tel ? "#2457a7" : "#1d2939" }}>{u.name}</b>
+                    <span style={{ fontSize: 11, color: "#667085" }}>{u.desc}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           <form onSubmit={submitAuth}>
             {isSignup && !awaitingConfirmation && <Field label="Full name" icon={UserRound} placeholder="Your full name" value={name} onChange={setName} />}
             <Field label="Mobile number" icon={Smartphone} placeholder="+91 98765 43210" type="tel" value={mobile} onChange={(value) => { setMobile(value); setError(""); }} />
@@ -461,24 +503,47 @@ function PageHeading({ title, subtitle, action }: { title: string; subtitle: str
 function MiniMap({ issues, selected, onSelect }: { issues: Issue[]; selected?: Issue | null; onSelect: (issue: Issue) => void }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
+  const [mapError, setMapError] = useState<string | null>(null);
   const locationKey = import.meta.env.VITE_LOCATION_API_KEY as string | undefined;
   const region = (import.meta.env.VITE_LOCATION_REGION as string | undefined) || "us-east-1";
 
   useEffect(() => {
-    if (!containerRef.current || !locationKey) return;
-    const map = new MapLibreMap({
-      container: containerRef.current,
-      style: `https://maps.geo.${region}.amazonaws.com/v2/styles/Standard/descriptor?key=${encodeURIComponent(locationKey)}`,
-      center: [72.8777, 19.076],
-      zoom: 11,
-      attributionControl: true,
-    });
-    map.addControl(new NavigationControl({ showCompass: true }), "top-right");
-    mapRef.current = map;
-    return () => {
-      map.remove();
-      mapRef.current = null;
-    };
+    if (!containerRef.current) return;
+    setMapError(null);
+
+    // Style descriptor endpoint using AWS Location Service authenticated with AWS Access and Secret keys
+    const styleUrl = `${API_BASE}/map/style`;
+    const backendHost = API_BASE.replace("/api/v1", "");
+
+    try {
+      const map = new MapLibreMap({
+        container: containerRef.current,
+        style: styleUrl,
+        center: [72.8777, 19.076],
+        zoom: 11,
+        attributionControl: true,
+        transformRequest: (url: string) => {
+          if (url.startsWith("/api/v1")) {
+            return { url: `${backendHost}${url}` };
+          }
+          return { url };
+        },
+      });
+
+      map.on("error", (err) => {
+        console.warn("AWS Location Service map error:", err);
+      });
+
+      map.addControl(new NavigationControl({ showCompass: true }), "top-right");
+      mapRef.current = map;
+      return () => {
+        map.remove();
+        mapRef.current = null;
+      };
+    } catch (err) {
+      console.error("Map initialization failed:", err);
+      setMapError("Failed to initialize AWS Location map.");
+    }
   }, [locationKey, region]);
 
   useEffect(() => {
@@ -510,8 +575,9 @@ function MiniMap({ issues, selected, onSelect }: { issues: Issue[]; selected?: I
 
   return (
     <div className="map-canvas">
-      {locationKey ? <div ref={containerRef} className="location-map" aria-label="Civic reports map" /> : (
-        <div className="map-unconfigured">Configure VITE_LOCATION_API_KEY in dashboard/.env to load Amazon Location.</div>
+      <div ref={containerRef} className="location-map" aria-label="Civic reports map" />
+      {mapError && (
+        <div className="map-unconfigured" style={{ color: "#b42318" }}>{mapError}</div>
       )}
       {selected && (
         <div className="map-popup">
