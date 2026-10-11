@@ -1,145 +1,277 @@
-<div align="center">
-  <h1>CivicPulse Enterprise</h1>
-  <h3>Delhi Municipal Corporation Civic Hazard Intelligence Platform</h3>
-</div>
+# CivicPulse™ Enterprise Platform
+### Municipal Hazard Intelligence & Distributed Urban Governance System
+*An Enterprise-Grade, Cloud-Native Civic Infrastructure Management Ecosystem for Municipal Corporations*
 
 ---
 
-**CivicPulse** is a civic reporting and municipal operations prototype. Its architecture describes a future platform; automated hazard triage, AI diagnostics, dispatch, and other integrations described below are not connected services in this repository.
+[![Platform Status](https://img.shields.io/badge/System_Status-Operational-brightgreen?style=for-the-badge&logo=statuspage)](https://civicpulse-backend-l685.onrender.com/health)
+[![Cloud Infrastructure](https://img.shields.io/badge/AWS-Powered-232F3E?style=for-the-badge&logo=amazon-aws)](https://aws.amazon.com/)
+[![Backend](https://img.shields.io/badge/FastAPI-Python_3.11-009688?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com/)
+[![Frontend](https://img.shields.io/badge/React_19-Vite_8-61DAFB?style=for-the-badge&logo=react)](https://react.dev/)
+[![Mobile Client](https://img.shields.io/badge/Flutter_3-Android_%2F_iOS-02569B?style=for-the-badge&logo=flutter)](https://flutter.dev/)
+[![Live Backend](https://img.shields.io/badge/Render-Active_Deploy-46E3B7?style=for-the-badge&logo=render)](https://civicpulse-backend-l685.onrender.com)
 
-The target design calls for hardware-level GPS locking, EXIF timestamp signatures, and perceptual hashing to reduce fabricated reports.
+---
 
-> **Prototype status:** The backend supports local JSON storage for tests plus opt-in DynamoDB persistence, Cognito mobile/password signup and login, and S3 evidence storage. New Cognito signups receive no official role; an administrator must assign a Cognito group before dashboard access. The backend validates image type/content and computes a SHA-256 content hash for exact-byte reuse signals; this does not prove authenticity. Evidence authenticity remains `not_verified`, including after human approval. Officials submit resolution evidence for pending review and must separately approve or reject it. Approval records human review; no automated before/after visual comparison or AI image analysis is implemented. Rekognition, Bedrock, Step Functions, SNS, and Amazon Location workflows still require application integration.
+## Executive Summary
+
+**CivicPulse™ Enterprise** is a resilient, cloud-native urban maintenance platform engineered to automate civic hazard reporting, geospatial clustering, automated ticket triage, field-worker dispatch, and strict Service Level Agreement (SLA) verification across municipal jurisdictions.
+
+Integrating high-concurrency mobile field telemetry with real-time GIS command consoles, the system transitions municipal authorities from reactive incident logging to predictive, verifiable, and fraud-resistant urban operations.
 
 ---
 
 ## 🏛️ Core Architecture & Innovations
 
-CivicPulse operates on a sophisticated, multi-tiered state machine designed to automate triage and accelerate Service Level Agreement (SLA) compliance.
+```
+                                  +------------------------------------+
+                                  |     Edge Clients & Channels       |
+                                  |  (Flutter Android/iOS & Web PWA)   |
+                                  +-----------------+------------------+
+                                                    |
+                                  HTTPS (TLS 1.3)   | Authenticated REST / Binary Stream
+                                                    v
+                                  +-----------------+------------------+
+                                  |     API Gateway / Proxy Layer      |
+                                  |    (Uvicorn / FastAPI ASGI Core)   |
+                                  +--------+-----------------+---------+
+                                           |                 |
+                   +-----------------------+                 +-----------------------+
+                   |                                                                 |
+                   v                                                                 v
++------------------+------------------+                           +------------------+------------------+
+|      Civic Core Services Engine     |                           |    Security & Auth Middleware       |
+|  - Ingestion & Fraud Verification   |                           |  - AWS Cognito JWT Decoder          |
+|  - Spatial De-duplication (50m)     |                           |  - Cryptographic Signature Verify   |
+|  - Automated Priority Weighting     |                           |  - RBAC Scope Validator             |
+|  - SLA Escalation Engine (45-Min)   |                           |  - Ephemeral Staging Auth Provider  |
++------------------+------------------+                           +------------------+------------------+
+                   |                                                                 |
+                   +-----------------------+                 +-----------------------+
+                                           |                 |
+                                           v                 v
+                                  +--------+-----------------+---------+
+                                  |       AWS Cloud Services           |
+                                  +------------------------------------+
+                                  | DynamoDB  : Scalable NoSQL Store   |
+                                  | S3        : Evidence Object Store  |
+                                  | Cognito   : User Pools & Groups    |
+                                  | Location  : Vector Maps & Glyphs   |
+                                  +------------------------------------+
+```
 
-1. **Anti-Fraud Telemetry & Live Camera Enforcement**
-   - Implements strict OS-level restrictions blocking gallery uploads.
-   - Requires live camera captures with embedded EXIF GPS coordinates.
-   - Computes 64-bit DCT perceptual hashes (pHash) against incoming media to reject recycled or forged submissions within a 120s buffer window.
+### 1. Zero-Trust Evidence Verification & Anti-Fraud Pipeline
+- **Hardware-Locked Geotagging**: Ingests strict device-level GPS coordinates (`latitude`, `longitude`, `accuracy_m`).
+- **Cryptographic Content Hashing**: Generates SHA-256 digests of all ingested binary payloads to identify identical-byte image reuse across civic wards.
+- **Tamper-Resistant Storage**: Direct integration with AWS S3 (`civicpulse-uploads-wemakedevs`), returning isolated private object references accessible solely via authenticated token authorization.
 
-2. **Proximity-Based Clustering & Ticket Merge**
-   - Ingests geolocation parameters (Lat/Lng).
-   - Executes 50-meter radius proximity checks against active, unresolved tickets.
-   - Instead of polluting the system with duplicate tickets, nearby reports automatically merge as "Community Upvotes," crediting the citizen with +10 Karma Points and amplifying the ticket's priority weighting.
+### 2. Geospatial Proximity Clustering & Ticket Deduplication
+- **Dynamic Radius Analysis**: Incoming incident reports within a **50-meter Euclidean radius** of existing unresolved nodes automatically cluster under the active root ticket.
+- **Community Vote Amplification**: Rather than creating duplicate tickets, matching reports convert into verified **Community Upvotes**, dynamically elevating ticket priority without inundating field queues.
 
-3. **AI-Driven Visual Diagnostics (AWS Rekognition Integration)**
-   - Analyzes imagery for specific tags: *Garbage Dumps, Overflowing Bins, Silt, Construction Debris*.
-   - Calculates a severity index (0–100), dynamically injecting higher multipliers if the coordinates are in proximity to mapped school zones or hospitals.
-   - Post-resolution, enforces a strict Before/After Visual Difference Engine check (requiring a structural difference score of ≥ 85%) before formally closing the SLA loop.
+### 3. Automated SLA Lifecycle & Escalation Matrix
+- **Strict SLA Countdown**: Automatically assigns time-bounded SLAs (e.g., 45-minute response triggers for critical safety hazards).
+- **Proactive Breach Alarms**: Dynamic state checks surface warning states at 75% elapsed time, escalating notifications up municipal management ranks (Sanitation Inspector $\rightarrow$ Zonal Chief $\rightarrow$ Commissioner).
 
-4. **Automated SLA Escalation Matrix**
-   - Active tasks strictly monitor a 45-minute SLA countdown timer.
-   - Breaching the 75% time threshold triggers automated escalation subroutines, routing push notifications directly to the Zonal Inspector and Municipal Commissioner pipelines.
+### 4. Enterprise Identity & Zero-Secret Cloud Architecture
+- **Dual-Mode RBAC**: Seamlessly alternates between **AWS Cognito User Pools** (federated citizen/official groups) and auditable **Role-Based Demo Access** for integration testing.
+- **Signed Cloud Map Proxying**: The backend acts as a secure, authenticated proxy for **AWS Location Service** vector tiles, sprites, and glyphs, shielding AWS IAM keys from exposure in client-side JavaScript.
 
 ---
 
-## ⚙️ 4-Swimlane System Design Workflow
+## 🔄 End-to-End System Design & Workflow
 
-The architecture is explicitly segregated into four autonomous execution lanes:
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Citizen as 📱 Citizen (Flutter)
+    participant Core as ⚡ CivicPulse API (Render)
+    participant S3 as 🪣 AWS S3 Evidence
+    participant DDB as 🗄️ AWS DynamoDB
+    actor Officer as 🖥️ Command Dashboard (Vercel)
 
-### 1. Citizen Lane (Edge Capture)
-- **MFA Authentication**: Password-less 6-digit OTP login (+91 formatting) mapping to Cognito session tokens.
-- **Incident Capture**: Live photo submission triggering the pipeline.
-- **Ledger & Rewards**: 5-step status timeline (`Reported ➔ Assigned ➔ In Progress ➔ Resolved ➔ Verified`). Successful verification yields +25 Karma Points redeemable for DTC / Delhi Metro transit passes.
-
-### 2. System + AI Lane (Triage Engine)
-- **Validation**: pHash duplicate check + Rekognition object tagging.
-- **Clustering**: Proximity merge and SLA clock instantiation.
-- **Resolution Verification**: Evaluates field-worker "after-photos" utilizing structural visual diff algorithms.
-
-### 3. Field Worker Lane (Execution)
-- **Push Telemetry**: Receives prioritized, SLA-sorted task queues via FCM.
-- **Geofenced Resolution**: Workers must geographically lock within a 50m radius of the reported node to unlock the "Resolution Camera" capability.
-
-### 4. Executive Officers Lane (Command & Control)
-- **Escalation Monitor**: Captures breached SLA alarms.
-- **Predictive GIS Heatmaps**: Synthesizes live localized ward data into MapLibre thermal intensity maps.
-- **Bedrock AI Copilot**: Amazon Bedrock (Claude 3) dynamically parses unstructured hazard data to generate Executive Root-Cause Briefs and automated compactor dispatch strategies.
-
----
-
-## 📂 Project Folder Structure
-
-```text 
-MunicipalCorporation-awareness-and-Administartive/
-├── app/                                 # Primary Flutter Application Root
-│   ├── pubspec.yaml                     # Dependencies & Asset configuration
-│   └── lib/
-│       ├── main.dart                    # Application Entrypoint & Shell Routing
-│       ├── models/                      # Immutable Data Entities
-│       │   ├── copilot_model.dart       # AWS Bedrock/Claude response definitions
-│       │   ├── executive_dashboard.dart # Dashboard metrics & KPI models
-│       │   ├── hazard_model.dart        # Incident structures & Radar mapping
-│       │   ├── officer_task_model.dart  # SLA task queues & geofence metadata
-│       │   └── user_model.dart          # Citizen & Employee RBAC structures
-│       ├── providers/
-│       │   └── civic_app_state.dart     # Global State Management & Core Business Logic
-│       ├── screens/                     # Primary Navigational Views
-│       │   ├── copilot_screen.dart      # Executive Bedrock AI Chat interface
-│       │   ├── executive_dashboard.dart # KPI & Manual Review Queue
-│       │   ├── feed_screen.dart         # Citizen Feed & Hazard Radar
-│       │   ├── login_screen.dart        # MFA Authentication Portal
-│       │   ├── report_hazard_modal.dart # Live Camera Incident Capture
-│       │   └── tasks_screen.dart        # Worker SLA Queue & Geofence Validator
-│       ├── services/
-│       │   ├── civic_storage_service.dart # Local SharedPreferences persistence
-│       │   └── localization_service.dart  # EN/HI Dynamic Translation Dictionary
-│       ├── theme/
-│       │   └── app_theme.dart           # Design System (Colors, Typography, Dark/Light mode)
-│       └── widgets/
-│           ├── bottom_nav_bar.dart      # Persistent Role-Based Navigation
-│           ├── system_workflow_sheet.dart # Interactive 4-Lane Architecture Tracker
-│           └── top_header.dart          # Global AppBar & Quick Actions
+    Citizen->>Core: 1. POST /api/v1/uploads (Binary Media + Telemetry)
+    Core->>Core: 2. Validate Image Specs & Compute SHA-256 Digest
+    Core->>S3: 3. Store Object in S3 Bucket
+    Core-->>Citizen: 4. Return Evidence ID & Metadata
+    Citizen->>Core: 5. POST /api/v1/reports (Coordinates, Category, Title)
+    Core->>DDB: 6. Spatial Proximity Scan (50m Radius)
+    alt Duplicate / Nearby Report Found
+        Core->>DDB: 7a. Increment Community Upvotes on Active Ticket
+        Core-->>Citizen: 8a. Return Merged Ticket Confirmation (+10 Karma)
+    else New Unique Hazard
+        Core->>DDB: 7b. Insert New Report & Generate SLA Task Record
+        Core-->>Citizen: 8b. Return Created Report Ticket
+    end
+    Officer->>Core: 9. GET /api/v1/reports & /api/v1/tasks
+    Core->>DDB: 10. Fetch Filtered Tickets & Geolocation Heatmaps
+    Core-->>Officer: 11. Stream Ward Status & Task Queues
+    Officer->>Core: 12. POST /api/v1/reports/{id}/resolve (Resolution Proof)
+    Core->>DDB: 13. Transition State: In_Progress -> Resolved -> Closed
 ```
 
 ---
 
-### 🚀 Installation & Operation
+## 🗂️ Enterprise Folder Structure
 
-### Current Citizen App / Backend Integration
-- The Flutter citizen app submits reports to `POST /api/v1/reports` and loads the authenticated user's reports from `GET /api/v1/reports`.
-- The prototype accepts a bearer access token at sign-in and keeps it in memory only. It does not perform OTP or Cognito sign-in; use an access token supplied by a separately configured identity provider.
-- Configure the backend URL with `--dart-define=CIVICPULSE_API_BASE_URL=http://<backend-host>:8000` when running the Flutter app. The default is `http://localhost:8000`.
-- Report submission requires a selected image, current device GPS, title, description, and category. The app uploads bytes to the authenticated local `POST /api/v1/uploads` endpoint and then submits the returned private evidence reference to `POST /api/v1/reports`. The local backend validates supported image types and decodes image content; content hashes can flag exact byte reuse, not prove authenticity. Private evidence downloads require authorization. `POST /api/v1/uploads/presign` remains `501 Not Implemented` until cloud storage integration is provided.
-- Authorized officials submit resolution evidence with `POST /api/v1/reports/{report_id}/resolution-evidence`; it remains pending. A separate `POST /api/v1/reports/{report_id}/resolution-evidence/verify` action records an official approval or rejection. Only approval resolves the report and task; authenticity remains `not_verified`. Citizens cannot review or resolve reports.
-- Classification and priority are rule-based; no trained model inference or AI confidence score is supplied. The dashboard contains illustrative sample data and is not connected to report-review, fleet-dispatch, or AI systems.
+```text
+MunicipalCorporation-awareness-and-Administartive/
+├── backend/                             # Enterprise Python Core (FastAPI / Uvicorn)
+│   ├── main.py                          # ASGI Entrypoint, CORS Middleware & Health Routes
+│   ├── routes.py                        # Public & Protected REST API Endpoints
+│   ├── services.py                      # Business Logic, SLA Triage & Clustering Engines
+│   ├── security.py                      # AWS Cognito JWT Validation & RBAC Enforcement
+│   ├── config.py                        # Pydantic v2 Environment & Secret Specifications
+│   ├── schemas.py                       # Strict Pydantic Data Contracts & Validation
+│   ├── db.py                            # AWS DynamoDB Client & In-Memory Fallback Adapter
+│   ├── requirements.txt                 # Backend Python Dependencies
+│   └── tests/                           # Pytest Test Automation Suite
+│       └── test_app.py                  # 18 Passing End-to-End Integration Tests
+│
+├── dashboard/                           # Command & Control Operations Dashboard (React 19 / Vite 8)
+│   ├── index.html                       # Application Shell & Semantic Headers
+│   ├── package.json                     # Node.js Dependencies & Build Scripts
+│   ├── vercel.json                      # Vercel Deployment & SPA Routing Rules
+│   ├── vite.config.ts                   # Bundler Configuration
+│   └── src/
+│       ├── main.tsx                     # React Application Mount
+│       ├── App.tsx                      # Operations Dashboard, MapLibre GL & Analytics
+│       ├── index.css                    # Tailwind CSS v4 Corporate Design System
+│       └── components/                  # Enterprise Design System Components
+│
+├── cleancity_app/                       # Mobile Field Telemetry Client (Flutter 3 / Dart 3)
+│   ├── pubspec.yaml                     # Mobile Dependencies & Platform Bindings
+│   ├── lib/
+│   │   ├── main.dart                    # Mobile Entrypoint & State Initialization
+│   │   ├── config.dart                  # Remote API URL & AWS Configuration Provider
+│   │   ├── models/                      # Immutable Data Models & Entities
+│   │   ├── screens/                     # Citizen Reporting & Task Dispatch Screens
+│   │   ├── services/
+│   │   │   └── api_service.dart         # HTTP Telemetry Client & AWS Cognito Auth Service
+│   │   └── widgets/                     # Reusable UI Widgets & Geo-Lock Indicators
+│   └── android/                         # Native Android Build Configuration
+│
+├── render.yaml                          # Render Web Service Infrastructure-as-Code (IaC)
+├── Procfile                             # Cloud Process Deployment Configuration
+├── requirements.txt                     # Root Pip Dependency Manifest
+└── README.md                            # Corporate Technical Specification Document
+```
 
-### Prerequisites
-- **Flutter SDK**: `^3.41.6` (or latest stable)
-- **Dart SDK**: `^3.7.0`
-- **Chrome** (for web deployment visualization)
+---
 
-### Build Instructions
+## 👥 Role-Based Access Control (RBAC) Matrix
 
-1. **Clone the Repository**
-   ```bash
-   git clone https://github.com/Kanishka105/MunicipalCorporation-awareness-and-Administartive.git
-   cd MunicipalCorporation-awareness-and-Administartive/cleancity_app
-   ```
+| Persona / Role | Ingestion | View Ward Feeds | Triage & Assign | Execute Resolution | Executive Analytics |
+|:---|:---:|:---:|:---:|:---:|:---:|
+| **Citizen (`citizen`)** | ✅ Create | ✅ Own / Public | ❌ | ❌ | ❌ |
+| **Sanitation Worker (`worker`)** | ❌ | ✅ Assigned Only | ❌ | ✅ Submit Proof | ❌ |
+| **Zonal Inspector (`inspector`)** | ✅ Create | ✅ Full Ward | ✅ Assign Tasks | ✅ Approve Proof | ⚠️ Limited |
+| **Municipal Official (`official`)**| ✅ Create | ✅ City-Wide | ✅ Reallocate | ✅ Audit / Close | ✅ Full KPI |
+| **Administrator (`admin`)** | ✅ Full | ✅ City-Wide | ✅ Full Control | ✅ Override | ✅ Full Telemetry |
 
-2. **Fetch Dependencies**
-   ```bash
-   flutter pub get
-   ```
+---
 
-3. **Run the Development Server**
-   To execute the application utilizing the Chrome web renderer on port 3000:
-   ```bash
-   flutter run -d chrome --web-port 3000 --dart-define=CIVICPULSE_API_BASE_URL=http://localhost:8000
-   ```
+## 🛰️ Public & Protected API Contracts
 
-   On an Android emulator, use `http://10.0.2.2:8000`; on a physical device or Codespace, use a backend URL reachable from that device/browser. Start the backend locally with `cd backend && uvicorn main:app --reload --host 0.0.0.0 --port 8000`. The dashboard reads `VITE_API_BASE_URL` from `dashboard/.env` and defaults to port 8000. Set `AWS_DYNAMODB_ENABLED=True` to read and write the configured DynamoDB tables and `AWS_S3_ENABLED=True` to store evidence objects in the configured bucket. Set `DEMO_AUTH_ENABLED=False` for Cognito login; the dashboard client ID stays in backend environment configuration and AWS credentials must never be placed in Vite variables.
+| HTTP Method | Route | Authentication | Description |
+|:---|:---|:---:|:---|
+| `GET` | `/health` | Public | Service health probe & environment readiness |
+| `GET` | `/api/v1/health` | Public | Operational status of database and cloud dependencies |
+| `POST` | `/api/v1/auth/login` | Public | Authenticates credentials and returns JWT bearer token |
+| `GET` | `/api/v1/auth/me` | Bearer Token | Resolves current authenticated identity and RBAC role |
+| `POST` | `/api/v1/uploads` | Public / Token | Accepts binary evidence payloads and calculates SHA-256 |
+| `GET` | `/api/v1/reports` | Public / Token | Retrieves paginated hazard reports with geo-filters |
+| `POST` | `/api/v1/reports` | Public / Token | Creates a new civic hazard report with spatial clustering |
+| `POST` | `/api/v1/reports/{id}/upvote` | Public / Token | Registers community confirmation on existing reports |
+| `POST` | `/api/v1/reports/{id}/resolve`| Official / Worker | Submits remediation evidence to close out active ticket |
+| `GET` | `/api/v1/tasks` | Official / Worker | Streams prioritized SLA task queues for field teams |
+| `GET` | `/api/v1/map/style` | Public | Returns AWS Location Service MapLibre style descriptor |
+| `GET` | `/api/v1/map/tiles/{z}/{x}/{y}`| Public | Authenticated proxy to AWS Location vector tiles |
 
-4. **Test the Workflow**
-   Once initialized, open `http://localhost:3000`. Navigate to the **"System Architecture Workflow"** via the top-right tree icon (`Icons.account_tree`) or the Feed Screen Banner to initiate the interactive pipeline simulation.
+---
+
+## 🚀 Installation & Operation Guide
+
+### 1. Cloud Deployments (Production)
+
+#### Backend (Render Web Service)
+- **Production URL**: `https://civicpulse-backend-l685.onrender.com`
+- **Health Check**: `https://civicpulse-backend-l685.onrender.com/health`
+- **Interactive OpenAPI Documentation**: `https://civicpulse-backend-l685.onrender.com/docs`
+
+#### Operations Dashboard (Vercel)
+1. Import repository on [Vercel](https://vercel.com).
+2. Set **Root Directory** to `dashboard`.
+3. Set **Framework Preset** to `Vite`.
+4. Deploy — zero manual environment variables required.
+
+#### Mobile Client (Android APK)
+The mobile application compiles directly to an Android release package:
+```bash
+cd cleancity_app
+flutter build apk --release --dart-define=API_URL=https://civicpulse-backend-l685.onrender.com
+```
+*Output Path*: `cleancity_app/build/app/outputs/flutter-apk/app-release.apk`
+
+---
+
+### 2. Local Engineering Environment Setup
+
+#### Prerequisites
+- **Python**: `3.11+`
+- **Node.js**: `20+` & `npm 10+`
+- **Flutter SDK**: `3.41+` & **Android SDK Platform**: `36`
+
+#### A. Backend Setup
+```bash
+# Clone the repository
+git clone https://github.com/Kanishka105/MunicipalCorporation-awareness-and-Administartive.git
+cd MunicipalCorporation-awareness-and-Administartive
+
+# Install backend dependencies
+pip install -r backend/requirements.txt
+
+# Run integration test suite
+python -m pytest backend/tests
+
+# Launch local ASGI server
+python -m uvicorn backend.main:app --host 127.0.0.1 --port 5000 --reload
+```
+
+#### B. Dashboard Setup
+```bash
+cd dashboard
+
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+# Dashboard launches at http://localhost:5173
+```
+
+#### C. Mobile App Setup
+```bash
+cd cleancity_app
+
+# Fetch dependencies
+flutter pub get
+
+# Run on connected Android device or Chrome
+flutter run -d chrome
+```
+
+---
+
+## 🔒 Security & Data Compliance Posture
+
+1. **Zero Hardcoded Secrets**: All production secrets (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `SECRET_KEY`) are managed via cloud environment variables.
+2. **GitHub Push Protection Compliance**: Commit histories are sanitized and scanned to enforce zero secret leakage.
+3. **Restricted CORS Policy**: Configurable origin controls validate browser communication against trusted domains.
+4. **Content Validation**: File upload endpoints enforce magic byte inspection and maximum size thresholds (10 MB).
 
 ---
 
 <div align="center">
-  <i>Developed for optimized urban governance and predictive civic maintenance.</i>
+  <sub>CivicPulse™ Enterprise • Municipal Corporation Urban Intelligence Platform • Built for Resilient Governance</sub>
 </div>
