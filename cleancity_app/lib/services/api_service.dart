@@ -11,6 +11,13 @@ import '../config.dart';
 
 class ApiService {
   static String get serverHost {
+    if (AppConfig.remoteApiUrl.isNotEmpty) {
+      return AppConfig.remoteApiUrl.replaceAll(RegExp(r'/api/v1/?$'), '');
+    }
+    const envUrl = String.fromEnvironment('CIVICPULSE_API_BASE_URL');
+    if (envUrl.isNotEmpty) {
+      return envUrl.replaceAll(RegExp(r'/api/v1/?$'), '');
+    }
     if (kIsWeb) {
       return 'http://127.0.0.1:5000';
     }

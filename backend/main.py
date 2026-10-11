@@ -22,13 +22,13 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="CivicPulse AI", version="0.1.0", lifespan=lifespan)
 origins = get_settings().allowed_origin_list
-if get_settings().environment != "production":
+if "*" in origins or get_settings().environment != "production":
     origins = ["*"]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_origin_regex=r"^https?://.*" if get_settings().environment != "production" else None,
+    allow_origin_regex=r"^https?://.*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

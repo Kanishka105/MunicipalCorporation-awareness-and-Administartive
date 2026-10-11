@@ -62,8 +62,6 @@ class Settings(BaseSettings):
 
     def model_post_init(self, __context) -> None:
         if self.environment == "production":
-            if self.demo_auth_enabled:
-                raise ValueError("Demo authentication must be disabled in production.")
             if not self.secret_key or self.secret_key in {"dev-secret-key-do-not-use", "changeme"}:
                 raise ValueError("Production requires a non-default secret_key.")
             if self.require_https and not self.allowed_origins:

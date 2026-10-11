@@ -1,0 +1,53 @@
+services:
+  - type: web
+    name: civicpulse-backend
+    runtime: python
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: ENVIRONMENT
+        value: development
+      - key: APP_NAME
+        value: CivicPulse AI
+      - key: DEMO_AUTH_ENABLED
+        value: "True"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: AWS_REGION
+        value: us-east-1
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: COGNITO_REGION
+        value: us-east-1
+      - key: COGNITO_USER_POOL_ID
+        value: us-east-1_SrdgAQpeJ
+      - key: COGNITO_CLIENT_ID
+        value: 2ud19o87ptnc7bn00sm6uh3ksk
+      - key: DASHBOARD_COGNITO_CLIENT_ID
+        value: 2ud19o87ptnc7bn00sm6uh3ksk
+      - key: S3_BUCKET
+        value: civicpulse-uploads-wemakedevs
+      - key: DYNAMODB_REPORTS_TABLE
+        value: civicpulse-reports
+      - key: DYNAMODB_TASKS_TABLE
+        value: civicpulse-tasks
+      - key: DYNAMODB_USERS_TABLE
+        value: civicpulse-users
+      - key: AWS_S3_ENABLED
+        value: "True"
+      - key: AWS_DYNAMODB_ENABLED
+        value: "True"
+      - key: LOCATION_SERVICE_MAP_NAME
+        value: civicpulse-map
+      - key: MAX_UPLOAD_SIZE_MB
+        value: "10"
+      - key: ALLOWED_ORIGINS
+        value: "*"
+      - key: REQUIRE_HTTPS
+        value: "False"
