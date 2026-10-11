@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
+import '../services/api_service.dart';
 
 class Post {
   final String id;
@@ -68,7 +68,7 @@ class Post {
     );
   }
 
-  factory Post.fromJson(Map<String, dynamic> json, {String currentUserId = ''}) {
+  factory Post.fromJson(Map<String, dynamic> json, {String currentUserId = '', String currentMobile = ''}) {
     final gps = json['gps'] as Map<String, dynamic>? ?? {};
     final lat = (json['latitude'] ?? json['lat'] ?? gps['latitude'] as num?)?.toDouble() ?? 19.0760;
     final long = (json['longitude'] ?? json['long'] ?? gps['longitude'] as num?)?.toDouble() ?? 72.8777;
@@ -86,24 +86,26 @@ class Post {
 
     String photoUrl = json['photo_url'] ?? '';
     if (photoUrl.startsWith('/api')) {
-      final host = kIsWeb ? 'http://127.0.0.1:5000' : 'http://10.0.2.2:5000';
-      photoUrl = '$host$photoUrl';
+      photoUrl = '${ApiService.serverHost}$photoUrl';
     }
 
     final rawUpvoters = (json['upvoters'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
     final upvotesCount = (json['upvotes'] as num?)?.toInt() ?? rawUpvoters.length;
-    final userUpvoted = currentUserId.isNotEmpty && rawUpvoters.contains(currentUserId);
+    final userUpvoted = (currentUserId.isNotEmpty && rawUpvoters.contains(currentUserId)) ||
+        (currentMobile.isNotEmpty && rawUpvoters.contains(currentMobile));
     final author = json['author_name'] ?? json['citizen_id'] ?? 'Citizen';
+
+    final accuracy = json['gps_accuracy_m'] != null ? '±${json['gps_accuracy_m']}m' : 'GNSS Tagged';
 
     return Post(
       id: json['id'] ?? '',
       authorName: author,
       authorAvatarUrl: 'https://api.dicebear.com/7.x/bottts/png?seed=${author.hashCode}',
       timeAgo: timeAgoStr,
-      cameraInfo: 'GNSS Tagged',
+      cameraInfo: accuracy,
       latitude: lat,
       longitude: long,
-      elevation: '42m',
+      elevation: 'GNSS Lock',
       locationName: (json['category'] != null && json['category'].toString().isNotEmpty)
           ? '${json['category'].toString().toUpperCase()} SECTOR'
           : 'CIVIC ZONE',

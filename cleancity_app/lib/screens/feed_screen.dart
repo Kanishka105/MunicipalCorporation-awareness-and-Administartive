@@ -243,7 +243,7 @@ class _FeedScreenState extends State<FeedScreen> {
       margin: const EdgeInsets.only(top: 8, bottom: 24),
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppTheme.accentBlue.withOpacity(0.3),
+        color: AppTheme.accentBlue.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(

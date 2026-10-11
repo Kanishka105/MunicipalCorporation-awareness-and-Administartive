@@ -45,9 +45,10 @@ async def request_id_middleware(request: Request, call_next):
 
 @app.exception_handler(StarletteHTTPException)
 async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    msg = exc.detail if isinstance(exc.detail, str) else "Request failed"
     return JSONResponse(
         status_code=exc.status_code,
-        content={"error": exc.detail if isinstance(exc.detail, str) else "Request failed", "request_id": request.headers.get("x-request-id")},
+        content={"error": msg, "detail": msg, "request_id": request.headers.get("x-request-id")},
     )
 
 

@@ -11,7 +11,7 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  bool isLogin = false; // toggle for Log In / Sign Up
+  bool isLogin = true; // Default to Log In
   bool autoTaggingEnabled = true;
   bool isLoading = false;
   final TextEditingController nameController = TextEditingController();
@@ -65,7 +65,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   Row(
                     children: [
-                      Icon(Icons.lock_clock, size: 14, color: AppTheme.primaryColor),
+                      const Icon(Icons.lock_clock, size: 14, color: AppTheme.primaryColor),
                       const SizedBox(width: 4),
                       Text(
                         'SECURE',
@@ -79,7 +79,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   )
                 ],
               ),
-              const SizedBox(height: 40),
+              const SizedBox(height: 36),
               // Logo
               Container(
                 width: 72,
@@ -89,7 +89,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -129,13 +129,13 @@ class _LoginScreenState extends State<LoginScreen> {
                   fontSize: 14,
                 ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 28),
               
               // Tabs
               Container(
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: AppTheme.accentBlue.withOpacity(0.3),
+                  color: AppTheme.accentBlue.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(30),
                 ),
                 child: Row(
@@ -151,7 +151,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             boxShadow: isLogin
                                 ? [
                                     BoxShadow(
-                                      color: Colors.black.withOpacity(0.05),
+                                      color: Colors.black.withValues(alpha: 0.05),
                                       blurRadius: 4,
                                       offset: const Offset(0, 2),
                                     )
@@ -160,7 +160,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           child: Center(
                             child: Text(
-                              'Log In',
+                              'Sign In',
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 color: isLogin ? AppTheme.primaryColor : AppTheme.textSecondary,
@@ -181,7 +181,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             boxShadow: !isLogin
                                 ? [
                                     BoxShadow(
-                                      color: Colors.black.withOpacity(0.05),
+                                      color: Colors.black.withValues(alpha: 0.05),
                                       blurRadius: 4,
                                       offset: const Offset(0, 2),
                                     )
@@ -190,7 +190,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           child: Center(
                             child: Text(
-                              'Sign Up',
+                              'Create Account',
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 color: !isLogin ? AppTheme.primaryColor : AppTheme.textSecondary,
@@ -213,7 +213,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.02),
+                      color: Colors.black.withValues(alpha: 0.02),
                       blurRadius: 20,
                       offset: const Offset(0, 10),
                     ),
@@ -243,19 +243,19 @@ class _LoginScreenState extends State<LoginScreen> {
                       ],
                     ),
                     const SizedBox(height: 8),
-                    _buildTextField(icon: Icons.phone_android, hint: '+91 9876543210', controller: mobileController, keyboardType: TextInputType.phone),
+                    _buildTextField(icon: Icons.phone_android, hint: 'e.g. 7307897622 or +91...', controller: mobileController, keyboardType: TextInputType.phone),
                     const SizedBox(height: 16),
                     
                     const Text('Password', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
                     const SizedBox(height: 8),
                     _buildTextField(icon: Icons.lock_outline, hint: '••••••••••••', isPassword: true, controller: passwordController),
-                    if (!isLogin) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        'Must be 8+ chars (e.g. Clean@123)',
-                        style: TextStyle(fontSize: 11, color: AppTheme.textSecondary),
-                      ),
-                    ],
+                    const SizedBox(height: 6),
+                    Text(
+                      isLogin
+                          ? 'AWS Cognito User Pool authentication'
+                          : 'Must be 8+ chars with uppercase, number & symbol (e.g. Clean@2026)',
+                      style: TextStyle(fontSize: 11, color: AppTheme.textSecondary),
+                    ),
                     const SizedBox(height: 16),
                     
                     if (!isLogin) ...[
@@ -281,12 +281,12 @@ class _LoginScreenState extends State<LoginScreen> {
                             Switch(
                               value: autoTaggingEnabled,
                               onChanged: (val) => setState(() => autoTaggingEnabled = val),
-                              activeColor: AppTheme.primaryColor,
+                              activeThumbColor: AppTheme.primaryColor,
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 20),
                     ],
                     
                     SizedBox(
@@ -295,26 +295,28 @@ class _LoginScreenState extends State<LoginScreen> {
                         onPressed: isLoading
                             ? null
                             : () async {
+                                final messenger = ScaffoldMessenger.of(context);
+                                final navigator = Navigator.of(context);
                                 final mobile = mobileController.text.trim();
                                 final password = passwordController.text;
                                 final name = nameController.text.trim();
                                 
                                 if (mobile.isEmpty) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Please enter your 10-digit mobile number')),
+                                  messenger.showSnackBar(
+                                    const SnackBar(content: Text('Please enter your mobile number')),
                                   );
                                   return;
                                 }
 
                                 if (password.isEmpty) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
+                                  messenger.showSnackBar(
                                     const SnackBar(content: Text('Please enter your password')),
                                   );
                                   return;
                                 }
 
                                 if (!isLogin && name.isEmpty) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
+                                  messenger.showSnackBar(
                                     const SnackBar(content: Text('Please enter your full name')),
                                   );
                                   return;
@@ -329,94 +331,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                   setState(() => isLoading = false);
                                   
                                   if (result['success'] == true) {
-                                    // Show OTP Dialog
-                                    final otpController = TextEditingController();
-                                    showDialog(
-                                      context: context,
-                                      barrierDismissible: false,
-                                      builder: (dialogCtx) => AlertDialog(
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                        title: const Text('Verify Phone Number', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                                        content: Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              'Enter the 6-digit verification OTP sent to $mobile:',
-                                              style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
-                                            ),
-                                            const SizedBox(height: 16),
-                                            TextField(
-                                              controller: otpController,
-                                              keyboardType: TextInputType.number,
-                                              maxLength: 6,
-                                              autofocus: true,
-                                              decoration: InputDecoration(
-                                                hintText: 'Enter 6-digit OTP',
-                                                counterText: '',
-                                                prefixIcon: const Icon(Icons.security, size: 20, color: AppTheme.primaryColor),
-                                                filled: true,
-                                                fillColor: AppTheme.backgroundColor,
-                                                border: OutlineInputBorder(
-                                                  borderRadius: BorderRadius.circular(12),
-                                                  borderSide: BorderSide.none,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        actions: [
-                                          TextButton(
-                                            onPressed: () => Navigator.of(dialogCtx).pop(),
-                                            child: const Text('Cancel'),
-                                          ),
-                                          ElevatedButton(
-                                            onPressed: () async {
-                                              final otp = otpController.text.trim();
-                                              if (otp.isEmpty) {
-                                                ScaffoldMessenger.of(context).showSnackBar(
-                                                  const SnackBar(content: Text('Please enter the OTP')),
-                                                );
-                                                return;
-                                              }
-                                              final verifyRes = await _apiService.verifyOtp(mobile, otp);
-                                              if (verifyRes['success'] == true) {
-                                                Navigator.of(dialogCtx).pop();
-                                                if (mounted) {
-                                                  ScaffoldMessenger.of(context).showSnackBar(
-                                                    const SnackBar(
-                                                      content: Row(
-                                                        children: [
-                                                          Icon(Icons.check_circle, color: Colors.white),
-                                                          SizedBox(width: 8),
-                                                          Text('Account verified with AWS Cognito!'),
-                                                        ],
-                                                      ),
-                                                      backgroundColor: Color(0xFF16A34A),
-                                                      duration: Duration(seconds: 2),
-                                                    ),
-                                                  );
-                                                }
-                                                // Auto login after verification
-                                                final loginRes = await _apiService.login(mobile, password);
-                                                if (loginRes['success'] == true && mounted) {
-                                                  Navigator.of(context).pushReplacement(
-                                                    MaterialPageRoute(builder: (_) => const HomeScreen()),
-                                                  );
-                                                }
-                                              } else {
-                                                ScaffoldMessenger.of(context).showSnackBar(
-                                                  SnackBar(content: Text(verifyRes['message'] ?? 'Invalid OTP. Please try again.')),
-                                                );
-                                              }
-                                            },
-                                            child: const Text('Verify & Complete'),
-                                          ),
-                                        ],
-                                      ),
-                                    );
+                                    _showOtpDialog(mobile, password, messenger, navigator);
                                   } else {
-                                    ScaffoldMessenger.of(context).showSnackBar(
+                                    messenger.showSnackBar(
                                       SnackBar(content: Text(result['message'] ?? 'Sign up failed')),
                                     );
                                   }
@@ -427,12 +344,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                   setState(() => isLoading = false);
                                   
                                   if (loginRes['success'] == true) {
-                                    Navigator.pushReplacement(
-                                      context,
+                                    navigator.pushReplacement(
                                       MaterialPageRoute(builder: (_) => const HomeScreen()),
                                     );
                                   } else {
-                                    ScaffoldMessenger.of(context).showSnackBar(
+                                    messenger.showSnackBar(
                                       SnackBar(content: Text(loginRes['message'] ?? 'Login failed. Check credentials.')),
                                     );
                                   }
@@ -450,23 +366,43 @@ class _LoginScreenState extends State<LoginScreen> {
                             : Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Text(isLogin ? 'Sign In to CleanCity' : 'Create Cognito Account', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                                  Text(
+                                    isLogin ? 'Sign In to CleanCity' : 'Create Cognito Account',
+                                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                                  ),
                                   const SizedBox(width: 8),
                                   const Icon(Icons.arrow_forward),
                                 ],
                               ),
                       ),
                     ),
+                    const SizedBox(height: 12),
+                    // Guest / Browse button
+                    Center(
+                      child: TextButton.icon(
+                        onPressed: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(builder: (_) => const HomeScreen()),
+                          );
+                        },
+                        icon: const Icon(Icons.public, size: 16, color: AppTheme.primaryColor),
+                        label: const Text(
+                          'Browse Live Feed as Guest',
+                          style: TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
               
-              // Stats Card
+              // Live Telemetry Architecture Card (NO MOCK DATA)
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppTheme.accentBlue.withOpacity(0.3),
+                  color: AppTheme.accentBlue.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Row(
@@ -477,31 +413,24 @@ class _LoginScreenState extends State<LoginScreen> {
                         color: Color(0xFF7FFFD4), // light mint
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.explore, color: AppTheme.primaryColor, size: 20),
+                      child: const Icon(Icons.cloud_done_outlined, color: AppTheme.primaryColor, size: 20),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('12,480+ Expeditions', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                          Text('Tagged by local creators worldwide', style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+                          const Text('AWS Cloud Infrastructure', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                          Text('Live S3 data archiving & Cognito identity verification', style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
                         ],
                       ),
                     ),
-                    Row(
-                      children: [
-                        Align(widthFactor: 0.7, child: _buildSmallStatIcon(Icons.terrain)),
-                        Align(widthFactor: 0.7, child: _buildSmallStatIcon(Icons.water_drop)),
-                        _buildSmallStatIcon(Icons.forest),
-                      ],
-                    )
                   ],
                 ),
               ),
               const SizedBox(height: 16),
               Text(
-                'By continuing, you agree to enable camera and GPS\nlocation permissions when posting.',
+                'By continuing, you enable camera and GPS\nlocation telemetry when publishing reports.',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
               ),
@@ -513,19 +442,89 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildSmallStatIcon(IconData icon) {
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: AppTheme.accentBlue,
-        shape: BoxShape.circle,
-        border: Border.all(color: Colors.white, width: 2),
-      ),
-      child: Icon(icon, size: 12, color: AppTheme.primaryColor),
+  void _showOtpDialog(String mobile, String password, ScaffoldMessengerState messenger, NavigatorState navigator) {
+    final otpController = TextEditingController();
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogCtx) {
+        final dialogMessenger = ScaffoldMessenger.of(dialogCtx);
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Verify Phone Number', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Enter the 6-digit verification OTP for $mobile:',
+                style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: otpController,
+                keyboardType: TextInputType.number,
+                maxLength: 6,
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: 'Enter 6-digit OTP',
+                  counterText: '',
+                  prefixIcon: const Icon(Icons.security, size: 20, color: AppTheme.primaryColor),
+                  filled: true,
+                  fillColor: AppTheme.backgroundColor,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogCtx).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final otp = otpController.text.trim();
+                if (otp.isEmpty) {
+                  dialogMessenger.showSnackBar(
+                    const SnackBar(content: Text('Please enter the OTP')),
+                  );
+                  return;
+                }
+                final verifyRes = await _apiService.verifyOtp(mobile, otp);
+                if (!dialogCtx.mounted) return;
+                if (verifyRes['success'] == true) {
+                  Navigator.of(dialogCtx).pop();
+                  final loginRes = await _apiService.login(mobile, password);
+                  if (loginRes['success'] == true && mounted) {
+                    navigator.pushReplacement(
+                      MaterialPageRoute(builder: (_) => const HomeScreen()),
+                    );
+                  }
+                } else {
+                  dialogMessenger.showSnackBar(
+                    SnackBar(content: Text(verifyRes['message'] ?? 'Invalid OTP. Please try again.')),
+                  );
+                }
+              },
+              child: const Text('Verify & Complete'),
+            ),
+          ],
+        );
+      },
     );
   }
 
-  Widget _buildTextField({required IconData icon, required String hint, bool isPassword = false, TextEditingController? controller, TextInputType? keyboardType}) {
+  Widget _buildTextField({
+    required IconData icon,
+    required String hint,
+    bool isPassword = false,
+    TextEditingController? controller,
+    TextInputType? keyboardType,
+  }) {
     return Container(
       decoration: BoxDecoration(
         color: AppTheme.backgroundColor,
@@ -539,7 +538,7 @@ class _LoginScreenState extends State<LoginScreen> {
           prefixIcon: Icon(icon, color: AppTheme.textSecondary),
           suffixIcon: isPassword ? Icon(Icons.visibility_outlined, color: AppTheme.textSecondary) : null,
           hintText: hint,
-          hintStyle: TextStyle(color: AppTheme.textSecondary.withOpacity(0.7)),
+          hintStyle: TextStyle(color: AppTheme.textSecondary.withValues(alpha: 0.7)),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         ),

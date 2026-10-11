@@ -4,6 +4,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../models/post_model.dart';
 import '../services/api_service.dart';
 import '../theme.dart';
+import 'login_screen.dart';
 
 class PostDetailScreen extends StatefulWidget {
   final Post post;
@@ -27,6 +28,27 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
   Future<void> _toggleUpvote() async {
     if (_isUpvoting) return;
+
+    final token = await _apiService.getToken();
+    if (token == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Please sign in with Cognito to upvote posts'),
+          action: SnackBarAction(
+            label: 'Sign In',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const LoginScreen()),
+              );
+            },
+          ),
+        ),
+      );
+      return;
+    }
+
     setState(() => _isUpvoting = true);
 
     try {
@@ -126,17 +148,13 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                           ],
                         ),
                         Text(
-                          'S3 Ref: ${_post.id.substring(0, _post.id.length > 8 ? 8 : _post.id.length)}...',
+                          'S3 Archive Ref: ${_post.id.length > 12 ? _post.id.substring(0, 12) : _post.id}...',
                           style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
                         ),
                       ],
                     ),
                   ),
-                  Row(
-                    children: [
-                      _buildIconBtn(Icons.share_outlined),
-                    ],
-                  ),
+                  _buildIconBtn(Icons.share_outlined),
                 ],
               ),
             ),
@@ -163,10 +181,10 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.95),
+                      color: Colors.white.withValues(alpha: 0.95),
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
-                        BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4),
+                        BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 4),
                       ],
                     ),
                     child: Row(
@@ -186,14 +204,14 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.7),
+                      color: Colors.black.withValues(alpha: 0.7),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Row(
-                      children: [
-                        const Icon(Icons.cloud_upload_outlined, size: 14, color: Colors.white),
-                        const SizedBox(width: 6),
-                        const Text('Stored in AWS S3', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+                      children: const [
+                        Icon(Icons.cloud_upload_outlined, size: 14, color: Colors.white),
+                        SizedBox(width: 6),
+                        Text('Stored in AWS S3', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
                       ],
                     ),
                   ),
@@ -228,7 +246,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                           duration: const Duration(milliseconds: 200),
                           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                           decoration: BoxDecoration(
-                            color: _post.hasUpvoted ? AppTheme.primaryColor : AppTheme.accentBlue.withOpacity(0.8),
+                            color: _post.hasUpvoted ? AppTheme.primaryColor : AppTheme.accentBlue.withValues(alpha: 0.8),
                             borderRadius: BorderRadius.circular(24),
                           ),
                           child: Row(
@@ -250,7 +268,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: _post.hasUpvoted ? Colors.white.withOpacity(0.2) : Colors.white,
+                                  color: _post.hasUpvoted ? Colors.white.withValues(alpha: 0.2) : Colors.white,
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Text(
@@ -278,7 +296,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                   // Map & Telemetry
                   Container(
                     decoration: BoxDecoration(
-                      color: AppTheme.accentBlue.withOpacity(0.3),
+                      color: AppTheme.accentBlue.withValues(alpha: 0.3),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     padding: const EdgeInsets.all(16),
@@ -289,7 +307,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                           children: [
                             Container(
                               padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
+                              decoration: const BoxDecoration(
                                 color: AppTheme.accentBlue,
                                 shape: BoxShape.circle,
                               ),
@@ -324,7 +342,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                           child: Container(
                             height: 150,
                             decoration: BoxDecoration(
-                              color: AppTheme.accentBlue.withOpacity(0.3),
+                              color: AppTheme.accentBlue.withValues(alpha: 0.3),
                               borderRadius: BorderRadius.circular(16),
                             ),
                             child: !kIsWeb
@@ -389,7 +407,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: AppTheme.accentBlue.withOpacity(0.5),
+        color: AppTheme.accentBlue.withValues(alpha: 0.5),
         shape: BoxShape.circle,
       ),
       child: Icon(icon, size: 18, color: AppTheme.textPrimary),
@@ -420,4 +438,3 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     );
   }
 }
-

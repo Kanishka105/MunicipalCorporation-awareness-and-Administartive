@@ -1,11 +1,11 @@
 import 'dart:io' as io;
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
 import '../theme.dart';
 import '../services/api_service.dart';
+import 'login_screen.dart';
 
 class CreatePostScreen extends StatefulWidget {
   const CreatePostScreen({super.key});
@@ -51,17 +51,21 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       }
       if (permission == LocationPermission.whileInUse || permission == LocationPermission.always) {
         final position = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.high,
-          timeLimit: const Duration(seconds: 10),
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.high,
+            timeLimit: Duration(seconds: 10),
+          ),
         );
-        setState(() {
-          _latitude = position.latitude;
-          _longitude = position.longitude;
-          _accuracy = position.accuracy;
-        });
+        if (mounted) {
+          setState(() {
+            _latitude = position.latitude;
+            _longitude = position.longitude;
+            _accuracy = position.accuracy;
+          });
+        }
       }
-    } catch (e) {
-      print('Location error: $e');
+    } catch (_) {
+      // Keep existing default or last coordinates
     } finally {
       if (mounted) setState(() => _isLocating = false);
     }
@@ -73,7 +77,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       imageQuality: 85,
       maxWidth: 1920,
     );
-    if (pickedFile != null) {
+    if (pickedFile != null && mounted) {
       setState(() {
         _imageFile = pickedFile;
       });
@@ -148,7 +152,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -225,7 +229,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                             decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.65),
+                              color: Colors.black.withValues(alpha: 0.65),
                               borderRadius: BorderRadius.circular(16),
                             ),
                             child: const Text('AWS S3 Ready • AES256', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
@@ -242,9 +246,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppTheme.accentBlue.withOpacity(0.3),
+                color: AppTheme.accentBlue.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppTheme.primaryColor.withOpacity(0.2)),
+                border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.2)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -376,7 +380,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 controller: _titleController,
                 decoration: InputDecoration(
                   hintText: 'e.g. Garbage accumulation near Central Ward',
-                  hintStyle: TextStyle(color: AppTheme.textSecondary.withOpacity(0.7)),
+                  hintStyle: TextStyle(color: AppTheme.textSecondary.withValues(alpha: 0.7)),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.all(16),
                 ),
@@ -394,7 +398,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 maxLines: 4,
                 decoration: InputDecoration(
                   hintText: 'Describe the civic issue, landmark details, or severity level...',
-                  hintStyle: TextStyle(color: AppTheme.textSecondary.withOpacity(0.7)),
+                  hintStyle: TextStyle(color: AppTheme.textSecondary.withValues(alpha: 0.7)),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.all(16),
                 ),
@@ -409,18 +413,40 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 onPressed: _isSubmitting
                     ? null
                     : () async {
+                        final messenger = ScaffoldMessenger.of(context);
+                        final navigator = Navigator.of(context);
+
+                        final token = await _apiService.getToken();
+                        if (token == null) {
+                          if (!mounted) return;
+                          messenger.showSnackBar(
+                            SnackBar(
+                              content: const Text('Please sign in with Cognito to publish posts'),
+                              action: SnackBarAction(
+                                label: 'Sign In',
+                                onPressed: () {
+                                  navigator.push(
+                                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                                  );
+                                },
+                              ),
+                            ),
+                          );
+                          return;
+                        }
+
                         final title = _titleController.text.trim();
                         final desc = _descController.text.trim();
 
                         if (title.isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
+                          messenger.showSnackBar(
                             const SnackBar(content: Text('Please enter an issue title')),
                           );
                           return;
                         }
 
                         if (_imageFile == null) {
-                          ScaffoldMessenger.of(context).showSnackBar(
+                          messenger.showSnackBar(
                             const SnackBar(content: Text('Please capture or select an evidence photo')),
                           );
                           return;
@@ -435,13 +461,13 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                           _imageFile!.name.isNotEmpty ? _imageFile!.name : 'evidence.jpg',
                         );
 
+                        if (!mounted) return;
+
                         if (photoUrl == null) {
-                          if (mounted) {
-                            setState(() => _isSubmitting = false);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Failed to upload evidence to S3. Please try again.')),
-                            );
-                          }
+                          setState(() => _isSubmitting = false);
+                          messenger.showSnackBar(
+                            const SnackBar(content: Text('Failed to upload evidence to S3. Please try again.')),
+                          );
                           return;
                         }
 
@@ -463,7 +489,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                         setState(() => _isSubmitting = false);
 
                         if (success) {
-                          ScaffoldMessenger.of(context).showSnackBar(
+                          messenger.showSnackBar(
                             const SnackBar(
                               content: Row(
                                 children: [
@@ -482,7 +508,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                             _imageFile = null;
                           });
                         } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
+                          messenger.showSnackBar(
                             const SnackBar(content: Text('Failed to publish post. Check backend connection.')),
                           );
                         }
@@ -520,7 +546,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
+        color: Colors.white.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(

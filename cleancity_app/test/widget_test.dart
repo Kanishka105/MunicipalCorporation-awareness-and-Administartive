@@ -5,14 +5,15 @@
 // gestures. You can also use WidgetTester to find child widgets in the widget
 // tree, read text, and verify that the values of widget properties are correct.
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cleancity_app/main.dart';
 
 void main() {
   testWidgets('App renders login screen smoke test', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({});
     await tester.pumpWidget(const CleanCityApp());
+    await tester.pumpAndSettle();
     expect(find.text('CleanCity'), findsWidgets);
   });
 }

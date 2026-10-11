@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io' show Platform;
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
@@ -13,7 +14,15 @@ class ApiService {
     if (kIsWeb) {
       return 'http://127.0.0.1:5000';
     }
-    return 'http://10.0.2.2:5000';
+    try {
+      if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+        return 'http://127.0.0.1:5000';
+      }
+      if (Platform.isAndroid) {
+        return 'http://10.0.2.2:5000';
+      }
+    } catch (_) {}
+    return 'http://127.0.0.1:5000';
   }
 
   static String get baseUrl => '$serverHost/api/v1';
@@ -119,10 +128,10 @@ class ApiService {
         return {'success': true, 'message': 'Logged in successfully'};
       } else {
         final err = jsonDecode(response.body);
-        final detail = err['detail'] ?? 'Login failed. Please check credentials.';
+        final detail = err['detail'] ?? err['error'] ?? 'Login failed. Please check credentials.';
         return {'success': false, 'message': detail};
       }
-    } catch (backendErr) {
+    } catch (_) {
       // 2. Direct AWS Cognito SDK Fallback
       try {
         final pool = userPool;
@@ -170,9 +179,10 @@ class ApiService {
         return {'success': true, 'message': 'Verification code sent via SMS.'};
       } else {
         final err = jsonDecode(response.body);
-        return {'success': false, 'message': err['detail'] ?? 'Sign up failed.'};
+        final detail = err['detail'] ?? err['error'] ?? 'Sign up failed.';
+        return {'success': false, 'message': detail};
       }
-    } catch (e) {
+    } catch (_) {
       // Direct Cognito fallback
       try {
         final pool = userPool;
@@ -205,9 +215,10 @@ class ApiService {
         return {'success': true, 'message': 'Account confirmed successfully!'};
       } else {
         final err = jsonDecode(response.body);
-        return {'success': false, 'message': err['detail'] ?? 'Confirmation failed.'};
+        final detail = err['detail'] ?? err['error'] ?? 'Confirmation failed.';
+        return {'success': false, 'message': detail};
       }
-    } catch (e) {
+    } catch (_) {
       try {
         final pool = userPool;
         final cognitoUser = CognitoUser(
@@ -254,12 +265,9 @@ class ApiService {
       if (response.statusCode == 201) {
         final data = jsonDecode(response.body);
         return data['photo_url'];
-      } else {
-        print('Upload failed: ${response.statusCode} - ${response.body}');
-        return null;
       }
-    } catch (e) {
-      print('Error uploading evidence: $e');
+      return null;
+    } catch (_) {
       return null;
     }
   }
@@ -279,8 +287,7 @@ class ApiService {
       );
 
       return response.statusCode == 201;
-    } catch (e) {
-      print('Create post error: $e');
+    } catch (_) {
       return false;
     }
   }
@@ -289,6 +296,7 @@ class ApiService {
     final token = await getToken();
     final user = await getCurrentUser();
     final currentUserId = user['user_id'] ?? '';
+    final currentMobile = user['mobile'] ?? '';
 
     try {
       final response = await http.get(
@@ -301,12 +309,10 @@ class ApiService {
 
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
-        return data.map((json) => Post.fromJson(json, currentUserId: currentUserId)).toList();
-      } else {
-        return [];
+        return data.map((json) => Post.fromJson(json, currentUserId: currentUserId, currentMobile: currentMobile)).toList();
       }
-    } catch (e) {
-      print('Get feed error: $e');
+      return [];
+    } catch (_) {
       return [];
     }
   }
@@ -315,6 +321,7 @@ class ApiService {
     final token = await getToken();
     final user = await getCurrentUser();
     final currentUserId = user['user_id'] ?? '';
+    final currentMobile = user['mobile'] ?? '';
 
     try {
       final response = await http.get(
@@ -327,12 +334,10 @@ class ApiService {
 
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
-        return data.map((json) => Post.fromJson(json, currentUserId: currentUserId)).toList();
-      } else {
-        return [];
+        return data.map((json) => Post.fromJson(json, currentUserId: currentUserId, currentMobile: currentMobile)).toList();
       }
-    } catch (e) {
-      print('Get my posts error: $e');
+      return [];
+    } catch (_) {
       return [];
     }
   }
@@ -354,8 +359,7 @@ class ApiService {
         return jsonDecode(response.body);
       }
       return null;
-    } catch (e) {
-      print('Upvote error: $e');
+    } catch (_) {
       return null;
     }
   }

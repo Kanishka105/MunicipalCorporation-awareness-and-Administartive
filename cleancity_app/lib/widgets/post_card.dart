@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/post_model.dart';
 import '../theme.dart';
 import '../screens/post_detail_screen.dart';
+import '../screens/login_screen.dart';
 import '../services/api_service.dart';
 
 class PostCard extends StatefulWidget {
@@ -38,6 +39,26 @@ class _PostCardState extends State<PostCard> {
 
   Future<void> _handleUpvote() async {
     if (_isUpvoting) return;
+
+    final token = await _apiService.getToken();
+    if (token == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Please sign in with Cognito to upvote posts'),
+          action: SnackBarAction(
+            label: 'Sign In',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const LoginScreen()),
+              );
+            },
+          ),
+        ),
+      );
+      return;
+    }
 
     setState(() {
       _isUpvoting = true;
@@ -85,7 +106,7 @@ class _PostCardState extends State<PostCard> {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -135,7 +156,7 @@ class _PostCardState extends State<PostCard> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: AppTheme.accentBlue.withOpacity(0.4),
+                      color: AppTheme.accentBlue.withValues(alpha: 0.4),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -166,7 +187,7 @@ class _PostCardState extends State<PostCard> {
                         children: const [
                           Icon(Icons.broken_image, color: Colors.grey, size: 48),
                           SizedBox(height: 8),
-                          Text('Evidence Snapshot', style: TextStyle(color: Colors.grey)),
+                          Text('Evidence Snapshot in S3', style: TextStyle(color: Colors.grey)),
                         ],
                       ),
                     ),
@@ -178,10 +199,10 @@ class _PostCardState extends State<PostCard> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.95),
+                      color: Colors.white.withValues(alpha: 0.95),
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
-                        BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4),
+                        BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 4),
                       ],
                     ),
                     child: Row(
@@ -203,7 +224,7 @@ class _PostCardState extends State<PostCard> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.65),
+                      color: Colors.black.withValues(alpha: 0.65),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
@@ -255,7 +276,7 @@ class _PostCardState extends State<PostCard> {
                             color: _hasUpvoted ? AppTheme.primaryColor : AppTheme.backgroundColor,
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                              color: _hasUpvoted ? AppTheme.primaryColor : Colors.grey.withOpacity(0.2),
+                              color: _hasUpvoted ? AppTheme.primaryColor : Colors.grey.withValues(alpha: 0.2),
                             ),
                           ),
                           child: Row(

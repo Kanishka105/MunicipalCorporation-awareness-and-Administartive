@@ -31,13 +31,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final user = await _apiService.getCurrentUser();
       final posts = await _apiService.getMyPosts();
 
-      setState(() {
-        _userName = user['name']?.isNotEmpty == true ? user['name']! : 'Citizen User';
-        _userMobile = user['mobile'] ?? '';
-        _myPosts = posts;
-        _isLoading = false;
-      });
-    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _userName = user['name']?.isNotEmpty == true ? user['name']! : 'Citizen User';
+          _userMobile = user['mobile'] ?? '';
+          _myPosts = posts;
+          _isLoading = false;
+        });
+      }
+    } catch (_) {
       if (mounted) {
         setState(() => _isLoading = false);
       }
@@ -91,14 +93,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Colors.cyan.withOpacity(0.1),
+                      Colors.cyan.withValues(alpha: 0.1),
                       Colors.white,
                     ],
                   ),
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
+                      color: Colors.black.withValues(alpha: 0.04),
                       blurRadius: 20,
                       offset: const Offset(0, 10),
                     ),
@@ -116,7 +118,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               shape: BoxShape.circle,
                               border: Border.all(color: Colors.white, width: 4),
                               boxShadow: [
-                                BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10),
+                                BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 10),
                               ],
                             ),
                             child: CircleAvatar(
@@ -155,16 +157,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         decoration: BoxDecoration(
-                          color: AppTheme.accentBlue.withOpacity(0.35),
+                          color: AppTheme.accentBlue.withValues(alpha: 0.35),
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
                             _buildStatColumn('${_myPosts.length}', 'My Posts'),
-                            Container(width: 1, height: 30, color: Colors.grey.withOpacity(0.3)),
+                            Container(width: 1, height: 30, color: Colors.grey.withValues(alpha: 0.3)),
                             _buildStatColumn('$_totalUpvotes', 'Upvotes'),
-                            Container(width: 1, height: 30, color: Colors.grey.withOpacity(0.3)),
+                            Container(width: 1, height: 30, color: Colors.grey.withValues(alpha: 0.3)),
                             _buildStatColumn('${_myPosts.length}', 'In S3'),
                           ],
                         ),
@@ -176,25 +178,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           Expanded(
                             child: ElevatedButton.icon(
                               onPressed: () async {
+                                final messenger = ScaffoldMessenger.of(context);
+                                final navigator = Navigator.of(context);
                                 await _apiService.logout();
-                                if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Logged out of Cognito session'),
-                                      duration: Duration(seconds: 2),
-                                    ),
-                                  );
-                                  Navigator.pushAndRemoveUntil(
-                                    context,
-                                    MaterialPageRoute(builder: (_) => const LoginScreen()),
-                                    (route) => false,
-                                  );
-                                }
+                                if (!mounted) return;
+                                messenger.showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Logged out of Cognito session'),
+                                    duration: Duration(seconds: 2),
+                                  ),
+                                );
+                                navigator.pushAndRemoveUntil(
+                                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                                  (route) => false,
+                                );
                               },
                               icon: const Icon(Icons.logout, color: Colors.red),
                               label: const Text('Log Out', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red.withOpacity(0.1),
+                                backgroundColor: Colors.red.withValues(alpha: 0.1),
                                 elevation: 0,
                                 padding: const EdgeInsets.symmetric(vertical: 12),
                               ),
@@ -223,7 +225,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: AppTheme.primaryColor.withOpacity(0.1),
+                        color: AppTheme.primaryColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
@@ -295,7 +297,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   borderRadius: BorderRadius.circular(16),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withOpacity(0.04),
+                                      color: Colors.black.withValues(alpha: 0.04),
                                       blurRadius: 8,
                                       offset: const Offset(0, 4),
                                     ),

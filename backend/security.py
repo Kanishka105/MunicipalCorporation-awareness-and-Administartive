@@ -162,6 +162,7 @@ async def get_current_user(
             signing_key.key,
             algorithms=["RS256"],
             issuer=issuer,
+            leeway=120,
             options={
                 "require": ["exp", "iss", "token_use"],
                 "verify_aud": False,
@@ -217,13 +218,13 @@ async def get_current_user(
         raise _unauthorized() from None
 
 
-def get_current_user_optional(
+async def get_current_user_optional(
     credentials: HTTPAuthorizationCredentials | None = Depends(security_scheme),
 ) -> AuthUser | None:
     if credentials is None:
         return None
     try:
-        return get_current_user(credentials)
+        return await get_current_user(credentials)
     except Exception:
         return None
 
